@@ -1,0 +1,30 @@
+<app-panel-shell>
+  <h1 class="page-title">Audit Logs</h1>
+  <p class="page-subtitle">Historial de acciones administrativas.</p>
+  <p *ngIf="loading" class="empty-text">Cargando...</p>
+  <p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
+
+  <div class="card">
+    <table class="data-table" *ngIf="logs.length">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Admin</th>
+          <th>Acción</th>
+          <th>Objetivo</th>
+          <th>Detalle</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let log of logs">
+          <td>{{ log.createdAt || '—' }}</td>
+          <td>{{ log.adminEmail }}</td>
+          <td>{{ log.action }}</td>
+          <td>{{ log.targetEmail || log.targetUserId || '—' }}</td>
+          <td>{{ log.details || '—' }}</td>
+        </tr>
+      </tbody>
+    </table>
+    <p *ngIf="!loading && !logs.length" class="empty-text">Sin registros de auditoría.</p>
+  </div>
+</app-panel-shell>

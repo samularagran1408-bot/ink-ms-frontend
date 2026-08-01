@@ -1,0 +1,43 @@
+<app-panel-shell [fixedSidebar]="fixedSidebar">
+  <h1 class="page-title">Accesibilidad</h1>
+  <p class="page-subtitle">Preferencias persistidas en ink-ms-accesibility.</p>
+  <p *ngIf="message" class="empty-text">{{ message }}</p>
+  <p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
+
+  <div class="card">
+    <form class="form-grid" [formGroup]="form" (ngSubmit)="save()">
+      <label>Idioma
+        <select formControlName="language">
+          <option value="es">Español</option>
+          <option value="en">English</option>
+        </select>
+      </label>
+      <label>Tamaño de fuente
+        <select formControlName="fontSize">
+          <option value="small">Small</option>
+          <option value="medium">Medium</option>
+          <option value="large">Large</option>
+          <option value="xlarge">XLarge</option>
+        </select>
+      </label>
+      <label>Tipo de discapacidad <input formControlName="disabilityType" /></label>
+      <label>Idioma de voz
+        <select formControlName="voiceLanguage">
+          <option value="es-ES">es-ES</option>
+          <option value="en-US">en-US</option>
+        </select>
+      </label>
+
+      <label><input type="checkbox" formControlName="highContrast" /> Alto contraste</label>
+      <label><input type="checkbox" formControlName="screenReader" /> Lector de pantalla</label>
+      <label><input type="checkbox" formControlName="reducedMotion" /> Menos movimiento</label>
+      <label><input type="checkbox" formControlName="keyboardNavigation" /> Navegación por teclado</label>
+      <label><input type="checkbox" formControlName="readerMode" /> Modo lectura</label>
+      <label><input type="checkbox" formControlName="notificationsEnabled" /> Notificaciones</label>
+      <label><input type="checkbox" formControlName="voiceCommandsEnabled" /> Comandos de voz</label>
+      <label><input type="checkbox" formControlName="ttsEnabled" /> Texto a voz</label>
+
+      <div><button class="btn-primary" type="submit">Guardar preferencias</button></div>
+    </form>
+  </div>
+</app-panel-shell>

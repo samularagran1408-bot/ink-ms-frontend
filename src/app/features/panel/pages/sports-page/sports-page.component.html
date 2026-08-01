@@ -1,0 +1,32 @@
+<app-panel-shell>
+  <h1 class="page-title">Sports</h1>
+  <p class="page-subtitle">Catálogo de deportes adaptados.</p>
+  <p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
+
+  <div class="card" style="margin-bottom: 16px;">
+    <h3 class="section-title">Nuevo deporte</h3>
+    <form class="form-grid" [formGroup]="form" (ngSubmit)="create()">
+      <label>Nombre <input formControlName="name" /></label>
+      <label>Dificultad
+        <select formControlName="difficulty">
+          <option value="beginner">Beginner</option>
+          <option value="intermediate">Intermediate</option>
+          <option value="advanced">Advanced</option>
+        </select>
+      </label>
+      <label>Materiales <input formControlName="requiredMaterials" /></label>
+      <label>Descripción <input formControlName="description" /></label>
+      <div><button class="btn-primary" type="submit">Crear</button></div>
+    </form>
+  </div>
+
+  <div class="card">
+    <div class="list-item" *ngFor="let sport of sports">
+      <div>
+        <strong>{{ sport.name }}</strong>
+        <div class="kpi-sub">{{ sport.description || 'Sin descripción' }} · {{ sport.difficulty || '—' }}</div>
+      </div>
+      <button class="btn-danger" type="button" (click)="remove(sport)">Eliminar</button>
+    </div>
+  </div>
+</app-panel-shell>

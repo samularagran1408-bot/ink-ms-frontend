@@ -1,0 +1,39 @@
+<app-panel-shell>
+  <h1 class="page-title">Roles</h1>
+  <p class="page-subtitle">Catálogo de roles y asignación a usuarios.</p>
+  <p *ngIf="message" class="empty-text">{{ message }}</p>
+  <p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
+
+  <div class="card" style="margin-bottom: 16px;">
+    <h3 class="section-title">Asignar rol</h3>
+    <form class="form-grid" [formGroup]="form" (ngSubmit)="assign()">
+      <label>
+        Email usuario
+        <input type="email" formControlName="email" list="users-list" />
+      </label>
+      <label>
+        Rol
+        <select formControlName="roleName">
+          <option *ngFor="let role of roles" [value]="role.name">{{ role.name }}</option>
+        </select>
+      </label>
+      <div>
+        <button class="btn-primary" type="submit">Asignar</button>
+      </div>
+    </form>
+    <datalist id="users-list">
+      <option *ngFor="let user of users" [value]="user.email"></option>
+    </datalist>
+  </div>
+
+  <div class="card">
+    <h3 class="section-title">Roles del sistema</h3>
+    <div class="list-item" *ngFor="let role of roles">
+      <div>
+        <strong>{{ role.name }}</strong>
+        <div class="kpi-sub">{{ role.description || 'Sin descripción' }}</div>
+      </div>
+      <span class="status-pill status-pill--ok">ID {{ role.id }}</span>
+    </div>
+  </div>
+</app-panel-shell>

@@ -1,0 +1,179 @@
+<div class="guest-home-wrapper">
+
+  <header class="top-header">
+    <div class="container top-header-inner">
+      <div class="brand-logo-container" (click)="goBack()">
+        <button class="back-arrow-btn" aria-label="Volver">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="19" y1="12" x2="5" y2="12" />
+            <polyline points="12 19 5 12 12 5" />
+          </svg>
+        </button>
+        <span class="brand-name">INKLUSPORT</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-wrapper">
+        <div class="hero-content">
+          <p class="hero-label">Rendimiento sin fronteras</p>
+          <h1 class="hero-title">
+            <span class="libertad">LIBERTAD</span>
+            <span class="kinetica">KINÉTICA</span>
+          </h1>
+          <p class="hero-text">
+            Plataforma de deportes adaptados de alto rendimiento diseñada para superar los límites del potencial humano. Datos de precisión, entrenadores de élite e inclusión total.
+          </p>
+          <div class="hero-buttons">
+            <a href="#disciplinas" class="btn btn-primary">
+              Explorar Deportes
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </a>
+            <a href="javascript:void(0)" class="btn btn-outline">Nuestra Misión</a>
+          </div>
+        </div>
+        <div class="hero-image-wrapper">
+          <img src="https://images.unsplash.com/photo-1530549387789-4c1017266635?w=800&h=600&fit=crop" alt="Atleta en silla de ruedas" class="hero-image">
+          <div class="hero-badge">
+            <div class="hero-badge-label">Velocidad Máxima</div>
+            <div class="hero-badge-value">28.4 km/h</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SERVICIOS -->
+  <section class="servicios">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Servicios Especializados</h2>
+        <p class="section-subtitle">Herramientas de élite para el logro adaptado.</p>
+      </div>
+      <div class="servicios-grid">
+        <div class="servicio-card">
+          <div class="servicio-tag">Riesgo IA</div>
+          <div class="servicio-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
+          </div>
+          <h3 class="servicio-title">Análisis Biomecánico</h3>
+          <p class="servicio-desc">Seguimiento avanzado por sensores y modelos de IA para optimizar la eficiencia del movimiento y prevenir lesiones por fatiga.</p>
+        </div>
+        <div class="servicio-card">
+          <div class="servicio-tag">Personalizado</div>
+          <div class="servicio-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+          </div>
+          <h3 class="servicio-title">Entrenamiento Adaptado</h3>
+          <p class="servicio-desc">Acceso directo a entrenadores certificados de élite especializados en tecnologías adaptadas y protocolos de entrenamiento modificados.</p>
+        </div>
+        <div class="servicio-card">
+          <div class="servicio-tag">Comunidad</div>
+          <div class="servicio-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <h3 class="servicio-title">Ecosistema de Inclusión</h3>
+          <p class="servicio-desc">Una red global para que los atletas conecten, compartan datos y descubran competiciones inclusivas en todo el mundo.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DISCIPLINAS -->
+  <section class="disciplinas" id="disciplinas">
+    <div class="container">
+      <div class="disciplinas-header">
+        <h2 class="disciplinas-title">Descubre tu Disciplina</h2>
+        <div class="filtros">
+          <button
+            *ngFor="let filtro of filtros"
+            type="button"
+            class="filtro"
+            [class.active]="selectedFiltro === filtro"
+            (click)="selectedFiltro = filtro"
+          >{{ filtro }}</button>
+        </div>
+      </div>
+      <div class="disciplinas-grid">
+        <div class="disciplina-card" *ngFor="let disciplina of disciplinas">
+          <img [src]="disciplina.img" [alt]="disciplina.alt" class="disciplina-img">
+          <div class="disciplina-info">
+            <h3 class="disciplina-name">{{ disciplina.nombre }}</h3>
+            <div class="disciplina-tags">
+              <span class="disciplina-tag" *ngFor="let tag of disciplina.tags">{{ tag }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- EVENTOS Y FORMULARIO -->
+  <section class="eventos-section">
+    <div class="container">
+      <div class="eventos-wrapper">
+        <div class="eventos-col">
+          <h2 class="eventos-title">Próximos Eventos</h2>
+          <div class="evento-item" *ngFor="let evento of eventos">
+            <div class="evento-fecha">
+              <div class="evento-dia">{{ evento.dia }}</div>
+              <div class="evento-mes">{{ evento.mes }}</div>
+            </div>
+            <div class="evento-info">
+              <div class="evento-nombre">{{ evento.nombre }}</div>
+              <div class="evento-lugar">{{ evento.lugar }}</div>
+            </div>
+            <button type="button" class="evento-btn" (click)="onViewEventDetails(evento.nombre)">Ver Detalles</button>
+          </div>
+        </div>
+        <div class="form-col">
+          <div class="form-card">
+            <h2 class="form-title">Únete a la Liga</h2>
+            <p class="form-subtitle">Comienza hoy tu viaje de alto rendimiento.</p>
+            <form (submit)="onJoinLeague($event)">
+              <div class="form-group">
+                <label class="form-label">Nombre Completo</label>
+                <input type="text" class="form-input" placeholder="Alex Rivera">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Correo Electrónico</label>
+                <input type="email" class="form-input" placeholder="alex@performance.com">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Disciplina Principal</label>
+                <select class="form-input form-select">
+                  <option>Seleccionar Deporte</option>
+                  <option>Baloncesto en silla de ruedas</option>
+                  <option>Para-Natación</option>
+                  <option>Atletismo Adaptado</option>
+                  <option>Para-Ciclismo</option>
+                </select>
+              </div>
+              <button type="submit" class="btn btn-primary form-submit">Comenzar Entrenamiento</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-wrapper">
+        <div class="footer-brand">INKLUSPORT</div>
+        <div class="footer-links">
+          <a href="javascript:void(0)" class="footer-link">Política de Privacidad</a>
+          <a href="javascript:void(0)" class="footer-link">Términos de Servicio</a>
+          <a href="javascript:void(0)" class="footer-link">Accesibilidad</a>
+          <a href="javascript:void(0)" class="footer-link">Soporte</a>
+        </div>
+        <div class="footer-copy">© 2024 Inklusport. Creado para el rendimiento.</div>
+      </div>
+    </div>
+  </footer>
+
+</div>

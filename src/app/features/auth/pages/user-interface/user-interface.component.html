@@ -1,0 +1,166 @@
+<div class="dashboard-wrapper">
+
+  <app-sidebar-nav></app-sidebar-nav>
+
+  <main class="dashboard-content">
+    <div class="welcome-banner">
+      <div class="welcome-title-group">
+        <h1 class="welcome-title"> ¿Listo para<span class="welcome-title-accent"> superar </span>tus límites?</h1>
+        <p class="welcome-text">
+          {{ loading ? 'Cargando tu panel...' : 'Explora eventos adaptados, revisa tus inscripciones y ajusta tu accesibilidad.' }}
+        </p>
+      </div>
+      <button class="notifications-btn" type="button" (click)="onNotifications()">
+        NOTIFICACIONES
+        <span *ngIf="unreadCount > 0" class="notif-count">{{ unreadCount }}</span>
+      </button>
+    </div>
+
+    <p *ngIf="errorMessage" class="panel-error">{{ errorMessage }}</p>
+
+    <div *ngIf="showNotifications" class="notifications-panel">
+      <h4>Notificaciones</h4>
+      <p *ngIf="!notifications.length" class="empty-text">No hay notificaciones.</p>
+      <div *ngFor="let note of notifications" class="notification-item">
+        <strong>{{ note.title }}</strong>
+        <span>{{ note.body }}</span>
+      </div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-box">
+        <div class="stat-box-header">
+          <span class="stat-box-title">SIGUIENTE EVENTO</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E11D48" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        </div>
+        <div>
+          <div class="stat-box-event-title">{{ nextEvent?.name || 'Sin eventos próximos' }}</div>
+          <div class="stat-box-subtext stat-box-subtext--spaced">
+            {{ nextEvent ? formatDate(nextEvent.eventDate) : 'Inscríbete para ver tu agenda' }}
+          </div>
+        </div>
+      </div>
+
+      <div class="stat-box">
+        <div class="stat-box-header">
+          <span class="stat-box-title">MIS ACTIVIDADES</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/></svg>
+        </div>
+        <div>
+          <div class="stat-box-value">{{ confirmedCount | number: '2.0-0' }}</div>
+          <div class="stat-box-subtext">INSCRIPCIONES</div>
+        </div>
+      </div>
+
+      <div class="stat-box">
+        <div class="stat-box-header">
+          <span class="stat-box-title">EVENTOS DISPONIBLES</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        </div>
+        <div>
+          <div class="stat-box-value">{{ events.length | number: '2.0-0' }}</div>
+          <div class="stat-box-subtext">EN EL CATÁLOGO</div>
+        </div>
+      </div>
+
+      <div class="stat-box">
+        <div class="stat-box-header">
+          <span class="stat-box-title">NO LEÍDAS</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E11D48" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        </div>
+        <div>
+          <div class="stat-box-value">{{ unreadCount | number: '2.0-0' }}</div>
+          <div class="stat-box-subtext">NOTIFICACIONES</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="main-grid">
+      <div class="events-section">
+        <div class="section-header-row">
+          <h3 class="section-title">Eventos Recomendados para ti</h3>
+          <span class="see-all-link" (click)="onSeeAllEvents()">VER TODO</span>
+        </div>
+
+        <p *ngIf="!loading && !events.length" class="empty-text">No hay eventos disponibles por ahora.</p>
+
+        <div class="event-card" *ngFor="let event of events">
+          <div class="event-image event-image--fallback">
+            <span class="event-tag">{{ event.sportName || 'DEPORTE' }}</span>
+          </div>
+          <div class="event-card-body">
+            <div>
+              <h4 class="event-card-title">{{ event.name }}</h4>
+              <div class="event-meta-list">
+                <div class="event-meta-item">
+                  <span>{{ formatDate(event.eventDate) }}</span>
+                </div>
+                <div class="event-meta-item">
+                  <span>{{ formatTime(event.eventTime) }}</span>
+                </div>
+                <div class="event-meta-item">
+                  <span>{{ event.location || 'Ubicación por confirmar' }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="event-card-footer">
+              <span class="spots-available">{{ event.availableCapacity ?? 0 }} cupos disponibles</span>
+              <button
+                class="register-event-btn"
+                type="button"
+                [disabled]="isRegistered(event.id) || registeringId === event.id"
+                (click)="onRegisterEvent(event)"
+              >
+                {{ isRegistered(event.id) ? 'INSCRITO' : (registeringId === event.id ? '...' : 'INSCRIBIRSE') }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="right-column">
+        <div class="widget-card">
+          <div class="calendar-header-row">
+            <span class="calendar-title">Mi Calendario</span>
+          </div>
+          <div class="calendar-month-label">{{ calendarMonthLabel }}</div>
+          <div class="calendar-grid">
+            <div class="cal-day-header">D</div>
+            <div class="cal-day-header">L</div>
+            <div class="cal-day-header">M</div>
+            <div class="cal-day-header">M</div>
+            <div class="cal-day-header">J</div>
+            <div class="cal-day-header">V</div>
+            <div class="cal-day-header">S</div>
+
+            <div
+              *ngFor="let cell of calendarCells"
+              class="cal-cell"
+              [class.cal-cell--muted]="cell.muted || !cell.day"
+              [class.cal-cell--selected]="cell.selected"
+              [class.cal-cell--event]="cell.hasEvent"
+            >
+              {{ cell.day || '' }}
+            </div>
+          </div>
+        </div>
+
+        <div class="widget-card">
+          <div class="ai-header">
+            <span class="ai-title">Mis inscripciones</span>
+          </div>
+          <p *ngIf="!registrations.length" class="ai-quote">Aún no tienes inscripciones activas.</p>
+          <div class="ai-metrics-list">
+            <div class="ai-metric-row" *ngFor="let reg of registrations.slice(0, 4)">
+              <div class="ai-metric-dot ai-metric-dot--rose"></div>
+              <span>{{ reg.eventName || ('Evento ' + reg.eventId) }}</span>
+            </div>
+          </div>
+          <button class="talk-ai-btn" type="button" (click)="onSeeAllEvents()">
+            VER EVENTOS
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>

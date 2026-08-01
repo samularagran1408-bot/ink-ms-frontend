@@ -1,0 +1,121 @@
+.accessibility-widget-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 100000;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-family: 'Inter', sans-serif;
+}
+
+.accessibility-toggle-btn {
+  background-color: #A30D11;
+  color: #ffffff;
+  border: 2px solid #ffffff;
+  border-radius: 30px;
+  padding: 11px 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(163, 13, 17, 0.4);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.accessibility-toggle-btn:hover {
+  background-color: #890A0D;
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 8px 25px rgba(163, 13, 17, 0.5);
+}
+
+.accessibility-toggle-btn:active {
+  transform: translateY(0) scale(0.96);
+}
+
+.accessibility-menu {
+  position: absolute;
+  bottom: 64px;
+  right: 0;
+  background-color: #ffffff;
+  border: 1px solid #E2E8F0;
+  border-radius: 14px;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.18);
+  width: 220px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  transform-origin: bottom right;
+  animation: menuOpenAnim 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.accessibility-menu.closing {
+  animation: menuCloseAnim 0.2s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+@keyframes menuOpenAnim {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.92);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes menuCloseAnim {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.92);
+  }
+}
+
+.accessibility-option {
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #1E293B;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: all 0.2s ease;
+}
+
+.accessibility-option:hover {
+  background-color: #FEF2F2;
+  border-color: #A30D11;
+  color: #A30D11;
+  transform: translateX(-3px);
+  box-shadow: 0 2px 8px rgba(163, 13, 17, 0.1);
+}
+
+.accessibility-option:active {
+  transform: translateX(-1px) scale(0.98);
+}
+
+.accessibility-option svg {
+  width: 16px;
+  height: 16px;
+  color: #A30D11;
+  flex-shrink: 0;
+  transition: transform 0.2s;
+}
+
+.accessibility-option:hover svg {
+  transform: scale(1.15);
+}

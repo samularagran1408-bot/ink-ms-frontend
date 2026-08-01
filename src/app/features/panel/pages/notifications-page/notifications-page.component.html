@@ -1,0 +1,31 @@
+<app-panel-shell [fixedSidebar]="fixedSidebar">
+  <h1 class="page-title">Notificaciones</h1>
+  <p class="page-subtitle">Avisos del sistema para tu cuenta.</p>
+
+  <div class="actions-row">
+    <button class="btn-secondary" type="button" (click)="reload()">Actualizar</button>
+    <button class="btn-primary" type="button" (click)="markAll()">Marcar todas como leídas</button>
+  </div>
+
+  <p *ngIf="loading" class="empty-text">Cargando...</p>
+  <p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
+
+  <div class="card">
+    <div class="list-item" *ngFor="let note of notifications">
+      <div>
+        <strong>{{ note.title }}</strong>
+        <div class="kpi-sub">{{ note.body || 'Sin detalle' }} · {{ note.createdAt || '' }}</div>
+      </div>
+      <button
+        *ngIf="!note.read"
+        class="btn-secondary"
+        type="button"
+        (click)="markOne(note)"
+      >
+        Marcar leída
+      </button>
+      <span *ngIf="note.read" class="status-pill status-pill--ok">Leída</span>
+    </div>
+    <p *ngIf="!loading && !notifications.length" class="empty-text">No hay notificaciones.</p>
+  </div>
+</app-panel-shell>

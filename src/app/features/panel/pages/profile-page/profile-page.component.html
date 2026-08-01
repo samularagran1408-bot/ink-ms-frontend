@@ -1,0 +1,18 @@
+<app-panel-shell [fixedSidebar]="fixedSidebar">
+  <h1 class="page-title">Perfil</h1>
+  <p class="page-subtitle">Datos personales y preferencias de apoyo. Roles: {{ rolesLabel }}</p>
+  <p *ngIf="message" class="empty-text">{{ message }}</p>
+  <p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
+
+  <div class="card">
+    <form class="form-grid" [formGroup]="form" (ngSubmit)="save()">
+      <label>Nombre completo <input formControlName="fullName" /></label>
+      <label>Teléfono <input formControlName="phone" /></label>
+      <label>Discapacidad <input formControlName="disability" /></label>
+      <label>Preferencia de apoyo <input formControlName="supportPreference" /></label>
+      <label style="grid-column: 1 / -1;">Bio <textarea rows="3" formControlName="bio"></textarea></label>
+      <label style="grid-column: 1 / -1;">Notas de apoyo <textarea rows="2" formControlName="supportPreferenceNotes"></textarea></label>
+      <div><button class="btn-primary" type="submit">Guardar</button></div>
+    </form>
+  </div>
+</app-panel-shell>

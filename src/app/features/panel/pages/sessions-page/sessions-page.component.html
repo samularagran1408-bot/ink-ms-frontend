@@ -1,0 +1,49 @@
+<app-panel-shell>
+  <h1 class="page-title">Sesiones</h1>
+  <p class="page-subtitle">Rutinas de entrenamiento (crear y publicar).</p>
+  <p *ngIf="successMessage" class="empty-text">{{ successMessage }}</p>
+  <p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
+
+  <div class="card" style="margin-bottom: 16px;">
+    <h3 class="section-title">Nueva sesión</h3>
+    <form class="form-grid" [formGroup]="form" (ngSubmit)="create()">
+      <label>Nombre <input formControlName="name" /></label>
+      <label>Deporte
+        <select formControlName="sportId">
+          <option *ngFor="let sport of sports" [ngValue]="sport.id">{{ sport.name }}</option>
+        </select>
+      </label>
+      <label>Enfoque discapacidad <input formControlName="disabilityFocus" /></label>
+      <label>Nivel
+        <select formControlName="level">
+          <option value="beginner">Beginner</option>
+          <option value="intermediate">Intermediate</option>
+          <option value="advanced">Advanced</option>
+        </select>
+      </label>
+      <label>Duración (min) <input type="number" formControlName="durationMinutes" /></label>
+      <label>Cupo <input type="number" formControlName="maxCapacity" /></label>
+      <label style="grid-column: 1 / -1;">Descripción <textarea rows="2" formControlName="description"></textarea></label>
+      <div><button class="btn-primary" type="submit">Crear</button></div>
+    </form>
+  </div>
+
+  <div class="card">
+    <div class="list-item" *ngFor="let routine of routines">
+      <div>
+        <strong>{{ routine.name }}</strong>
+        <div class="kpi-sub">{{ routine.status }} · {{ routine.disabilityFocus || 'General' }} · {{ routine.durationMinutes || '—' }} min</div>
+      </div>
+      <button
+        class="btn-secondary"
+        type="button"
+        *ngIf="routine.status !== 'published'"
+        (click)="publish(routine)"
+      >
+        Publicar
+      </button>
+      <span *ngIf="routine.status === 'published'" class="status-pill status-pill--ok">Publicada</span>
+    </div>
+    <p *ngIf="!routines.length" class="empty-text">Sin sesiones todavía.</p>
+  </div>
+</app-panel-shell>

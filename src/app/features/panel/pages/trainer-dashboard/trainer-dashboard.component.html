@@ -1,0 +1,73 @@
+<app-panel-shell>
+  <h1 class="page-title">Panel Entrenador</h1>
+  <p class="page-subtitle">Sesiones, atletas inscritos y enfoque por discapacidad.</p>
+  <p *ngIf="loading" class="empty-text">Cargando...</p>
+  <p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
+
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-label">Sesiones</div>
+      <div class="kpi-value">{{ routines.length }}</div>
+      <div class="kpi-sub">Rutinas del entrenador</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Publicadas</div>
+      <div class="kpi-value">{{ publishedCount }}</div>
+      <div class="kpi-sub">Listas para atletas</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Atletas</div>
+      <div class="kpi-value">{{ athleteIds.size }}</div>
+      <div class="kpi-sub">Inscritos en tus rutinas</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Discapacidades</div>
+      <div class="kpi-value">{{ disabilities.length }}</div>
+      <div class="kpi-sub">Catálogo activo</div>
+    </div>
+  </div>
+
+  <div class="actions-row">
+    <button class="btn-primary" type="button" (click)="goSessions()">Gestionar sesiones</button>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h3 class="section-title">Gestión de actividades</h3>
+      <table class="data-table" *ngIf="routines.length; else emptyRoutines">
+        <thead>
+          <tr>
+            <th>Actividad</th>
+            <th>Enfoque</th>
+            <th>Estado</th>
+            <th>Duración</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let routine of routines">
+            <td>{{ routine.name }}</td>
+            <td>{{ routine.disabilityFocus || '—' }}</td>
+            <td>
+              <span class="status-pill" [class.status-pill--ok]="routine.status === 'published'" [class.status-pill--warn]="routine.status !== 'published'">
+                {{ routine.status || 'draft' }}
+              </span>
+            </td>
+            <td>{{ routine.durationMinutes || '—' }} min</td>
+          </tr>
+        </tbody>
+      </table>
+      <ng-template #emptyRoutines><p class="empty-text">Aún no tienes rutinas. Crea una en Sesiones.</p></ng-template>
+    </div>
+
+    <div class="card">
+      <h3 class="section-title">Enfoque por discapacidad</h3>
+      <div class="list-item" *ngFor="let item of disabilities">
+        <div>
+          <strong>{{ item.name }}</strong>
+          <div class="kpi-sub">{{ item.category || 'Sin categoría' }}</div>
+        </div>
+      </div>
+      <p *ngIf="!disabilities.length" class="empty-text">Sin discapacidades activas.</p>
+    </div>
+  </div>
+</app-panel-shell>

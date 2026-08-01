@@ -1,0 +1,65 @@
+<app-panel-shell>
+  <h1 class="page-title">Panel Organizador</h1>
+  <p class="page-subtitle">Operación de eventos, cupos y seguimiento de atletas inscritos.</p>
+  <p *ngIf="loading" class="empty-text">Cargando...</p>
+  <p *ngIf="successMessage" class="empty-text">{{ successMessage }}</p>
+  <p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
+
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-label">Eventos</div>
+      <div class="kpi-value">{{ events.length }}</div>
+      <div class="kpi-sub">En gestión</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Activos</div>
+      <div class="kpi-value">{{ activeEvents }}</div>
+      <div class="kpi-sub">Estado active</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Cupos ocupados</div>
+      <div class="kpi-value">{{ athleteCount }}</div>
+      <div class="kpi-sub">Estimado por capacidad</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Deportes</div>
+      <div class="kpi-value">{{ sports.length }}</div>
+      <div class="kpi-sub">Disponibles</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h3 class="section-title">Crear evento</h3>
+      <form class="form-grid" [formGroup]="form" (ngSubmit)="createEvent()">
+        <label>Deporte
+          <select formControlName="sportId">
+            <option *ngFor="let sport of sports" [ngValue]="sport.id">{{ sport.name }}</option>
+          </select>
+        </label>
+        <label>Nombre <input formControlName="name" /></label>
+        <label>Fecha <input type="date" formControlName="eventDate" /></label>
+        <label>Hora <input type="time" formControlName="eventTime" /></label>
+        <label>Ubicación <input formControlName="location" /></label>
+        <label>Cupo <input type="number" formControlName="maxCapacity" /></label>
+        <label style="grid-column: 1 / -1;">Descripción <textarea rows="2" formControlName="description"></textarea></label>
+        <div><button class="btn-primary" type="submit">Crear evento</button></div>
+      </form>
+    </div>
+
+    <div class="card">
+      <h3 class="section-title">Eventos</h3>
+      <div class="list-item" *ngFor="let event of events">
+        <div>
+          <strong>{{ event.name }}</strong>
+          <div class="kpi-sub">
+            {{ event.eventDate }} {{ event.eventTime }} ·
+            {{ event.availableCapacity ?? 0 }}/{{ event.maxCapacity }} libres
+          </div>
+        </div>
+        <span class="status-pill status-pill--ok">{{ event.status || 'active' }}</span>
+      </div>
+      <p *ngIf="!events.length" class="empty-text">Sin eventos todavía.</p>
+    </div>
+  </div>
+</app-panel-shell>

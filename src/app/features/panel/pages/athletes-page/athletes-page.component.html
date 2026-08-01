@@ -1,0 +1,23 @@
+<app-panel-shell>
+  <h1 class="page-title">Atletas</h1>
+  <p class="page-subtitle">Ocupación y waitlist por evento del organizador.</p>
+  <p *ngIf="loading" class="empty-text">Cargando...</p>
+  <p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
+
+  <div class="card" *ngFor="let summary of summaries" style="margin-bottom: 12px;">
+    <h3 class="section-title">{{ summary.event.name }}</h3>
+    <div class="kpi-sub" style="margin-bottom: 10px;">
+      {{ summary.occupied }}/{{ summary.event.maxCapacity }} cupos ocupados ·
+      Waitlist: {{ summary.waitlist.length }}
+    </div>
+    <div class="list-item" *ngFor="let item of summary.waitlist">
+      <div>
+        <strong>User {{ item.userId }}</strong>
+        <div class="kpi-sub">Posición {{ item.waitlistPosition ?? '—' }}</div>
+      </div>
+    </div>
+    <p *ngIf="!summary.waitlist.length" class="empty-text">Sin waitlist para este evento.</p>
+  </div>
+
+  <p *ngIf="!loading && !summaries.length" class="empty-text">No hay eventos para mostrar atletas.</p>
+</app-panel-shell>

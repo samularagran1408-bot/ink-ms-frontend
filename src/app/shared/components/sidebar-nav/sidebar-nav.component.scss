@@ -1,0 +1,326 @@
+/* HEADER SUPERIOR */
+.top-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 48px;
+  background-color: #FFFFFF;
+  border-bottom: 1px solid #E2E8F0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+
+.hamburger-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 4px;
+}
+
+.hamburger-line {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background-color: #0F172A;
+}
+
+.brand-logo {
+  font-family: 'Oswald', sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  color: #A30D11;
+  letter-spacing: 0.5px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-info-text {
+  text-align: right;
+}
+
+.user-role-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  color: #94A3B8;
+  letter-spacing: 0.5px;
+}
+
+.user-name-text {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0F172A;
+}
+
+.user-avatar-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background-color: #FEF2F2;
+  border: 1px solid #FCA5A5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+/* SIDEBAR */
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: #000000;
+  opacity: 0;
+  z-index: 999;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.sidebar-backdrop--visible {
+  opacity: 0.5;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.sidebar-panel {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 320px;
+  max-width: 85vw;
+  height: 100vh;
+  background-color: #FFFFFF;
+  z-index: 1000;
+  box-shadow: 10px 0 30px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  padding: 32px 24px;
+  box-sizing: border-box;
+  overflow-y: auto;
+  transform: translateX(-100%);
+  transition: transform 0.3s ease;
+}
+
+.sidebar-panel--open {
+  transform: translateX(0);
+}
+
+.close-sidebar-btn {
+  align-self: flex-end;
+  background: none;
+  border: none;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  color: #64748B;
+  padding: 4px 8px;
+}
+
+.sidebar-profile-section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-top: 10px;
+  margin-bottom: 32px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #F1F5F9;
+}
+
+.sidebar-avatar-box {
+  width: 72px;
+  height: 72px;
+  border-radius: 16px;
+  background-color: #CCFBF1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+
+.sidebar-user-name {
+  font-family: 'Oswald', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: #0F172A;
+  margin: 0 0 2px 0;
+}
+
+.sidebar-user-role {
+  font-size: 13px;
+  color: #64748B;
+  margin: 0;
+}
+
+.sidebar-nav-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sidebar-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #475569;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.sidebar-nav-item:hover {
+  background-color: #F8FAFC;
+}
+
+.sidebar-nav-item--active {
+  background-color: #E11D48;
+  color: #FFFFFF;
+  box-shadow: 0 4px 12px rgba(225, 29, 72, 0.25);
+}
+
+.sidebar-nav-item--active:hover {
+  background-color: #E11D48;
+}
+
+@media (max-width: 600px) {
+  .top-nav {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+}
+
+/* Sidebar fijo (admin / entrenador / organizador) */
+.role-sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 260px;
+  height: 100vh;
+  background: #FFFFFF;
+  border-right: 1px solid #E2E8F0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  padding: 28px 20px;
+  box-sizing: border-box;
+}
+
+.role-sidebar-brand {
+  font-family: 'Oswald', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: #A30D11;
+  letter-spacing: 0.4px;
+  margin-bottom: 24px;
+}
+
+.role-profile-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #F8FAFC;
+  border-radius: 14px;
+  padding: 12px;
+  margin-bottom: 24px;
+}
+
+.role-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #E2E8F0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.role-profile-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0F172A;
+}
+
+.role-profile-sub {
+  font-size: 11px;
+  color: #94A3B8;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.role-nav-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.role-nav-item {
+  display: block;
+  padding: 12px 14px;
+  border-radius: 12px;
+  color: #475569;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.role-nav-item:hover {
+  background: #F8FAFC;
+}
+
+.role-nav-item--active {
+  background: #E11D48;
+  color: #FFFFFF;
+  box-shadow: 0 4px 12px rgba(225, 29, 72, 0.25);
+}
+
+.role-nav-divider {
+  height: 1px;
+  background: #E2E8F0;
+  margin: 10px 0;
+}
+
+.role-logout-btn {
+  margin-top: 16px;
+  width: 100%;
+  border: none;
+  background: #F1F5F9;
+  color: #0F172A;
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.role-logout-btn:hover {
+  background: #E2E8F0;
+}
+
+@media (max-width: 900px) {
+  .role-sidebar {
+    width: 220px;
+  }
+}

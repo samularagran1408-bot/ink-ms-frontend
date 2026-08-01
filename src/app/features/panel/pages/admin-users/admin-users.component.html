@@ -1,0 +1,32 @@
+<app-panel-shell>
+  <h1 class="page-title">Users</h1>
+  <p class="page-subtitle">Gestión de usuarios, bloqueos y activaciones.</p>
+  <p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
+  <p *ngIf="loading" class="empty-text">Cargando usuarios...</p>
+
+  <div class="card">
+    <table class="data-table" *ngIf="users.length">
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Email</th>
+          <th>Roles</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let user of users">
+          <td>{{ user.fullName || '—' }}</td>
+          <td>{{ user.email }}</td>
+          <td>{{ rolesLabel(user) }}</td>
+          <td>{{ user.isActive === false || user.blockReason ? 'Inactivo/Bloqueado' : 'Activo' }}</td>
+          <td>
+            <button class="btn-danger" type="button" [disabled]="actionEmail === user.email" (click)="block(user)">Bloquear</button>
+            <button class="btn-secondary" type="button" [disabled]="actionEmail === user.email" (click)="activate(user)">Activar</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</app-panel-shell>

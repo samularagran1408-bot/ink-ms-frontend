@@ -1,0 +1,29 @@
+.panel-shell {
+  min-height: 100vh;
+  background: #F8FAFC;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  color: #0F172A;
+}
+
+.panel-shell--fixed .panel-main {
+  margin-left: 260px;
+}
+
+.panel-main {
+  padding: 32px 40px;
+  max-width: 1280px;
+}
+
+@media (max-width: 900px) {
+  .panel-shell--fixed .panel-main {
+    margin-left: 220px;
+    padding: 24px 20px;
+  }
+}
+
+@media (max-width: 700px) {
+  .panel-shell--fixed .panel-main {
+    margin-left: 0;
+    padding-top: 16px;
+  }
+}

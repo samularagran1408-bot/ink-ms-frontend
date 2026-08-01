@@ -1,0 +1,72 @@
+<app-panel-shell>
+  <h1 class="page-title">Administrative Intelligence</h1>
+  <p class="page-subtitle">Monitoreo operativo con usuarios, eventos, deportes y discapacidades.</p>
+
+  <p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
+  <p *ngIf="loading" class="empty-text">Cargando métricas...</p>
+
+  <div class="actions-row">
+    <button class="btn-primary" type="button" (click)="go('/admin/events')">Crear Evento</button>
+    <button class="btn-secondary" type="button" (click)="go('/admin/athletes')">Waitlist / Atletas</button>
+    <button class="btn-secondary" type="button" (click)="go('/admin/users')">Gestionar Usuarios</button>
+    <button class="btn-secondary" type="button" (click)="go('/admin/audit')">Audit Logs</button>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-label">Total Users</div>
+      <div class="kpi-value">{{ totalUsers }}</div>
+      <div class="kpi-sub">{{ activeUsers }} activos</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Active Events</div>
+      <div class="kpi-value">{{ activeEvents }}</div>
+      <div class="kpi-sub">Eventos activos</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Sports</div>
+      <div class="kpi-value">{{ sportsCount }}</div>
+      <div class="kpi-sub">Catálogo deportivo</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Disabilities</div>
+      <div class="kpi-value">{{ disabilitiesCount }}</div>
+      <div class="kpi-sub">Tipos registrados</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h3 class="section-title">Usuarios recientes</h3>
+      <table class="data-table" *ngIf="recentUsers.length; else noUsers">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Email</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let user of recentUsers">
+            <td>{{ user.fullName || '—' }}</td>
+            <td>{{ user.email }}</td>
+            <td><span class="status-pill" [ngClass]="statusClass(user)">{{ statusLabel(user) }}</span></td>
+          </tr>
+        </tbody>
+      </table>
+      <ng-template #noUsers><p class="empty-text">Sin usuarios para mostrar.</p></ng-template>
+    </div>
+
+    <div class="card">
+      <h3 class="section-title">Eventos</h3>
+      <div *ngIf="!events.length" class="empty-text">Sin eventos.</div>
+      <div class="list-item" *ngFor="let event of events">
+        <div>
+          <strong>{{ event.name }}</strong>
+          <div class="kpi-sub">{{ event.sportName || 'Deporte' }} · {{ event.eventDate }}</div>
+        </div>
+        <button class="btn-secondary" type="button" (click)="go('/admin/events')">Gestionar</button>
+      </div>
+    </div>
+  </div>
+</app-panel-shell>
