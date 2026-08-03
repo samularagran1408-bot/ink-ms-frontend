@@ -89,7 +89,7 @@
   display: block;
 }
 
-/* SIDEBAR */
+/* SIDEBAR hover */
 .sidebar-backdrop {
   position: fixed;
   inset: 0;
@@ -191,6 +191,7 @@
 .sidebar-nav-item {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 14px;
   padding: 12px 16px;
   border-radius: 12px;
@@ -296,7 +297,10 @@
 }
 
 .role-nav-item {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   padding: 12px 14px;
   border-radius: 12px;
   color: #475569;
@@ -306,8 +310,30 @@
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
+.nav-badge {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #A30D11;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.sidebar-nav-item--active .nav-badge,
+.role-nav-item--active .nav-badge {
+  background: #fff;
+  color: #A30D11;
+}
+
 .role-nav-item:hover {
-  background: #F8FAFC;
+  background: #b42947;
+  color: #FFFFFF;
 }
 
 .role-nav-item--active {

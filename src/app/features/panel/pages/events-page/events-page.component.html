@@ -62,10 +62,10 @@
       <button
         class="btn-primary"
         type="button"
-        [disabled]="registeringId === event.id"
+        [disabled]="registeringId === event.id || isRegistered(event.id) || (event.availableCapacity ?? 0) <= 0"
         (click)="register(event)"
       >
-        Inscribirse
+        {{ isRegistered(event.id) ? 'Inscrito' : 'Inscribirse' }}
       </button>
     </div>
     <p *ngIf="!loading && !events.length" class="empty-text">No hay eventos.</p>

@@ -58,6 +58,20 @@ export interface DisabilityRequest {
   isActive?: boolean;
 }
 
+export interface SportDisability {
+  sportId: number;
+  sportName?: string;
+  disabilityId: number;
+  disabilityName?: string;
+  adaptations?: string;
+}
+
+export interface SportDisabilityRequest {
+  sportId: number;
+  disabilityId: number;
+  adaptations: string;
+}
+
 export interface Registration {
   id: string;
   userId: string;

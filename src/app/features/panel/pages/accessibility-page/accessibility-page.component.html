@@ -6,7 +6,7 @@
 
   <div class="card">
     <form class="form-grid accessibility-form" [formGroup]="form" (ngSubmit)="save()">
-      <label>{{ 'ACCESSIBILITY.LANGUAGE' | translate }}
+      <label>{{ 'ACCESSIBILITY.TEXT_LANGUAGE' | translate }}
         <select formControlName="language">
           <option value="es">{{ 'ACCESSIBILITY.LANG_ES' | translate }}</option>
           <option value="en">{{ 'ACCESSIBILITY.LANG_EN' | translate }}</option>
@@ -68,6 +68,9 @@
 
       <p class="page-subtitle" style="grid-column: 1 / -1;">
         {{ 'ACCESSIBILITY.TTS_HINT' | translate }}
+      </p>
+      <p class="page-subtitle" style="grid-column: 1 / -1;">
+        {{ 'ACCESSIBILITY.LANG_HINT' | translate }}
       </p>
 
       <div class="actions-row" style="grid-column: 1 / -1;">

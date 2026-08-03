@@ -13,6 +13,8 @@ import {
   RoutineRegistration,
   RoutineRequest,
   Sport,
+  SportDisability,
+  SportDisabilityRequest,
   SportRequest
 } from '../models/sports';
 
@@ -23,6 +25,7 @@ export class SportsService {
   private readonly sportsUrl = `${API_BASE_URL}/api/sports`;
   private readonly eventsUrl = `${API_BASE_URL}/api/events`;
   private readonly disabilitiesUrl = `${API_BASE_URL}/api/disabilities`;
+  private readonly sportDisabilitiesUrl = `${API_BASE_URL}/api/sport-disabilities`;
   private readonly registrationsUrl = `${API_BASE_URL}/api/registrations`;
   private readonly routinesUrl = `${API_BASE_URL}/api/routines`;
   private readonly routineRegistrationsUrl = `${API_BASE_URL}/api/routine-registrations`;
@@ -83,6 +86,18 @@ export class SportsService {
 
   deleteDisability(id: number): Observable<void> {
     return this.http.delete<void>(`${this.disabilitiesUrl}/${id}`);
+  }
+
+  getSportDisabilities(sportId: number): Observable<SportDisability[]> {
+    return this.http.get<SportDisability[]>(`${this.sportDisabilitiesUrl}/sport/${sportId}`);
+  }
+
+  addSportDisability(payload: SportDisabilityRequest): Observable<SportDisability> {
+    return this.http.post<SportDisability>(this.sportDisabilitiesUrl, payload);
+  }
+
+  removeSportDisability(sportId: number, disabilityId: number): Observable<void> {
+    return this.http.delete<void>(`${this.sportDisabilitiesUrl}/sport/${sportId}/disability/${disabilityId}`);
   }
 
   registerToEvent(userId: string, eventId: string): Observable<Registration> {

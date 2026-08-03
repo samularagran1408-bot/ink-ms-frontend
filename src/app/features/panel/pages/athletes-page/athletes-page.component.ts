@@ -28,6 +28,12 @@ export class AthletesPageComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.reload();
+  }
+
+  reload(): void {
+    this.loading = true;
+    this.errorMessage = null;
     const start = this.session.getProfile()
       ? of(this.session.getProfile())
       : this.session.loadProfile();

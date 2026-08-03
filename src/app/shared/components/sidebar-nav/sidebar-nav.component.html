@@ -64,6 +64,7 @@
         (click)="closeSidebar()"
       >
         <span>{{ item.labelKey | translate }}</span>
+        <span *ngIf="item.showBadge && unreadCount > 0" class="nav-badge">{{ unreadCount }}</span>
       </a>
     </nav>
   </aside>
@@ -94,7 +95,8 @@
       [routerLinkActiveOptions]="{ exact: !!item.exact }"
       class="role-nav-item"
     >
-      {{ item.labelKey | translate }}
+      <span>{{ item.labelKey | translate }}</span>
+      <span *ngIf="item.showBadge && unreadCount > 0" class="nav-badge">{{ unreadCount }}</span>
     </a>
 
     <ng-container *ngIf="secondaryItems.length">
@@ -106,7 +108,8 @@
         [routerLinkActiveOptions]="{ exact: !!item.exact }"
         class="role-nav-item"
       >
-        {{ item.labelKey | translate }}
+        <span>{{ item.labelKey | translate }}</span>
+        <span *ngIf="item.showBadge && unreadCount > 0" class="nav-badge">{{ unreadCount }}</span>
       </a>
     </ng-container>
   </nav>

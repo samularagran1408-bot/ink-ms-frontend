@@ -1,1 +1,96 @@
 @import '../../styles/panel-common.scss';
+
+.list-item-actions {
+  margin-bottom: 0;
+  justify-content: flex-end;
+}
+
+.voice-note {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+  background: #F0FDF4;
+  border: 1px solid #BBF7D0;
+  border-radius: 18px 18px 18px 4px;
+  padding: 10px 14px;
+  max-width: 420px;
+}
+
+.voice-note--playing {
+  background: #DCFCE7;
+  border-color: #86EFAC;
+}
+
+.voice-play-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: #16A34A;
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+}
+
+.voice-waveform {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 22px;
+  flex: 1;
+  min-width: 80px;
+}
+
+.voice-waveform span {
+  width: 3px;
+  border-radius: 2px;
+  background: #4ADE80;
+  animation: none;
+}
+
+.voice-waveform span:nth-child(1) { height: 8px; }
+.voice-waveform span:nth-child(2) { height: 14px; }
+.voice-waveform span:nth-child(3) { height: 10px; }
+.voice-waveform span:nth-child(4) { height: 18px; }
+.voice-waveform span:nth-child(5) { height: 12px; }
+.voice-waveform span:nth-child(6) { height: 16px; }
+.voice-waveform span:nth-child(7) { height: 9px; }
+
+.voice-note--playing .voice-waveform span {
+  animation: voice-bar 0.8s ease-in-out infinite;
+}
+
+.voice-note--playing .voice-waveform span:nth-child(2) { animation-delay: 0.1s; }
+.voice-note--playing .voice-waveform span:nth-child(3) { animation-delay: 0.2s; }
+.voice-note--playing .voice-waveform span:nth-child(4) { animation-delay: 0.05s; }
+.voice-note--playing .voice-waveform span:nth-child(5) { animation-delay: 0.15s; }
+.voice-note--playing .voice-waveform span:nth-child(6) { animation-delay: 0.25s; }
+.voice-note--playing .voice-waveform span:nth-child(7) { animation-delay: 0.12s; }
+
+@keyframes voice-bar {
+  0%, 100% { transform: scaleY(0.55); }
+  50% { transform: scaleY(1); }
+}
+
+.voice-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.voice-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #166534;
+}
+
+.list-item {
+  align-items: center;
+  gap: 16px;
+}

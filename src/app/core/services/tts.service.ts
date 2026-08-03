@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { BehaviorSubject } from 'rxjs';
 
 import { AppNotification, Preference } from '../models/accessibility-api';
 
@@ -6,25 +7,62 @@ import { AppNotification, Preference } from '../models/accessibility-api';
   providedIn: 'root'
 })
 export class TtsService {
+  private voiceCommandsEnabled = false;
   private ttsEnabled = false;
   private notificationsEnabled = true;
   private voiceLanguage = 'es-ES';
   private unlocked = false;
+  private playingId: string | null = null;
   private readonly spokenIds = new Set<string>();
+  private readonly prefsSubject = new BehaviorSubject<{
+    voiceCommandsEnabled: boolean;
+    ttsEnabled: boolean;
+    notificationsEnabled: boolean;
+    voiceLanguage: string;
+  }>({
+    voiceCommandsEnabled: false,
+    ttsEnabled: false,
+    notificationsEnabled: true,
+    voiceLanguage: 'es-ES'
+  });
+  private readonly playingIdSubject = new BehaviorSubject<string | null>(null);
+
+  readonly preferences$ = this.prefsSubject.asObservable();
+  readonly playingId$ = this.playingIdSubject.asObservable();
 
   applyPreferences(prefs: Partial<Preference> | null | undefined): void {
     if (!prefs) {
       return;
     }
+    this.voiceCommandsEnabled = !!prefs.voiceCommandsEnabled;
     this.ttsEnabled = !!prefs.ttsEnabled;
     this.notificationsEnabled = prefs.notificationsEnabled !== false;
     if (prefs.voiceLanguage) {
       this.voiceLanguage = prefs.voiceLanguage;
     }
+    this.prefsSubject.next({
+      voiceCommandsEnabled: this.voiceCommandsEnabled,
+      ttsEnabled: this.ttsEnabled,
+      notificationsEnabled: this.notificationsEnabled,
+      voiceLanguage: this.voiceLanguage
+    });
   }
 
+  /** Audio de notificaciones activo: comandos de voz + notificaciones habilitadas. */
   get isAudioNotificationsActive(): boolean {
-    return this.ttsEnabled && this.notificationsEnabled && this.isSupported;
+    return this.voiceCommandsEnabled && this.notificationsEnabled && this.isSupported;
+  }
+
+  get isVoiceCommandsEnabled(): boolean {
+    return this.voiceCommandsEnabled;
+  }
+
+  get currentVoiceLanguage(): string {
+    return this.voiceLanguage;
+  }
+
+  get currentPlayingId(): string | null {
+    return this.playingId;
   }
 
   get isSupported(): boolean {
@@ -45,7 +83,7 @@ export class TtsService {
       window.speechSynthesis.speak(warmUp);
       window.speechSynthesis.cancel();
     } catch {
-      // Ignorar errores de warm-up; el siguiente speak reintentará.
+      // Ignorar errores de warm-up.
     }
   }
 
@@ -54,9 +92,10 @@ export class TtsService {
       return;
     }
     window.speechSynthesis.cancel();
+    this.setPlayingId(null);
   }
 
-  speak(text: string, options?: { force?: boolean }): void {
+  speak(text: string, options?: { force?: boolean; notificationId?: string }): void {
     const content = (text || '').trim();
     if (!content || !this.isSupported) {
       return;
@@ -67,6 +106,7 @@ export class TtsService {
 
     this.unlock();
     window.speechSynthesis.cancel();
+    this.setPlayingId(options?.notificationId || null);
 
     const utterance = new SpeechSynthesisUtterance(content);
     utterance.lang = this.voiceLanguage;
@@ -76,6 +116,12 @@ export class TtsService {
     if (voice) {
       utterance.voice = voice;
     }
+    utterance.onend = () => {
+      this.setPlayingId(null);
+    };
+    utterance.onerror = () => {
+      this.setPlayingId(null);
+    };
     window.speechSynthesis.speak(utterance);
   }
 
@@ -90,16 +136,12 @@ export class TtsService {
     if (!parts.length) {
       return;
     }
-    this.speak(parts.join('. '), options);
+    this.speak(parts.join('. '), { ...options, notificationId: note.id });
     if (note.id) {
       this.spokenIds.add(note.id);
     }
   }
 
-  /**
-   * Encola varias notificaciones (p. ej. no leídas) en orden.
-   * Usa una sola utterance concatenada para evitar cortes entre piezas.
-   */
   announceNotifications(
     notes: AppNotification[],
     options?: { onlyUnread?: boolean; force?: boolean; markSpoken?: boolean }
@@ -118,12 +160,16 @@ export class TtsService {
       return;
     }
 
+    const separator = this.voiceLanguage.toLowerCase().startsWith('en')
+      ? '. Next alert: '
+      : '. Siguiente aviso: ';
+
     const text = list
       .map((note) => [note.title, note.body].filter(Boolean).join('. '))
       .filter(Boolean)
-      .join('. Siguiente aviso: ');
+      .join(separator);
 
-    this.speak(text, { force: options?.force });
+    this.speak(text, { force: options?.force, notificationId: list[0]?.id });
 
     if (options?.markSpoken !== false) {
       list.forEach((note) => {
@@ -140,6 +186,11 @@ export class TtsService {
 
   clearSpokenHistory(): void {
     this.spokenIds.clear();
+  }
+
+  private setPlayingId(id: string | null): void {
+    this.playingId = id;
+    this.playingIdSubject.next(id);
   }
 
   private pickVoice(lang: string): SpeechSynthesisVoice | null {

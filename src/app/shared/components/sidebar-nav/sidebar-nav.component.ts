@@ -6,11 +6,13 @@ import { filter } from 'rxjs/operators';
 
 import { AppRole } from '../../../core/models/app-role';
 import { SessionService } from '../../../core/services/session.service';
+import { UnreadNotificationsService } from '../../../core/services/unread-notifications.service';
 
 export interface SidebarNavItem {
   labelKey: string;
   route?: string;
   exact?: boolean;
+  showBadge?: boolean;
 }
 
 @Component({
@@ -28,25 +30,34 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
   profilePicture: string | null = null;
   navItems: SidebarNavItem[] = [];
   secondaryItems: SidebarNavItem[] = [];
+  unreadCount = 0;
 
   private subs = new Subscription();
 
   constructor(
     private router: Router,
     private session: SessionService,
-    private translate: TranslateService
+    private translate: TranslateService,
+    private unreadNotifications: UnreadNotificationsService
   ) {}
 
   ngOnInit(): void {
     this.refreshFromSession();
+    this.unreadNotifications.start();
     this.subs.add(this.session.profile$.subscribe(() => this.refreshFromSession()));
     this.subs.add(this.session.roles$.subscribe(() => this.refreshFromSession()));
     this.subs.add(this.translate.onLangChange.subscribe(() => this.refreshFromSession()));
+    this.subs.add(this.unreadNotifications.count$.subscribe((count) => {
+      this.unreadCount = count;
+    }));
     this.subs.add(
       this.router.events
         .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
-        .subscribe(() => {
+        .subscribe((event) => {
           this.sidebarOpen = false;
+          if (event.urlAfterRedirects.includes('/notifications')) {
+            this.unreadNotifications.refresh();
+          }
         })
     );
 
@@ -88,6 +99,10 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
     this.layout = this.role === 'USUARIO' ? 'drawer' : 'fixed';
     this.brandTitle = this.role === 'ADMIN' ? 'INKLUSPORT ADMIN' : 'INKLUSPORT';
     this.applyMenuByRole();
+    if (this.session.isAuthenticated()) {
+      this.unreadNotifications.start();
+      this.unreadNotifications.refresh();
+    }
   }
 
   get sessionHome(): string {
@@ -98,7 +113,7 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
     return [
       { labelKey: 'NAV.PROFILE', route: `${base}/profile` },
       { labelKey: 'NAV.ACCESSIBILITY', route: `${base}/accessibility` },
-      { labelKey: 'NAV.NOTIFICATIONS', route: `${base}/notifications` }
+      { labelKey: 'NAV.NOTIFICATIONS', route: `${base}/notifications`, showBadge: true }
     ];
   }
 
@@ -112,6 +127,7 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
           { labelKey: 'NAV.ATHLETES_WAITLIST', route: '/admin/athletes' },
           { labelKey: 'NAV.SPORTS', route: '/admin/sports' },
           { labelKey: 'NAV.DISABILITIES', route: '/admin/disabilities' },
+          { labelKey: 'NAV.ASSOCIATIONS', route: '/admin/associations' },
           { labelKey: 'NAV.ROLES', route: '/admin/roles' },
           { labelKey: 'NAV.AUDIT_LOGS', route: '/admin/audit' }
         ];
@@ -119,10 +135,11 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
         break;
       case 'ENTRENADOR':
         this.navItems = [
-          { labelKey: 'NAV.ATHLETES', route: '/trainer', exact: true },
+          { labelKey: 'NAV.DASHBOARD', route: '/trainer', exact: true },
           { labelKey: 'NAV.SESSIONS', route: '/trainer/sessions' },
-          { labelKey: 'NAV.EVENTS', route: '/trainer/events' },
-          { labelKey: 'NAV.WAITLIST', route: '/trainer/athletes' }
+          { labelKey: 'NAV.SPORTS', route: '/trainer/sports' },
+          { labelKey: 'NAV.DISABILITIES', route: '/trainer/disabilities' },
+          { labelKey: 'NAV.ASSOCIATIONS', route: '/trainer/associations' }
         ];
         this.secondaryItems = this.commonAccountItems('/trainer');
         break;

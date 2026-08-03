@@ -1,7 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { forkJoin, of } from 'rxjs';
+import { Subscription, forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
+import { TranslateService } from '@ngx-translate/core';
 
 import { EventItem, Registration } from '../../../../core/models/sports';
 import { AppNotification } from '../../../../core/models/accessibility-api';
@@ -9,13 +10,16 @@ import { SessionService } from '../../../../core/services/session.service';
 import { SportsService } from '../../../../core/services/sports.service';
 import { PreferencesApiService } from '../../../../core/services/preferences-api.service';
 import { NotificationAnnounceService } from '../../../../core/services/notification-announce.service';
+import { TtsService } from '../../../../core/services/tts.service';
+import { LanguageService } from '../../../../core/services/language.service';
+import { UnreadNotificationsService } from '../../../../core/services/unread-notifications.service';
 
 @Component({
   selector: 'app-user-interface',
   templateUrl: './user-interface.component.html',
   styleUrl: './user-interface.component.scss'
 })
-export class UserInterfaceComponent implements OnInit {
+export class UserInterfaceComponent implements OnInit, OnDestroy {
   loading = true;
   errorMessage: string | null = null;
   events: EventItem[] = [];
@@ -27,18 +31,40 @@ export class UserInterfaceComponent implements OnInit {
   registeringId: string | null = null;
   calendarMonthLabel = '';
   calendarCells: { day: number | null; muted: boolean; selected: boolean; hasEvent: boolean }[] = [];
+  audioMode = false;
+
+  private prefsSub: Subscription | null = null;
+  private playingSub: Subscription | null = null;
+  private langSub: Subscription | null = null;
+  playingId: string | null = null;
 
   constructor(
     private session: SessionService,
     private sportsService: SportsService,
     private preferencesApi: PreferencesApiService,
     private router: Router,
-    private notificationAnnounce: NotificationAnnounceService
+    private notificationAnnounce: NotificationAnnounceService,
+    private tts: TtsService,
+    private translate: TranslateService,
+    private languageService: LanguageService,
+    private unreadNotifications: UnreadNotificationsService
   ) {}
 
   ngOnInit(): void {
     this.notificationAnnounce.start();
+    this.prefsSub = this.tts.preferences$.subscribe(() => {
+      this.audioMode = this.tts.isAudioNotificationsActive;
+    });
+    this.playingSub = this.tts.playingId$.subscribe((id) => {
+      this.playingId = id;
+    });
     this.buildCalendar(new Date());
+    this.langSub = this.translate.onLangChange.subscribe(() => this.buildCalendar(new Date()));
+    this.loadHomeData();
+  }
+
+  private loadHomeData(): void {
+    this.loading = true;
     const profile$ = this.session.getProfile()
       ? of(this.session.getProfile())
       : this.session.loadProfile();
@@ -51,23 +77,32 @@ export class UserInterfaceComponent implements OnInit {
           ? this.sportsService.getRegistrationsByUser(userId).pipe(catchError(() => of([] as Registration[])))
           : of([] as Registration[]),
         unread: this.preferencesApi.getUnreadCount().pipe(catchError(() => of(0))),
-        notifications: this.preferencesApi.getNotifications().pipe(catchError(() => of([] as AppNotification[])))
+        notifications: this.preferencesApi.getNotifications().pipe(catchError(() => of([] as AppNotification[]))),
+        prefs: this.notificationAnnounce.refreshPreferences()
       }).subscribe({
         next: ({ events, registrations, unread, notifications }) => {
           this.events = this.sortEvents(events).slice(0, 6);
           this.registrations = registrations;
           this.nextEvent = this.resolveNextEvent(events, registrations);
           this.unreadCount = typeof unread === 'number' ? unread : (unread?.count ?? 0);
+          this.unreadNotifications.setCount(this.unreadCount);
           this.notifications = notifications.slice(0, 5);
+          this.audioMode = this.tts.isAudioNotificationsActive;
           this.markEventDays(events);
           this.loading = false;
         },
         error: () => {
-          this.errorMessage = 'No se pudo cargar el panel.';
+          this.errorMessage = this.translate.instant('HOME.LOAD_ERROR');
           this.loading = false;
         }
       });
     });
+  }
+
+  ngOnDestroy(): void {
+    this.prefsSub?.unsubscribe();
+    this.playingSub?.unsubscribe();
+    this.langSub?.unsubscribe();
   }
 
   get confirmedCount(): number {
@@ -76,17 +111,30 @@ export class UserInterfaceComponent implements OnInit {
 
   onNotifications(): void {
     this.showNotifications = !this.showNotifications;
-    if (this.showNotifications) {
-      this.notificationAnnounce.announceList(this.notifications, true);
-      if (this.unreadCount > 0) {
-        this.preferencesApi.markAllAsRead().subscribe({
-          next: () => {
-            this.unreadCount = 0;
-            this.notifications = this.notifications.map((n) => ({ ...n, read: true }));
-          }
-        });
-      }
+    if (this.showNotifications && this.unreadCount > 0) {
+      this.preferencesApi.markAllAsRead().subscribe({
+        next: () => {
+          this.unreadCount = 0;
+          this.unreadNotifications.setCount(0);
+          this.notifications = this.notifications.map((n) => ({ ...n, read: true }));
+        }
+      });
     }
+  }
+
+  togglePlay(note: AppNotification): void {
+    if (!this.audioMode) {
+      return;
+    }
+    if (this.playingId === note.id) {
+      this.tts.stop();
+      return;
+    }
+    this.notificationAnnounce.announceOne(note, true);
+  }
+
+  isPlaying(note: AppNotification): boolean {
+    return this.playingId === note.id;
   }
 
   onSeeAllEvents(): void {
@@ -94,28 +142,29 @@ export class UserInterfaceComponent implements OnInit {
   }
 
   onRegisterEvent(event: EventItem): void {
-    const userId = this.session.getProfile()?.id;
-    if (!userId) {
-      this.errorMessage = 'No se encontró el perfil del usuario.';
-      return;
-    }
+    const ensureProfile$ = this.session.getProfile()
+      ? of(this.session.getProfile())
+      : this.session.loadProfile();
 
-    this.registeringId = event.id;
-    this.sportsService.registerToEvent(userId, event.id).subscribe({
-      next: (registration) => {
-        this.registrations = [...this.registrations, registration];
-        this.registeringId = null;
-        this.events = this.events.map((item) =>
-          item.id === event.id
-            ? { ...item, availableCapacity: Math.max((item.availableCapacity ?? 1) - 1, 0) }
-            : item
-        );
-        this.nextEvent = this.resolveNextEvent(this.events, this.registrations);
-      },
-      error: (error) => {
-        this.registeringId = null;
-        this.errorMessage = error?.error?.message || 'No se pudo completar la inscripción.';
+    ensureProfile$.subscribe((profile) => {
+      const userId = profile?.id;
+      if (!userId) {
+        this.errorMessage = this.translate.instant('HOME.NO_PROFILE');
+        return;
       }
+
+      this.registeringId = event.id;
+      this.sportsService.registerToEvent(userId, event.id).subscribe({
+        next: () => {
+          this.registeringId = null;
+          this.errorMessage = null;
+          this.loadHomeData();
+        },
+        error: (error) => {
+          this.registeringId = null;
+          this.errorMessage = error?.error?.message || this.translate.instant('HOME.REGISTER_ERROR');
+        }
+      });
     });
   }
 
@@ -124,10 +173,11 @@ export class UserInterfaceComponent implements OnInit {
   }
 
   formatDate(value?: string): string {
-    if (!value) return 'Sin fecha';
+    if (!value) return this.translate.instant('HOME.NO_DATE');
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return value;
-    return date.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
+    const locale = this.languageService.currentLang === 'en' ? 'en-US' : 'es-MX';
+    return date.toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' });
   }
 
   formatTime(value?: string): string {
@@ -157,7 +207,8 @@ export class UserInterfaceComponent implements OnInit {
   private buildCalendar(base: Date): void {
     const year = base.getFullYear();
     const month = base.getMonth();
-    this.calendarMonthLabel = base.toLocaleDateString('es-MX', { month: 'long', year: 'numeric' });
+    const locale = this.languageService.currentLang === 'en' ? 'en-US' : 'es-MX';
+    this.calendarMonthLabel = base.toLocaleDateString(locale, { month: 'long', year: 'numeric' });
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const today = base.getDate();

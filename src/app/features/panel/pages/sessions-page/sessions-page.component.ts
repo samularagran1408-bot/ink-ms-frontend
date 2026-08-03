@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { of } from 'rxjs';
 
 import { Routine, Sport } from '../../../../core/models/sports';
 import { SessionService } from '../../../../core/services/session.service';
@@ -16,6 +17,7 @@ export class SessionsPageComponent implements OnInit {
   form: FormGroup;
   errorMessage: string | null = null;
   successMessage: string | null = null;
+  loading = true;
 
   constructor(
     private fb: FormBuilder,
@@ -27,10 +29,10 @@ export class SessionsPageComponent implements OnInit {
       sportId: [null],
       description: [''],
       disabilityFocus: [''],
-      level: ['beginner'],
+      level: ['principiante'],
       durationMinutes: [60, [Validators.min(1)]],
       maxCapacity: [10, [Validators.min(1)]],
-      exercisesJson: ['']
+      exercisesJson: ['[]']
     });
   }
 
@@ -47,16 +49,10 @@ export class SessionsPageComponent implements OnInit {
   }
 
   reload(): void {
-    const trainerId = this.session.getProfile()?.id;
-    if (!trainerId) {
-      this.session.loadProfile().subscribe((profile) => {
-        if (profile?.id) {
-          this.fetchRoutines(profile.id);
-        }
-      });
-      return;
-    }
-    this.fetchRoutines(trainerId);
+    this.loading = true;
+    this.withTrainerId((trainerId) => {
+      this.fetchRoutines(trainerId);
+    });
   }
 
   create(): void {
@@ -65,40 +61,69 @@ export class SessionsPageComponent implements OnInit {
       return;
     }
 
-    const trainerId = this.session.getProfile()?.id;
-    const payload = {
-      ...this.form.value,
-      trainerId,
-      sportId: this.form.value.sportId ? Number(this.form.value.sportId) : undefined,
-      durationMinutes: Number(this.form.value.durationMinutes),
-      maxCapacity: Number(this.form.value.maxCapacity)
-    };
+    this.withTrainerId((trainerId) => {
+      const exercisesRaw = String(this.form.value.exercisesJson || '').trim();
+      const payload = {
+        ...this.form.value,
+        trainerId,
+        sportId: this.form.value.sportId ? Number(this.form.value.sportId) : undefined,
+        durationMinutes: Number(this.form.value.durationMinutes),
+        maxCapacity: Number(this.form.value.maxCapacity),
+        exercisesJson: exercisesRaw && exercisesRaw !== 'null' ? exercisesRaw : '[]'
+      };
 
-    this.sportsService.createRoutine(payload).subscribe({
-      next: () => {
-        this.successMessage = 'Sesión creada.';
-        this.errorMessage = null;
-        this.form.patchValue({ name: '', description: '', disabilityFocus: '', exercisesJson: '' });
-        this.reload();
-      },
-      error: (error) => {
-        this.successMessage = null;
-        this.errorMessage = error?.error?.message || 'No se pudo crear la sesión.';
-      }
+      this.sportsService.createRoutine(payload).subscribe({
+        next: () => {
+          this.successMessage = 'Sesión creada.';
+          this.errorMessage = null;
+          this.form.patchValue({ name: '', description: '', disabilityFocus: '', exercisesJson: '[]' });
+          this.reload();
+        },
+        error: (error) => {
+          this.successMessage = null;
+          this.errorMessage = error?.error?.message || 'No se pudo crear la sesión.';
+        }
+      });
     });
   }
 
   publish(routine: Routine): void {
     this.sportsService.publishRoutine(routine.id).subscribe({
-      next: () => this.reload(),
+      next: () => {
+        this.successMessage = 'Sesión publicada.';
+        this.errorMessage = null;
+        this.reload();
+      },
       error: (error) => this.errorMessage = error?.error?.message || 'No se pudo publicar.'
+    });
+  }
+
+  private withTrainerId(action: (trainerId: string) => void): void {
+    const profile$ = this.session.getProfile()
+      ? of(this.session.getProfile())
+      : this.session.loadProfile();
+
+    profile$.subscribe((profile) => {
+      const trainerId = profile?.id;
+      if (!trainerId) {
+        this.loading = false;
+        this.errorMessage = 'Perfil de entrenador no disponible.';
+        return;
+      }
+      action(trainerId);
     });
   }
 
   private fetchRoutines(trainerId: string): void {
     this.sportsService.getRoutinesByTrainer(trainerId).subscribe({
-      next: (routines) => this.routines = routines,
-      error: (error) => this.errorMessage = error?.error?.message || 'No se pudieron cargar sesiones.'
+      next: (routines) => {
+        this.routines = routines;
+        this.loading = false;
+      },
+      error: (error) => {
+        this.errorMessage = error?.error?.message || 'No se pudieron cargar sesiones.';
+        this.loading = false;
+      }
     });
   }
 }

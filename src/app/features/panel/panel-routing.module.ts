@@ -18,6 +18,7 @@ import { TrainerDashboardComponent } from './pages/trainer-dashboard/trainer-das
 import { SessionsPageComponent } from './pages/sessions-page/sessions-page.component';
 import { OrganizerDashboardComponent } from './pages/organizer-dashboard/organizer-dashboard.component';
 import { AthletesPageComponent } from './pages/athletes-page/athletes-page.component';
+import { AssociationsPageComponent } from './pages/associations-page/associations-page.component';
 
 const accountChildren = [
   { path: 'profile', component: ProfilePageComponent },
@@ -47,6 +48,7 @@ const routes: Routes = [
       { path: 'athletes', component: AthletesPageComponent },
       { path: 'sports', component: SportsPageComponent },
       { path: 'disabilities', component: DisabilitiesPageComponent },
+      { path: 'associations', component: AssociationsPageComponent },
       { path: 'roles', component: AdminRolesComponent },
       { path: 'audit', component: AdminAuditComponent },
       ...accountChildren
@@ -59,8 +61,9 @@ const routes: Routes = [
     children: [
       { path: '', component: TrainerDashboardComponent },
       { path: 'sessions', component: SessionsPageComponent },
-      { path: 'events', component: EventsPageComponent, data: { mode: 'manage' } },
-      { path: 'athletes', component: AthletesPageComponent },
+      { path: 'sports', component: SportsPageComponent },
+      { path: 'disabilities', component: DisabilitiesPageComponent },
+      { path: 'associations', component: AssociationsPageComponent },
       ...accountChildren
     ]
   },

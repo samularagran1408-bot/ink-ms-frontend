@@ -39,35 +39,40 @@ export class OrganizerDashboardComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    if (!this.session.getProfile()) {
-      this.session.loadProfile().subscribe();
-    }
+    this.reload();
+  }
 
-    forkJoin({
-      events: this.sportsService.getEvents().pipe(catchError(() => of([] as EventItem[]))),
-      activeEvents: this.sportsService.countActiveEvents().pipe(catchError(() => of(0))),
-      sports: this.sportsService.getActiveSports().pipe(catchError(() => of([] as Sport[])))
-    }).subscribe({
-      next: ({ events, activeEvents, sports }) => {
-        const profileId = this.session.getProfile()?.id;
-        this.events = profileId
-          ? events.filter((event) => event.createdBy === profileId)
-          : events;
-        if (!this.events.length) {
-          this.events = events;
+  reload(): void {
+    this.loading = true;
+    const profile$ = this.session.getProfile()
+      ? of(this.session.getProfile())
+      : this.session.loadProfile();
+
+    profile$.subscribe(() => {
+      forkJoin({
+        events: this.sportsService.getEvents().pipe(catchError(() => of([] as EventItem[]))),
+        activeEvents: this.sportsService.countActiveEvents().pipe(catchError(() => of(0))),
+        sports: this.sportsService.getActiveSports().pipe(catchError(() => of([] as Sport[])))
+      }).subscribe({
+        next: ({ events, activeEvents, sports }) => {
+          const profileId = this.session.getProfile()?.id;
+          const own = profileId
+            ? events.filter((event) => event.createdBy === profileId)
+            : [];
+          this.events = own.length ? own : events;
+          this.activeEvents = activeEvents;
+          this.sports = sports;
+          if (sports.length && !this.form.value.sportId) {
+            this.form.patchValue({ sportId: sports[0].id });
+          }
+          this.loadAthleteCount(this.events);
+          this.loading = false;
+        },
+        error: () => {
+          this.errorMessage = 'No se pudo cargar el panel del organizador.';
+          this.loading = false;
         }
-        this.activeEvents = activeEvents;
-        this.sports = sports;
-        if (sports.length) {
-          this.form.patchValue({ sportId: sports[0].id });
-        }
-        this.loadAthleteCount(this.events);
-        this.loading = false;
-      },
-      error: () => {
-        this.errorMessage = 'No se pudo cargar el panel del organizador.';
-        this.loading = false;
-      }
+      });
     });
   }
 
@@ -77,24 +82,30 @@ export class OrganizerDashboardComponent implements OnInit {
       return;
     }
 
-    const payload = {
-      ...this.form.value,
-      sportId: Number(this.form.value.sportId),
-      maxCapacity: Number(this.form.value.maxCapacity),
-      createdBy: this.session.getProfile()?.id
-    };
+    const ensureProfile$ = this.session.getProfile()
+      ? of(this.session.getProfile())
+      : this.session.loadProfile();
 
-    this.sportsService.createEvent(payload).subscribe({
-      next: (event) => {
-        this.events = [event, ...this.events];
-        this.successMessage = 'Evento creado.';
-        this.errorMessage = null;
-        this.form.patchValue({ name: '', description: '', location: '' });
-      },
-      error: (error) => {
-        this.successMessage = null;
-        this.errorMessage = error?.error?.message || 'No se pudo crear el evento.';
-      }
+    ensureProfile$.subscribe((profile) => {
+      const payload = {
+        ...this.form.value,
+        sportId: Number(this.form.value.sportId),
+        maxCapacity: Number(this.form.value.maxCapacity),
+        createdBy: profile?.id
+      };
+
+      this.sportsService.createEvent(payload).subscribe({
+        next: () => {
+          this.successMessage = 'Evento creado.';
+          this.errorMessage = null;
+          this.form.patchValue({ name: '', description: '', location: '' });
+          this.reload();
+        },
+        error: (error) => {
+          this.successMessage = null;
+          this.errorMessage = error?.error?.message || 'No se pudo crear el evento.';
+        }
+      });
     });
   }
 
@@ -104,7 +115,6 @@ export class OrganizerDashboardComponent implements OnInit {
       return;
     }
 
-    // Approximate from event capacity usage when registration listing by event is limited.
     this.athleteCount = events.reduce((acc, event) => {
       const taken = (event.maxCapacity || 0) - (event.availableCapacity ?? (event.maxCapacity || 0));
       return acc + Math.max(taken, 0);

@@ -15,16 +15,22 @@ export class AuthInterceptor implements HttpInterceptor {
 
   intercept(req: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
     const token = this.session.getToken();
-    if (!token || req.headers.has('Authorization')) {
-      return next.handle(req);
+    const noCacheHeaders = {
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      Pragma: 'no-cache'
+    };
+
+    let headers = req.headers;
+    Object.entries(noCacheHeaders).forEach(([key, value]) => {
+      if (!headers.has(key)) {
+        headers = headers.set(key, value);
+      }
+    });
+
+    if (token && !headers.has('Authorization')) {
+      headers = headers.set('Authorization', `Bearer ${token}`);
     }
 
-    return next.handle(
-      req.clone({
-        setHeaders: {
-          Authorization: `Bearer ${token}`
-        }
-      })
-    );
+    return next.handle(req.clone({ headers }));
   }
 }

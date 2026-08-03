@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { catchError, switchMap } from 'rxjs/operators';
 
 import { EventItem, Registration, Sport } from '../../../../core/models/sports';
 import { SessionService } from '../../../../core/services/session.service';
@@ -22,6 +22,7 @@ interface EventManageRow {
 export class EventsPageComponent implements OnInit {
   mode: 'user' | 'manage' = 'user';
   events: EventItem[] = [];
+  registrations: Registration[] = [];
   manageRows: EventManageRow[] = [];
   sports: Sport[] = [];
   form: FormGroup;
@@ -59,9 +60,33 @@ export class EventsPageComponent implements OnInit {
 
   reload(): void {
     this.loading = true;
-    this.sportsService.getEvents().subscribe({
-      next: (events) => {
+    this.errorMessage = null;
+
+    const profile$ = this.session.getProfile()
+      ? of(this.session.getProfile())
+      : this.session.loadProfile();
+
+    profile$.pipe(
+      switchMap((profile) => {
+        const userId = profile?.id;
+        return forkJoin({
+          events: this.sportsService.getEvents().pipe(catchError(() => of([] as EventItem[]))),
+          registrations: userId && this.mode === 'user'
+            ? this.sportsService.getRegistrationsByUser(userId).pipe(catchError(() => of([] as Registration[])))
+            : of([] as Registration[]),
+          sports: this.canManage
+            ? this.sportsService.getActiveSports().pipe(catchError(() => of([] as Sport[])))
+            : of([] as Sport[])
+        });
+      })
+    ).subscribe({
+      next: ({ events, registrations, sports }) => {
         this.events = events;
+        this.registrations = registrations;
+        this.sports = sports;
+        if (sports.length && !this.form.value.sportId) {
+          this.form.patchValue({ sportId: sports[0].id });
+        }
         if (this.canManage && this.mode === 'manage') {
           this.loadWaitlists(events);
         } else {
@@ -73,17 +98,6 @@ export class EventsPageComponent implements OnInit {
         this.loading = false;
       }
     });
-
-    if (this.canManage) {
-      this.sportsService.getActiveSports().subscribe({
-        next: (sports) => {
-          this.sports = sports;
-          if (sports.length && !this.form.value.sportId) {
-            this.form.patchValue({ sportId: sports[0].id });
-          }
-        }
-      });
-    }
   }
 
   createEvent(): void {
@@ -92,45 +106,63 @@ export class EventsPageComponent implements OnInit {
       return;
     }
 
-    const payload = {
-      ...this.form.value,
-      sportId: Number(this.form.value.sportId),
-      maxCapacity: Number(this.form.value.maxCapacity),
-      createdBy: this.session.getProfile()?.id
-    };
+    const ensureProfile$ = this.session.getProfile()
+      ? of(this.session.getProfile())
+      : this.session.loadProfile();
 
-    this.sportsService.createEvent(payload).subscribe({
-      next: () => {
-        this.successMessage = 'Evento creado.';
-        this.errorMessage = null;
-        this.form.patchValue({ name: '', description: '', location: '' });
-        this.reload();
-      },
-      error: (error) => {
-        this.successMessage = null;
-        this.errorMessage = error?.error?.message || 'No se pudo crear el evento.';
-      }
+    ensureProfile$.subscribe((profile) => {
+      const payload = {
+        ...this.form.value,
+        sportId: Number(this.form.value.sportId),
+        maxCapacity: Number(this.form.value.maxCapacity),
+        createdBy: profile?.id
+      };
+
+      this.sportsService.createEvent(payload).subscribe({
+        next: () => {
+          this.successMessage = 'Evento creado.';
+          this.errorMessage = null;
+          this.form.patchValue({ name: '', description: '', location: '' });
+          this.reload();
+        },
+        error: (error) => {
+          this.successMessage = null;
+          this.errorMessage = error?.error?.message || 'No se pudo crear el evento.';
+        }
+      });
     });
   }
 
   register(event: EventItem): void {
-    const userId = this.session.getProfile()?.id;
-    if (!userId) {
-      this.errorMessage = 'Perfil no disponible.';
-      return;
-    }
+    const ensureProfile$ = this.session.getProfile()
+      ? of(this.session.getProfile())
+      : this.session.loadProfile();
 
-    this.registeringId = event.id;
-    this.sportsService.registerToEvent(userId, event.id).subscribe({
-      next: () => {
-        this.registeringId = null;
-        this.successMessage = `Inscripción a ${event.name} realizada.`;
-      },
-      error: (error) => {
-        this.registeringId = null;
-        this.errorMessage = error?.error?.message || 'No se pudo inscribir.';
+    ensureProfile$.subscribe((profile) => {
+      const userId = profile?.id;
+      if (!userId) {
+        this.errorMessage = 'Perfil no disponible.';
+        return;
       }
+
+      this.registeringId = event.id;
+      this.sportsService.registerToEvent(userId, event.id).subscribe({
+        next: () => {
+          this.registeringId = null;
+          this.successMessage = `Inscripción a ${event.name} realizada.`;
+          this.errorMessage = null;
+          this.reload();
+        },
+        error: (error) => {
+          this.registeringId = null;
+          this.errorMessage = error?.error?.message || 'No se pudo inscribir.';
+        }
+      });
     });
+  }
+
+  isRegistered(eventId: string): boolean {
+    return this.registrations.some((reg) => reg.eventId === eventId);
   }
 
   toggleWaitlist(row: EventManageRow): void {

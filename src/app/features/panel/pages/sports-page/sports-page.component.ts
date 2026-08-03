@@ -21,7 +21,7 @@ export class SportsPageComponent implements OnInit {
     this.form = this.fb.group({
       name: ['', Validators.required],
       description: [''],
-      difficulty: ['beginner'],
+      difficulty: ['bajo'],
       requiredMaterials: [''],
       isActive: [true]
     });
@@ -46,7 +46,7 @@ export class SportsPageComponent implements OnInit {
 
     this.sportsService.createSport(this.form.value).subscribe({
       next: () => {
-        this.form.reset({ difficulty: 'beginner', isActive: true });
+        this.form.reset({ difficulty: 'bajo', isActive: true });
         this.reload();
       },
       error: (error) => this.errorMessage = error?.error?.message || 'No se pudo crear el deporte.'

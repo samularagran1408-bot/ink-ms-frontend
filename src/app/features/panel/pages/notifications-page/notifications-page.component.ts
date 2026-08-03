@@ -1,66 +1,85 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Subscription } from 'rxjs';
+import { TranslateService } from '@ngx-translate/core';
 
 import { AppNotification } from '../../../../core/models/accessibility-api';
 import { SessionService } from '../../../../core/services/session.service';
 import { PreferencesApiService } from '../../../../core/services/preferences-api.service';
 import { NotificationAnnounceService } from '../../../../core/services/notification-announce.service';
 import { TtsService } from '../../../../core/services/tts.service';
+import { UnreadNotificationsService } from '../../../../core/services/unread-notifications.service';
 
 @Component({
   selector: 'app-notifications-page',
   templateUrl: './notifications-page.component.html',
   styleUrl: './notifications-page.component.scss'
 })
-export class NotificationsPageComponent implements OnInit {
+export class NotificationsPageComponent implements OnInit, OnDestroy {
   notifications: AppNotification[] = [];
   loading = true;
   errorMessage: string | null = null;
+  audioMode = false;
+  playingId: string | null = null;
+
+  private prefsSub: Subscription | null = null;
+  private playingSub: Subscription | null = null;
 
   constructor(
     private session: SessionService,
     private preferencesApi: PreferencesApiService,
     private notificationAnnounce: NotificationAnnounceService,
-    private tts: TtsService
+    private tts: TtsService,
+    private translate: TranslateService,
+    private unreadNotifications: UnreadNotificationsService
   ) {}
 
   ngOnInit(): void {
     this.notificationAnnounce.start();
+    this.prefsSub = this.tts.preferences$.subscribe(() => {
+      this.audioMode = this.tts.isAudioNotificationsActive;
+    });
+    this.playingSub = this.tts.playingId$.subscribe((id) => {
+      this.playingId = id;
+    });
     this.reload();
+  }
+
+  ngOnDestroy(): void {
+    this.prefsSub?.unsubscribe();
+    this.playingSub?.unsubscribe();
   }
 
   get fixedSidebar(): boolean {
     return this.session.getPrimaryRole() !== 'USUARIO';
   }
 
-  get audioActive(): boolean {
-    return this.tts.isAudioNotificationsActive;
-  }
-
   reload(): void {
     this.loading = true;
-    this.preferencesApi.getNotifications().subscribe({
-      next: (notifications) => {
-        this.notifications = notifications;
-        this.loading = false;
-        const unread = notifications.filter((n) => !n.read);
-        if (unread.length) {
-          this.notificationAnnounce.announceList(unread, true);
+    this.notificationAnnounce.refreshPreferences().subscribe(() => {
+      this.audioMode = this.tts.isAudioNotificationsActive;
+      this.preferencesApi.getNotifications().subscribe({
+        next: (notifications) => {
+          this.notifications = notifications;
+          this.loading = false;
+          this.unreadNotifications.refresh();
+        },
+        error: (error) => {
+          this.errorMessage =
+            error?.error?.message || this.translate.instant('NOTIFICATIONS.LOAD_ERROR');
+          this.loading = false;
         }
-      },
-      error: (error) => {
-        this.errorMessage = error?.error?.message || 'No se pudieron cargar notificaciones.';
-        this.loading = false;
-      }
+      });
     });
   }
 
-  listenUnread(): void {
-    const unread = this.notifications.filter((n) => !n.read);
-    this.tts.clearSpokenHistory();
-    this.notificationAnnounce.announceList(unread.length ? unread : this.notifications, unread.length > 0);
-  }
-
-  listenOne(note: AppNotification): void {
+  togglePlay(note: AppNotification): void {
+    if (!this.audioMode) {
+      return;
+    }
+    if (this.playingId === note.id) {
+      this.tts.stop();
+      return;
+    }
     this.notificationAnnounce.announceOne(note, true);
   }
 
@@ -68,13 +87,19 @@ export class NotificationsPageComponent implements OnInit {
     this.tts.stop();
   }
 
+  isPlaying(note: AppNotification): boolean {
+    return this.playingId === note.id;
+  }
+
   markAll(): void {
     this.preferencesApi.markAllAsRead().subscribe({
       next: () => {
         this.notifications = this.notifications.map((n) => ({ ...n, read: true }));
+        this.unreadNotifications.setCount(0);
       },
       error: (error) => {
-        this.errorMessage = error?.error?.message || 'No se pudieron marcar como leídas.';
+        this.errorMessage =
+          error?.error?.message || this.translate.instant('NOTIFICATIONS.MARK_ERROR');
       }
     });
   }
@@ -83,6 +108,7 @@ export class NotificationsPageComponent implements OnInit {
     this.preferencesApi.markAsRead(note.id).subscribe({
       next: () => {
         note.read = true;
+        this.unreadNotifications.refresh();
       }
     });
   }

@@ -1,38 +1,82 @@
 <app-panel-shell [fixedSidebar]="fixedSidebar">
-  <h1 class="page-title">Notificaciones</h1>
-  <p class="page-subtitle">Avisos del sistema para tu cuenta.</p>
+  <h1 class="page-title">{{ 'NOTIFICATIONS.TITLE' | translate }}</h1>
+  <p class="page-subtitle">{{ 'NOTIFICATIONS.SUBTITLE' | translate }}</p>
 
   <div class="actions-row">
-    <button class="btn-secondary" type="button" (click)="reload()">Actualizar</button>
-    <button class="btn-secondary" type="button" (click)="listenUnread()">Escuchar</button>
-    <button class="btn-secondary" type="button" (click)="stopAudio()">Detener audio</button>
-    <button class="btn-primary" type="button" (click)="markAll()">Marcar todas como leídas</button>
+    <button class="btn-secondary" type="button" (click)="reload()">
+      {{ 'NOTIFICATIONS.REFRESH' | translate }}
+    </button>
+    <button *ngIf="audioMode" class="btn-secondary" type="button" (click)="stopAudio()">
+      {{ 'NOTIFICATIONS.STOP_AUDIO' | translate }}
+    </button>
+    <button class="btn-primary" type="button" (click)="markAll()">
+      {{ 'NOTIFICATIONS.MARK_ALL' | translate }}
+    </button>
   </div>
 
-  <p *ngIf="audioActive" class="empty-text">Texto a voz activo: las notificaciones no leídas se anuncian en audio.</p>
+  <p *ngIf="audioMode" class="empty-text">{{ 'NOTIFICATIONS.AUDIO_MODE_HINT' | translate }}</p>
 
-  <p *ngIf="loading" class="empty-text">Cargando...</p>
+  <p *ngIf="loading" class="empty-text">{{ 'COMMON.LOADING' | translate }}</p>
   <p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
 
   <div class="card">
     <div class="list-item" *ngFor="let note of notifications">
-      <div>
-        <strong>{{ note.title }}</strong>
-        <div class="kpi-sub">{{ note.body || 'Sin detalle' }} · {{ note.createdAt || '' }}</div>
-      </div>
-      <div class="actions-row">
-        <button class="btn-secondary" type="button" (click)="listenOne(note)">Escuchar</button>
-        <button
-          *ngIf="!note.read"
-          class="btn-secondary"
-          type="button"
-          (click)="markOne(note)"
-        >
-          Marcar leída
-        </button>
-        <span *ngIf="note.read" class="status-pill status-pill--ok">Leída</span>
-      </div>
+      <ng-container *ngIf="audioMode">
+        <div class="voice-note" [class.voice-note--playing]="isPlaying(note)">
+          <button
+            class="voice-play-btn"
+            type="button"
+            (click)="togglePlay(note)"
+            [attr.aria-label]="(isPlaying(note) ? 'NOTIFICATIONS.PAUSE' : 'NOTIFICATIONS.PLAY') | translate"
+          >
+            <span *ngIf="!isPlaying(note)">▶</span>
+            <span *ngIf="isPlaying(note)">■</span>
+          </button>
+          <div class="voice-waveform" aria-hidden="true">
+            <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+          </div>
+          <div class="voice-meta">
+            <span class="voice-label">{{ 'NOTIFICATIONS.AUDIO_MESSAGE' | translate }}</span>
+            <span class="kpi-sub">{{ note.createdAt || '' }}</span>
+          </div>
+        </div>
+        <div class="actions-row list-item-actions">
+          <button
+            *ngIf="!note.read"
+            class="btn-secondary"
+            type="button"
+            (click)="markOne(note)"
+          >
+            {{ 'NOTIFICATIONS.MARK_ONE' | translate }}
+          </button>
+          <span *ngIf="note.read" class="status-pill status-pill--ok">
+            {{ 'NOTIFICATIONS.READ' | translate }}
+          </span>
+        </div>
+      </ng-container>
+
+      <ng-container *ngIf="!audioMode">
+        <div>
+          <strong>{{ note.title }}</strong>
+          <div class="kpi-sub">{{ note.body || ('NOTIFICATIONS.NO_DETAIL' | translate) }} · {{ note.createdAt || '' }}</div>
+        </div>
+        <div class="actions-row list-item-actions">
+          <button
+            *ngIf="!note.read"
+            class="btn-secondary"
+            type="button"
+            (click)="markOne(note)"
+          >
+            {{ 'NOTIFICATIONS.MARK_ONE' | translate }}
+          </button>
+          <span *ngIf="note.read" class="status-pill status-pill--ok">
+            {{ 'NOTIFICATIONS.READ' | translate }}
+          </span>
+        </div>
+      </ng-container>
     </div>
-    <p *ngIf="!loading && !notifications.length" class="empty-text">No hay notificaciones.</p>
+    <p *ngIf="!loading && !notifications.length" class="empty-text">
+      {{ 'NOTIFICATIONS.EMPTY' | translate }}
+    </p>
   </div>
 </app-panel-shell>

@@ -26,6 +26,11 @@ export class TrainerDashboardComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.reload();
+  }
+
+  reload(): void {
+    this.loading = true;
     const bootstrap$ = this.session.getProfile()
       ? of(this.session.getProfile())
       : this.session.loadProfile();
@@ -62,8 +67,21 @@ export class TrainerDashboardComponent implements OnInit {
     this.router.navigate(['/trainer/sessions']);
   }
 
+  goSports(): void {
+    this.router.navigate(['/trainer/sports']);
+  }
+
+  goDisabilities(): void {
+    this.router.navigate(['/trainer/disabilities']);
+  }
+
+  goAssociations(): void {
+    this.router.navigate(['/trainer/associations']);
+  }
+
   private loadAthleteIds(routines: Routine[]): void {
     if (!routines.length) {
+      this.athleteIds = new Set();
       return;
     }
 

@@ -17,6 +17,7 @@ import { TrainerDashboardComponent } from './pages/trainer-dashboard/trainer-das
 import { SessionsPageComponent } from './pages/sessions-page/sessions-page.component';
 import { OrganizerDashboardComponent } from './pages/organizer-dashboard/organizer-dashboard.component';
 import { AthletesPageComponent } from './pages/athletes-page/athletes-page.component';
+import { AssociationsPageComponent } from './pages/associations-page/associations-page.component';
 import { NotificationsPageComponent } from './pages/notifications-page/notifications-page.component';
 import { PanelShellComponent } from './components/panel-shell/panel-shell.component';
 import { UserInterfaceComponent } from '../auth/pages/user-interface/user-interface.component';
@@ -32,6 +33,7 @@ import { UserInterfaceComponent } from '../auth/pages/user-interface/user-interf
     EventsPageComponent,
     SportsPageComponent,
     DisabilitiesPageComponent,
+    AssociationsPageComponent,
     ProfilePageComponent,
     AccessibilityPageComponent,
     NotificationsPageComponent,

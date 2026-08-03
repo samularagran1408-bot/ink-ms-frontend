@@ -44,14 +44,9 @@ export class AccessibilityPageComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    // Vista previa inmediata del idioma de texto (toda la UI); no fuerza el idioma de voz.
     this.form.get('language')!.valueChanges.subscribe((lang) => {
-      const normalized = this.languageService.normalize(lang);
-      this.form.patchValue(
-        { voiceLanguage: this.languageService.voiceLanguageFor(normalized) },
-        { emitEvent: false }
-      );
-      // Vista previa inmediata; se confirma al guardar preferencias.
-      this.languageService.setLanguage(normalized);
+      this.languageService.setLanguage(lang);
     });
 
     this.preferencesApi.getPreferences().subscribe({
@@ -85,7 +80,11 @@ export class AccessibilityPageComponent implements OnInit {
   testVoice(): void {
     this.tts.unlock();
     this.tts.applyPreferences(this.form.value);
-    this.tts.speak(this.translate.instant('ACCESSIBILITY.TTS_TEST_PHRASE'), { force: true });
+    const voiceLang = String(this.form.value.voiceLanguage || 'es-ES');
+    const phrase = voiceLang.toLowerCase().startsWith('en')
+      ? 'Audio notifications are on. This is how your alerts will sound.'
+      : 'Notificaciones en audio activadas. Así se escucharán tus avisos.';
+    this.tts.speak(phrase, { force: true });
   }
 
   get fixedSidebar(): boolean {

@@ -1,0 +1,47 @@
+<app-panel-shell>
+  <h1 class="page-title">Asociaciones</h1>
+  <p class="page-subtitle">Vincula deportes con discapacidades y define adaptaciones.</p>
+  <p *ngIf="loading" class="empty-text">Cargando...</p>
+  <p *ngIf="successMessage" class="empty-text">{{ successMessage }}</p>
+  <p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
+
+  <div class="card" style="margin-bottom: 16px;">
+    <h3 class="section-title">Nueva asociación</h3>
+    <form class="form-grid" [formGroup]="form" (ngSubmit)="create()">
+      <label>Deporte
+        <select formControlName="sportId">
+          <option *ngFor="let sport of sports" [ngValue]="sport.id">{{ sport.name }}</option>
+        </select>
+      </label>
+      <label>Discapacidad
+        <select formControlName="disabilityId">
+          <option *ngFor="let item of disabilities" [ngValue]="item.id">{{ item.name }}</option>
+        </select>
+      </label>
+      <label style="grid-column: 1 / -1;">
+        Adaptaciones
+        <textarea rows="3" formControlName="adaptations" placeholder="Ej. Guía verbal, balón sonoro, acompañante..."></textarea>
+      </label>
+      <div>
+        <button class="btn-primary" type="submit">Asociar</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="card">
+    <h3 class="section-title">
+      Asociaciones del deporte
+      <span *ngIf="selectedSportId">seleccionado</span>
+    </h3>
+    <div class="list-item" *ngFor="let item of associations">
+      <div>
+        <strong>{{ item.disabilityName || ('Discapacidad #' + item.disabilityId) }}</strong>
+        <div class="kpi-sub">{{ item.adaptations || 'Sin adaptaciones' }}</div>
+      </div>
+      <button class="btn-danger" type="button" (click)="remove(item)">Eliminar</button>
+    </div>
+    <p *ngIf="!loading && !associations.length" class="empty-text">
+      Este deporte aún no tiene discapacidades asociadas.
+    </p>
+  </div>
+</app-panel-shell>
