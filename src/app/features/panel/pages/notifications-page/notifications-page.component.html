@@ -4,8 +4,12 @@
 
   <div class="actions-row">
     <button class="btn-secondary" type="button" (click)="reload()">Actualizar</button>
+    <button class="btn-secondary" type="button" (click)="listenUnread()">Escuchar</button>
+    <button class="btn-secondary" type="button" (click)="stopAudio()">Detener audio</button>
     <button class="btn-primary" type="button" (click)="markAll()">Marcar todas como leídas</button>
   </div>
+
+  <p *ngIf="audioActive" class="empty-text">Texto a voz activo: las notificaciones no leídas se anuncian en audio.</p>
 
   <p *ngIf="loading" class="empty-text">Cargando...</p>
   <p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
@@ -16,15 +20,18 @@
         <strong>{{ note.title }}</strong>
         <div class="kpi-sub">{{ note.body || 'Sin detalle' }} · {{ note.createdAt || '' }}</div>
       </div>
-      <button
-        *ngIf="!note.read"
-        class="btn-secondary"
-        type="button"
-        (click)="markOne(note)"
-      >
-        Marcar leída
-      </button>
-      <span *ngIf="note.read" class="status-pill status-pill--ok">Leída</span>
+      <div class="actions-row">
+        <button class="btn-secondary" type="button" (click)="listenOne(note)">Escuchar</button>
+        <button
+          *ngIf="!note.read"
+          class="btn-secondary"
+          type="button"
+          (click)="markOne(note)"
+        >
+          Marcar leída
+        </button>
+        <span *ngIf="note.read" class="status-pill status-pill--ok">Leída</span>
+      </div>
     </div>
     <p *ngIf="!loading && !notifications.length" class="empty-text">No hay notificaciones.</p>
   </div>

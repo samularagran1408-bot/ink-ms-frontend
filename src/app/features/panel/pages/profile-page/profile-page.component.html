@@ -1,18 +1,77 @@
 <app-panel-shell [fixedSidebar]="fixedSidebar">
-  <h1 class="page-title">Perfil</h1>
-  <p class="page-subtitle">Datos personales y preferencias de apoyo. Roles: {{ rolesLabel }}</p>
-  <p *ngIf="message" class="empty-text">{{ message }}</p>
+  <h1 class="page-title">{{ 'PROFILE.TITLE' | translate }}</h1>
+  <p class="page-subtitle">{{ 'PROFILE.SUBTITLE' | translate:{ roles: rolesLabel } }}</p>
+  <p *ngIf="message" class="empty-text success-text">{{ message }}</p>
   <p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
 
   <div class="card">
     <form class="form-grid" [formGroup]="form" (ngSubmit)="save()">
-      <label>Nombre completo <input formControlName="fullName" /></label>
-      <label>Teléfono <input formControlName="phone" /></label>
-      <label>Discapacidad <input formControlName="disability" /></label>
-      <label>Preferencia de apoyo <input formControlName="supportPreference" /></label>
-      <label style="grid-column: 1 / -1;">Bio <textarea rows="3" formControlName="bio"></textarea></label>
-      <label style="grid-column: 1 / -1;">Notas de apoyo <textarea rows="2" formControlName="supportPreferenceNotes"></textarea></label>
-      <div><button class="btn-primary" type="submit">Guardar</button></div>
+      <div class="photo-section" style="grid-column: 1 / -1;">
+        <div class="photo-preview" [class.photo-preview--empty]="!profilePicturePreview">
+          <img *ngIf="profilePicturePreview" [src]="profilePicturePreview" [alt]="'PROFILE.PHOTO_ALT' | translate" />
+          <span *ngIf="!profilePicturePreview" class="photo-initials">{{ initials }}</span>
+        </div>
+        <div class="photo-actions">
+          <label class="btn-secondary photo-upload-btn">
+            {{ (isProcessingPhoto ? 'PROFILE.PROCESSING' : (profilePicturePreview ? 'PROFILE.CHANGE_PHOTO' : 'PROFILE.UPLOAD_PHOTO')) | translate }}
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/gif"
+              (change)="onPhotoSelected($event)"
+              [disabled]="isProcessingPhoto || isSaving"
+              hidden
+            />
+          </label>
+          <button
+            *ngIf="profilePicturePreview"
+            class="btn-danger"
+            type="button"
+            (click)="removePhoto()"
+            [disabled]="isSaving"
+          >
+            {{ 'PROFILE.REMOVE_PHOTO' | translate }}
+          </button>
+          <p class="photo-hint">{{ 'PROFILE.PHOTO_HINT' | translate }}</p>
+        </div>
+      </div>
+
+      <label>{{ 'PROFILE.FULL_NAME' | translate }} <input formControlName="fullName" /></label>
+      <label>{{ 'PROFILE.PHONE' | translate }} <input formControlName="phone" /></label>
+      <label>
+        {{ 'PROFILE.DISABILITY' | translate }}
+        <select formControlName="disability">
+          <option *ngFor="let opt of disabilityOptions" [value]="opt.value">{{ opt.labelKey | translate }}</option>
+        </select>
+      </label>
+      <label>{{ 'PROFILE.SUPPORT_PREFERENCE' | translate }} <input formControlName="supportPreference" /></label>
+
+      <ng-container *ngIf="showCompanionFields">
+        <label style="grid-column: 1 / -1;" class="section-label">{{ 'PROFILE.COMPANION_SECTION' | translate }}</label>
+        <label>
+          {{ 'PROFILE.COMPANION_NAME' | translate }}
+          <input formControlName="companionFullName" />
+        </label>
+        <label>
+          {{ 'PROFILE.COMPANION_PHONE' | translate }}
+          <input formControlName="companionPhone" />
+        </label>
+        <label>
+          {{ 'PROFILE.COMPANION_RELATIONSHIP' | translate }}
+          <input formControlName="companionRelationship" [placeholder]="'PROFILE.COMPANION_RELATIONSHIP_PH' | translate" />
+        </label>
+        <label>
+          {{ 'PROFILE.COMPANION_EMAIL' | translate }}
+          <input formControlName="companionEmail" type="email" />
+        </label>
+      </ng-container>
+
+      <label style="grid-column: 1 / -1;">{{ 'PROFILE.BIO' | translate }} <textarea rows="3" formControlName="bio"></textarea></label>
+      <label style="grid-column: 1 / -1;">{{ 'PROFILE.SUPPORT_NOTES' | translate }} <textarea rows="2" formControlName="supportPreferenceNotes"></textarea></label>
+      <div>
+        <button class="btn-primary" type="submit" [disabled]="isSaving || isProcessingPhoto">
+          {{ (isSaving ? 'COMMON.SAVING' : 'COMMON.SAVE') | translate }}
+        </button>
+      </div>
     </form>
   </div>
 </app-panel-shell>

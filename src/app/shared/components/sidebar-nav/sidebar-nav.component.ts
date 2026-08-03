@@ -1,13 +1,14 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
+import { TranslateService } from '@ngx-translate/core';
 import { Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
 
-import { AppRole, ROLE_LABELS } from '../../../core/models/app-role';
+import { AppRole } from '../../../core/models/app-role';
 import { SessionService } from '../../../core/services/session.service';
 
 export interface SidebarNavItem {
-  label: string;
+  labelKey: string;
   route?: string;
   exact?: boolean;
 }
@@ -21,9 +22,10 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
   sidebarOpen = false;
   role: AppRole = 'USUARIO';
   displayName = 'Usuario';
-  roleLabel = ROLE_LABELS.USUARIO;
+  roleKey = 'ROLES.USUARIO';
   brandTitle = 'INKLUSPORT';
   layout: 'drawer' | 'fixed' = 'drawer';
+  profilePicture: string | null = null;
   navItems: SidebarNavItem[] = [];
   secondaryItems: SidebarNavItem[] = [];
 
@@ -31,13 +33,15 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
 
   constructor(
     private router: Router,
-    private session: SessionService
+    private session: SessionService,
+    private translate: TranslateService
   ) {}
 
   ngOnInit(): void {
     this.refreshFromSession();
     this.subs.add(this.session.profile$.subscribe(() => this.refreshFromSession()));
     this.subs.add(this.session.roles$.subscribe(() => this.refreshFromSession()));
+    this.subs.add(this.translate.onLangChange.subscribe(() => this.refreshFromSession()));
     this.subs.add(
       this.router.events
         .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
@@ -67,10 +71,20 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
     this.session.logout();
   }
 
+  get initials(): string {
+    return this.displayName
+      .trim()
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((part) => part.charAt(0).toUpperCase())
+      .join('') || 'U';
+  }
+
   private refreshFromSession(): void {
     this.role = this.session.getPrimaryRole();
     this.displayName = this.session.getDisplayName();
-    this.roleLabel = this.session.getRoleLabel();
+    this.roleKey = `ROLES.${this.role}`;
+    this.profilePicture = this.session.getProfile()?.profilePicture || null;
     this.layout = this.role === 'USUARIO' ? 'drawer' : 'fixed';
     this.brandTitle = this.role === 'ADMIN' ? 'INKLUSPORT ADMIN' : 'INKLUSPORT';
     this.applyMenuByRole();
@@ -82,9 +96,9 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
 
   private commonAccountItems(base: string): SidebarNavItem[] {
     return [
-      { label: 'Perfil', route: `${base}/profile` },
-      { label: 'Accesibilidad', route: `${base}/accessibility` },
-      { label: 'Notificaciones', route: `${base}/notifications` }
+      { labelKey: 'NAV.PROFILE', route: `${base}/profile` },
+      { labelKey: 'NAV.ACCESSIBILITY', route: `${base}/accessibility` },
+      { labelKey: 'NAV.NOTIFICATIONS', route: `${base}/notifications` }
     ];
   }
 
@@ -92,38 +106,38 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
     switch (this.role) {
       case 'ADMIN':
         this.navItems = [
-          { label: 'Dashboard', route: '/admin', exact: true },
-          { label: 'Users', route: '/admin/users' },
-          { label: 'Events', route: '/admin/events' },
-          { label: 'Atletas / Waitlist', route: '/admin/athletes' },
-          { label: 'Sports', route: '/admin/sports' },
-          { label: 'Disabilities', route: '/admin/disabilities' },
-          { label: 'Roles', route: '/admin/roles' },
-          { label: 'Audit Logs', route: '/admin/audit' }
+          { labelKey: 'NAV.DASHBOARD', route: '/admin', exact: true },
+          { labelKey: 'NAV.USERS', route: '/admin/users' },
+          { labelKey: 'NAV.EVENTS', route: '/admin/events' },
+          { labelKey: 'NAV.ATHLETES_WAITLIST', route: '/admin/athletes' },
+          { labelKey: 'NAV.SPORTS', route: '/admin/sports' },
+          { labelKey: 'NAV.DISABILITIES', route: '/admin/disabilities' },
+          { labelKey: 'NAV.ROLES', route: '/admin/roles' },
+          { labelKey: 'NAV.AUDIT_LOGS', route: '/admin/audit' }
         ];
         this.secondaryItems = this.commonAccountItems('/admin');
         break;
       case 'ENTRENADOR':
         this.navItems = [
-          { label: 'Atletas', route: '/trainer', exact: true },
-          { label: 'Sesiones', route: '/trainer/sessions' },
-          { label: 'Eventos', route: '/trainer/events' },
-          { label: 'Waitlist', route: '/trainer/athletes' }
+          { labelKey: 'NAV.ATHLETES', route: '/trainer', exact: true },
+          { labelKey: 'NAV.SESSIONS', route: '/trainer/sessions' },
+          { labelKey: 'NAV.EVENTS', route: '/trainer/events' },
+          { labelKey: 'NAV.WAITLIST', route: '/trainer/athletes' }
         ];
         this.secondaryItems = this.commonAccountItems('/trainer');
         break;
       case 'ORGANIZADOR':
         this.navItems = [
-          { label: 'Eventos', route: '/organizer', exact: true },
-          { label: 'Gestionar eventos', route: '/organizer/events' },
-          { label: 'Atletas / Waitlist', route: '/organizer/athletes' }
+          { labelKey: 'NAV.EVENTS', route: '/organizer', exact: true },
+          { labelKey: 'NAV.MANAGE_EVENTS', route: '/organizer/events' },
+          { labelKey: 'NAV.ATHLETES_WAITLIST', route: '/organizer/athletes' }
         ];
         this.secondaryItems = this.commonAccountItems('/organizer');
         break;
       default:
         this.navItems = [
-          { label: 'Inicio', route: '/home', exact: true },
-          { label: 'Eventos', route: '/home/events' },
+          { labelKey: 'NAV.HOME', route: '/home', exact: true },
+          { labelKey: 'NAV.EVENTS', route: '/home/events' },
           ...this.commonAccountItems('/home')
         ];
         this.secondaryItems = [];

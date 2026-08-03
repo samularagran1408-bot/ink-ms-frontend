@@ -8,6 +8,7 @@ import { AppNotification } from '../../../../core/models/accessibility-api';
 import { SessionService } from '../../../../core/services/session.service';
 import { SportsService } from '../../../../core/services/sports.service';
 import { PreferencesApiService } from '../../../../core/services/preferences-api.service';
+import { NotificationAnnounceService } from '../../../../core/services/notification-announce.service';
 
 @Component({
   selector: 'app-user-interface',
@@ -31,10 +32,12 @@ export class UserInterfaceComponent implements OnInit {
     private session: SessionService,
     private sportsService: SportsService,
     private preferencesApi: PreferencesApiService,
-    private router: Router
+    private router: Router,
+    private notificationAnnounce: NotificationAnnounceService
   ) {}
 
   ngOnInit(): void {
+    this.notificationAnnounce.start();
     this.buildCalendar(new Date());
     const profile$ = this.session.getProfile()
       ? of(this.session.getProfile())
@@ -73,13 +76,16 @@ export class UserInterfaceComponent implements OnInit {
 
   onNotifications(): void {
     this.showNotifications = !this.showNotifications;
-    if (this.showNotifications && this.unreadCount > 0) {
-      this.preferencesApi.markAllAsRead().subscribe({
-        next: () => {
-          this.unreadCount = 0;
-          this.notifications = this.notifications.map((n) => ({ ...n, read: true }));
-        }
-      });
+    if (this.showNotifications) {
+      this.notificationAnnounce.announceList(this.notifications, true);
+      if (this.unreadCount > 0) {
+        this.preferencesApi.markAllAsRead().subscribe({
+          next: () => {
+            this.unreadCount = 0;
+            this.notifications = this.notifications.map((n) => ({ ...n, read: true }));
+          }
+        });
+      }
     }
   }
 

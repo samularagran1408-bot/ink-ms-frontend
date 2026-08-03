@@ -2,7 +2,7 @@
 <ng-container *ngIf="layout === 'drawer'">
   <header class="top-nav">
     <div class="nav-left">
-      <button class="hamburger-btn" type="button" (click)="openSidebar()" aria-label="Abrir menú">
+      <button class="hamburger-btn" type="button" (click)="openSidebar()" [attr.aria-label]="'COMMON.OPEN_MENU' | translate">
         <span class="hamburger-line"></span>
         <span class="hamburger-line"></span>
         <span class="hamburger-line"></span>
@@ -11,11 +11,18 @@
     </div>
     <div class="nav-right">
       <div class="user-info-text">
-        <span class="user-role-label">{{ roleLabel | uppercase }}</span>
+        <span class="user-role-label">{{ roleKey | translate | uppercase }}</span>
         <div class="user-name-text">{{ displayName }}</div>
       </div>
-      <button class="user-avatar-btn" type="button" (click)="handleLogout()" title="Cerrar sesión" aria-label="Cerrar sesión">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E11D48" stroke-width="2">
+      <button
+        class="user-avatar-btn"
+        type="button"
+        (click)="handleLogout()"
+        [attr.title]="'COMMON.LOGOUT' | translate"
+        [attr.aria-label]="'COMMON.LOGOUT' | translate"
+      >
+        <img *ngIf="profilePicture" [src]="profilePicture" alt="" class="avatar-img" />
+        <svg *ngIf="!profilePicture" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E11D48" stroke-width="2">
           <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
           <circle cx="12" cy="7" r="4"/>
         </svg>
@@ -26,18 +33,25 @@
   <div class="sidebar-backdrop" [class.sidebar-backdrop--visible]="sidebarOpen" (click)="closeSidebar()"></div>
 
   <aside class="sidebar-panel" [class.sidebar-panel--open]="sidebarOpen">
-    <button class="close-sidebar-btn" type="button" (click)="closeSidebar()" title="Cerrar menú" aria-label="Cerrar menú">
+    <button
+      class="close-sidebar-btn"
+      type="button"
+      (click)="closeSidebar()"
+      [attr.title]="'COMMON.CLOSE_MENU' | translate"
+      [attr.aria-label]="'COMMON.CLOSE_MENU' | translate"
+    >
       &times;
     </button>
 
     <div class="sidebar-profile-section">
-      <div class="sidebar-avatar-box">
-        <svg width="54" height="54" viewBox="0 0 24 24" fill="#0D9488">
+      <div class="sidebar-avatar-box" [class.sidebar-avatar-box--photo]="!!profilePicture">
+        <img *ngIf="profilePicture" [src]="profilePicture" alt="" class="avatar-img" />
+        <svg *ngIf="!profilePicture" width="54" height="54" viewBox="0 0 24 24" fill="#0D9488">
           <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
         </svg>
       </div>
       <h3 class="sidebar-user-name">{{ displayName }}</h3>
-      <p class="sidebar-user-role">{{ roleLabel }}</p>
+      <p class="sidebar-user-role">{{ roleKey | translate }}</p>
     </div>
 
     <nav class="sidebar-nav-list">
@@ -49,7 +63,7 @@
         class="sidebar-nav-item"
         (click)="closeSidebar()"
       >
-        <span>{{ item.label }}</span>
+        <span>{{ item.labelKey | translate }}</span>
       </a>
     </nav>
   </aside>
@@ -60,14 +74,15 @@
   <div class="role-sidebar-brand">{{ brandTitle }}</div>
 
   <div class="role-profile-card">
-    <div class="role-avatar">
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="#64748B">
+    <div class="role-avatar" [class.role-avatar--photo]="!!profilePicture">
+      <img *ngIf="profilePicture" [src]="profilePicture" alt="" class="avatar-img" />
+      <svg *ngIf="!profilePicture" width="28" height="28" viewBox="0 0 24 24" fill="#64748B">
         <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
       </svg>
     </div>
     <div>
       <div class="role-profile-name">{{ displayName }}</div>
-      <div class="role-profile-sub">{{ roleLabel }}</div>
+      <div class="role-profile-sub">{{ roleKey | translate }}</div>
     </div>
   </div>
 
@@ -79,7 +94,7 @@
       [routerLinkActiveOptions]="{ exact: !!item.exact }"
       class="role-nav-item"
     >
-      {{ item.label }}
+      {{ item.labelKey | translate }}
     </a>
 
     <ng-container *ngIf="secondaryItems.length">
@@ -91,12 +106,12 @@
         [routerLinkActiveOptions]="{ exact: !!item.exact }"
         class="role-nav-item"
       >
-        {{ item.label }}
+        {{ item.labelKey | translate }}
       </a>
     </ng-container>
   </nav>
 
   <button class="role-logout-btn" type="button" (click)="handleLogout()">
-    Cerrar Sesión
+    {{ 'COMMON.LOGOUT' | translate }}
   </button>
 </aside>

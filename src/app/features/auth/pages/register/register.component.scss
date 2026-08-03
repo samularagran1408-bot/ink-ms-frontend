@@ -226,8 +226,54 @@
 .login-form {
   display: flex;
   flex-direction: column;
-  gap: 20px
-  
+  gap: 20px;
+}
+
+.companion-section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid #FECACA;
+  border-radius: 10px;
+  background: #FFF7F7;
+}
+
+.companion-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.companion-title {
+  margin: 0;
+  font-family: 'Oswald', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: #A30D11;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.companion-hint {
+  margin: 0;
+  font-size: 12px;
+  color: #64748B;
+  line-height: 1.4;
+}
+
+.login-wrapper.high-contrast-mode .companion-section {
+  background: #1A0000 !important;
+  border-color: #FFD700 !important;
+}
+
+.login-wrapper.high-contrast-mode .companion-title {
+  color: #FFD700 !important;
+}
+
+.login-wrapper.high-contrast-mode .companion-hint {
+  color: #CCCCCC !important;
 }
 
 .form-row {

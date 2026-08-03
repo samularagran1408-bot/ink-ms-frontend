@@ -1,71 +1,71 @@
 <app-panel-shell>
-  <h1 class="page-title">Administrative Intelligence</h1>
-  <p class="page-subtitle">Monitoreo operativo con usuarios, eventos, deportes y discapacidades.</p>
+  <h1 class="page-title">{{ 'ADMIN_DASHBOARD.TITLE' | translate }}</h1>
+  <p class="page-subtitle">{{ 'ADMIN_DASHBOARD.SUBTITLE' | translate }}</p>
 
   <p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
-  <p *ngIf="loading" class="empty-text">Cargando métricas...</p>
+  <p *ngIf="loading" class="empty-text">{{ 'ADMIN_DASHBOARD.LOADING' | translate }}</p>
 
   <div class="actions-row">
-    <button class="btn-primary" type="button" (click)="go('/admin/events')">Crear Evento</button>
-    <button class="btn-secondary" type="button" (click)="go('/admin/athletes')">Waitlist / Atletas</button>
-    <button class="btn-secondary" type="button" (click)="go('/admin/users')">Gestionar Usuarios</button>
-    <button class="btn-secondary" type="button" (click)="go('/admin/audit')">Audit Logs</button>
+    <button class="btn-primary" type="button" (click)="go('/admin/events')">{{ 'ADMIN_DASHBOARD.CREATE_EVENT' | translate }}</button>
+    <button class="btn-secondary" type="button" (click)="go('/admin/athletes')">{{ 'ADMIN_DASHBOARD.WAITLIST_ATHLETES' | translate }}</button>
+    <button class="btn-secondary" type="button" (click)="go('/admin/users')">{{ 'ADMIN_DASHBOARD.MANAGE_USERS' | translate }}</button>
+    <button class="btn-secondary" type="button" (click)="go('/admin/audit')">{{ 'ADMIN_DASHBOARD.AUDIT_LOGS' | translate }}</button>
   </div>
 
   <div class="kpi-grid">
     <div class="kpi-card">
-      <div class="kpi-label">Total Users</div>
+      <div class="kpi-label">{{ 'ADMIN_DASHBOARD.TOTAL_USERS' | translate }}</div>
       <div class="kpi-value">{{ totalUsers }}</div>
-      <div class="kpi-sub">{{ activeUsers }} activos</div>
+      <div class="kpi-sub">{{ 'ADMIN_DASHBOARD.ACTIVE_USERS' | translate:{ count: activeUsers } }}</div>
     </div>
     <div class="kpi-card">
-      <div class="kpi-label">Active Events</div>
+      <div class="kpi-label">{{ 'ADMIN_DASHBOARD.ACTIVE_EVENTS' | translate }}</div>
       <div class="kpi-value">{{ activeEvents }}</div>
-      <div class="kpi-sub">Eventos activos</div>
+      <div class="kpi-sub">{{ 'ADMIN_DASHBOARD.ACTIVE_EVENTS_SUB' | translate }}</div>
     </div>
     <div class="kpi-card">
-      <div class="kpi-label">Sports</div>
+      <div class="kpi-label">{{ 'ADMIN_DASHBOARD.SPORTS' | translate }}</div>
       <div class="kpi-value">{{ sportsCount }}</div>
-      <div class="kpi-sub">Catálogo deportivo</div>
+      <div class="kpi-sub">{{ 'ADMIN_DASHBOARD.SPORTS_SUB' | translate }}</div>
     </div>
     <div class="kpi-card">
-      <div class="kpi-label">Disabilities</div>
+      <div class="kpi-label">{{ 'ADMIN_DASHBOARD.DISABILITIES' | translate }}</div>
       <div class="kpi-value">{{ disabilitiesCount }}</div>
-      <div class="kpi-sub">Tipos registrados</div>
+      <div class="kpi-sub">{{ 'ADMIN_DASHBOARD.DISABILITIES_SUB' | translate }}</div>
     </div>
   </div>
 
   <div class="grid-2">
     <div class="card">
-      <h3 class="section-title">Usuarios recientes</h3>
+      <h3 class="section-title">{{ 'ADMIN_DASHBOARD.RECENT_USERS' | translate }}</h3>
       <table class="data-table" *ngIf="recentUsers.length; else noUsers">
         <thead>
           <tr>
-            <th>Nombre</th>
-            <th>Email</th>
-            <th>Estado</th>
+            <th>{{ 'ADMIN_DASHBOARD.NAME' | translate }}</th>
+            <th>{{ 'ADMIN_DASHBOARD.EMAIL' | translate }}</th>
+            <th>{{ 'ADMIN_DASHBOARD.STATUS' | translate }}</th>
           </tr>
         </thead>
         <tbody>
           <tr *ngFor="let user of recentUsers">
-            <td>{{ user.fullName || '—' }}</td>
+            <td>{{ user.fullName || ('COMMON.NONE' | translate) }}</td>
             <td>{{ user.email }}</td>
-            <td><span class="status-pill" [ngClass]="statusClass(user)">{{ statusLabel(user) }}</span></td>
+            <td><span class="status-pill" [ngClass]="statusClass(user)">{{ statusLabel(user) | translate }}</span></td>
           </tr>
         </tbody>
       </table>
-      <ng-template #noUsers><p class="empty-text">Sin usuarios para mostrar.</p></ng-template>
+      <ng-template #noUsers><p class="empty-text">{{ 'ADMIN_DASHBOARD.NO_USERS' | translate }}</p></ng-template>
     </div>
 
     <div class="card">
-      <h3 class="section-title">Eventos</h3>
-      <div *ngIf="!events.length" class="empty-text">Sin eventos.</div>
+      <h3 class="section-title">{{ 'ADMIN_DASHBOARD.EVENTS' | translate }}</h3>
+      <div *ngIf="!events.length" class="empty-text">{{ 'ADMIN_DASHBOARD.NO_EVENTS' | translate }}</div>
       <div class="list-item" *ngFor="let event of events">
         <div>
           <strong>{{ event.name }}</strong>
-          <div class="kpi-sub">{{ event.sportName || 'Deporte' }} · {{ event.eventDate }}</div>
+          <div class="kpi-sub">{{ event.sportName || ('COMMON.SPORT' | translate) }} · {{ event.eventDate }}</div>
         </div>
-        <button class="btn-secondary" type="button" (click)="go('/admin/events')">Gestionar</button>
+        <button class="btn-secondary" type="button" (click)="go('/admin/events')">{{ 'COMMON.MANAGE' | translate }}</button>
       </div>
     </div>
   </div>

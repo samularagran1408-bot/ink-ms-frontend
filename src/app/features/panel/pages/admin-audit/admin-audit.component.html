@@ -1,30 +1,30 @@
 <app-panel-shell>
-  <h1 class="page-title">Audit Logs</h1>
-  <p class="page-subtitle">Historial de acciones administrativas.</p>
-  <p *ngIf="loading" class="empty-text">Cargando...</p>
+  <h1 class="page-title">{{ 'ADMIN_AUDIT.TITLE' | translate }}</h1>
+  <p class="page-subtitle">{{ 'ADMIN_AUDIT.SUBTITLE' | translate }}</p>
+  <p *ngIf="loading" class="empty-text">{{ 'ADMIN_AUDIT.LOADING' | translate }}</p>
   <p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
 
   <div class="card">
     <table class="data-table" *ngIf="logs.length">
       <thead>
         <tr>
-          <th>Fecha</th>
-          <th>Admin</th>
-          <th>Acción</th>
-          <th>Objetivo</th>
-          <th>Detalle</th>
+          <th>{{ 'ADMIN_AUDIT.DATE' | translate }}</th>
+          <th>{{ 'ADMIN_AUDIT.ADMIN' | translate }}</th>
+          <th>{{ 'ADMIN_AUDIT.ACTION' | translate }}</th>
+          <th>{{ 'ADMIN_AUDIT.TARGET' | translate }}</th>
+          <th>{{ 'ADMIN_AUDIT.DETAIL' | translate }}</th>
         </tr>
       </thead>
       <tbody>
         <tr *ngFor="let log of logs">
-          <td>{{ log.createdAt || '—' }}</td>
+          <td>{{ formatDate(log.createdAt) }}</td>
           <td>{{ log.adminEmail }}</td>
-          <td>{{ log.action }}</td>
-          <td>{{ log.targetEmail || log.targetUserId || '—' }}</td>
-          <td>{{ log.details || '—' }}</td>
+          <td>{{ formatAction(log.action) }}</td>
+          <td>{{ log.targetEmail || log.targetUserId || ('COMMON.NONE' | translate) }}</td>
+          <td>{{ formatDetails(log.details) }}</td>
         </tr>
       </tbody>
     </table>
-    <p *ngIf="!loading && !logs.length" class="empty-text">Sin registros de auditoría.</p>
+    <p *ngIf="!loading && !logs.length" class="empty-text">{{ 'ADMIN_AUDIT.EMPTY' | translate }}</p>
   </div>
 </app-panel-shell>

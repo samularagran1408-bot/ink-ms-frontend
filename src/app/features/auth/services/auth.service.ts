@@ -12,6 +12,7 @@ import { catchError, map, switchMap } from 'rxjs/operators';
 import { API_BASE_URL } from '../../../core/config/api.config';
 import { UsersService } from '../../../core/services/users.service';
 import { SessionService } from '../../../core/services/session.service';
+import { UpdateProfileRequest } from '../../../core/models/user-profile';
 
 @Injectable({
   providedIn: 'root'
@@ -26,37 +27,49 @@ export class AuthService {
   ) {}
 
   /**
-   * Auth ya materializa el perfil en users-ms.
-   * Aquí solo registramos y luego actualizamos campos extra (teléfono / discapacidad).
+   * Auth materializa el perfil (discapacidad + acompañante) en users-ms.
+   * Luego se actualizan campos extra del perfil (teléfono).
    */
   register(data: RegisterRequest): Observable<AuthResponse> {
     const disabilityType = this.toCanonicalDisability(data.disabilityType);
 
-    const authPayload: Record<string, string> = {
+    const authPayload: Record<string, unknown> = {
       nombre: data.fullName,
       email: data.email,
       password: data.password
     };
 
-    // MOTRIZ exige acompañante en auth; si no lo tenemos, no lo enviamos en el alta.
-    if (disabilityType && disabilityType !== 'MOTRIZ') {
+    if (disabilityType) {
       authPayload['disabilityType'] = disabilityType;
+    }
+
+    if (data.companion?.fullName && data.companion?.phone) {
+      authPayload['companion'] = {
+        fullName: data.companion.fullName.trim(),
+        phone: data.companion.phone.trim(),
+        relationship: data.companion.relationship?.trim() || undefined,
+        email: data.companion.email?.trim() || undefined
+      };
     }
 
     return this.http.post<AuthResponse>(`${this.apiUrlAuth}/register`, authPayload).pipe(
       switchMap((authResponse) => {
         this.session.setSession(authResponse.token);
 
-        return this.usersService
-          .updateProfile({
-            fullName: data.fullName,
-            phone: data.phone,
-            disability: disabilityType || undefined
-          })
-          .pipe(
-            catchError(() => of(null)),
-            map(() => authResponse)
-          );
+        const profileUpdate: UpdateProfileRequest = {
+          fullName: data.fullName,
+          phone: data.phone,
+          disability: disabilityType || undefined,
+          companionFullName: data.companion?.fullName?.trim() || undefined,
+          companionPhone: data.companion?.phone?.trim() || undefined,
+          companionRelationship: data.companion?.relationship?.trim() || undefined,
+          companionEmail: data.companion?.email?.trim() || undefined
+        };
+
+        return this.usersService.updateProfile(profileUpdate).pipe(
+          catchError(() => of(null)),
+          map(() => authResponse)
+        );
       })
     );
   }

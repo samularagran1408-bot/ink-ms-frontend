@@ -7,6 +7,7 @@ import { AuthService } from '../../services/auth.service';
 import { LoginRequest } from '../../models/login-request';
 import { AccessibilityService } from '../../../../core/services/accessibility.service';
 import { SessionService } from '../../../../core/services/session.service';
+import { NotificationAnnounceService } from '../../../../core/services/notification-announce.service';
 
 @Component({
   selector: 'app-login',
@@ -29,7 +30,8 @@ export class LoginComponent {
     private authService: AuthService,
     private session: SessionService,
     private router: Router,
-    public accessibilityService: AccessibilityService
+    public accessibilityService: AccessibilityService,
+    private notificationAnnounce: NotificationAnnounceService
   ) {
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
@@ -68,11 +70,13 @@ export class LoginComponent {
           next: (home) => {
             this.isSubmitting = false;
             this.loginSuccess = true;
+            this.notificationAnnounce.start();
             this.router.navigate([home]);
           },
           error: () => {
             this.isSubmitting = false;
             this.loginSuccess = true;
+            this.notificationAnnounce.start();
             this.router.navigate([this.session.homeForCurrentUser()]);
           }
         });

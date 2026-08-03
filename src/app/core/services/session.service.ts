@@ -1,12 +1,13 @@
-import { Injectable } from '@angular/core';
+import { Injectable, Injector } from '@angular/core';
 import { BehaviorSubject, Observable, of } from 'rxjs';
-import { catchError, map, tap } from 'rxjs/operators';
+import { catchError, map, switchMap, tap } from 'rxjs/operators';
 import { Router } from '@angular/router';
 
 import { AppRole, ROLE_HOME, ROLE_LABELS, normalizeRoles, resolvePrimaryRole } from '../models/app-role';
 import { UserProfile } from '../models/user-profile';
 import { decodeJwtPayload, isTokenExpired } from '../utils/jwt.util';
 import { UsersService } from './users.service';
+import { LanguageService } from './language.service';
 
 const TOKEN_KEY = 'auth_token';
 
@@ -22,7 +23,8 @@ export class SessionService {
 
   constructor(
     private usersService: UsersService,
-    private router: Router
+    private router: Router,
+    private injector: Injector
   ) {
     const token = this.getToken();
     if (token && !isTokenExpired(token)) {
@@ -112,7 +114,9 @@ export class SessionService {
 
   bootstrapAfterLogin(token: string): Observable<string> {
     this.setSession(token);
+    const languageService = this.injector.get(LanguageService);
     return this.loadProfile().pipe(
+      switchMap(() => languageService.init()),
       map(() => this.homeForCurrentUser())
     );
   }

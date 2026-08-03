@@ -68,8 +68,8 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   statusLabel(user: UserProfile): string {
-    if (user.blockedPermanently || user.blockReason) return 'Bloqueado';
-    if (user.isActive === false) return 'Inactivo';
-    return 'Activo';
+    if (user.blockedPermanently || user.blockReason) return 'COMMON.BLOCKED';
+    if (user.isActive === false) return 'COMMON.INACTIVE';
+    return 'COMMON.ACTIVE';
   }
 }
