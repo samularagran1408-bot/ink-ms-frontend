@@ -10,6 +10,9 @@
     <button class="btn-secondary" type="button" (click)="go('/admin/athletes')">{{ 'ADMIN_DASHBOARD.WAITLIST_ATHLETES' | translate }}</button>
     <button class="btn-secondary" type="button" (click)="go('/admin/users')">{{ 'ADMIN_DASHBOARD.MANAGE_USERS' | translate }}</button>
     <button class="btn-secondary" type="button" (click)="go('/admin/audit')">{{ 'ADMIN_DASHBOARD.AUDIT_LOGS' | translate }}</button>
+    <button class="btn-primary" type="button" (click)="exportPdf()" [disabled]="exporting">
+      {{ exporting ? ('ADMIN_DASHBOARD.EXPORTING' | translate) : ('ADMIN_DASHBOARD.EXPORT_PDF' | translate) }}
+    </button>
   </div>
 
   <div class="kpi-grid">
@@ -32,6 +35,43 @@
       <div class="kpi-label">{{ 'ADMIN_DASHBOARD.DISABILITIES' | translate }}</div>
       <div class="kpi-value">{{ disabilitiesCount }}</div>
       <div class="kpi-sub">{{ 'ADMIN_DASHBOARD.DISABILITIES_SUB' | translate }}</div>
+    </div>
+  </div>
+
+  <div class="grid-2" *ngIf="weeklyTrend.length || eventCounts.length">
+    <div class="card" *ngIf="weeklyTrend.length">
+      <h3 class="section-title">{{ 'ADMIN_DASHBOARD.WEEKLY_TREND' | translate }}</h3>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>{{ 'ADMIN_DASHBOARD.DATE' | translate }}</th>
+            <th>{{ 'ADMIN_DASHBOARD.EVENTS_COUNT' | translate }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of weeklyTrend">
+            <td>{{ item.date }}</td>
+            <td>{{ item.count }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card" *ngIf="eventCounts.length">
+      <h3 class="section-title">{{ 'ADMIN_DASHBOARD.EVENT_TYPES' | translate }}</h3>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>{{ 'ADMIN_DASHBOARD.TYPE' | translate }}</th>
+            <th>{{ 'ADMIN_DASHBOARD.EVENTS_COUNT' | translate }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of eventCounts">
+            <td>{{ item.type }}</td>
+            <td>{{ item.count }}</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 

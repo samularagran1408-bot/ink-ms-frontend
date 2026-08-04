@@ -1,30 +1,168 @@
 <app-panel-shell>
-  <h1 class="page-title">{{ 'ADMIN_AUDIT.TITLE' | translate }}</h1>
-  <p class="page-subtitle">{{ 'ADMIN_AUDIT.SUBTITLE' | translate }}</p>
+  <div class="audit-header">
+    <div>
+      <p class="eyebrow">{{ 'ADMIN_AUDIT.EYEBROW' | translate }}</p>
+      <h1 class="page-title">{{ 'ADMIN_AUDIT.TITLE' | translate }}</h1>
+      <p class="page-subtitle">{{ 'ADMIN_AUDIT.SUBTITLE' | translate }}</p>
+    </div>
+    <div class="export-actions">
+      <button class="btn-export btn-export--ghost" type="button" (click)="exportCsv()" [disabled]="!filteredLogs.length">
+        {{ 'ADMIN_AUDIT.EXPORT_CSV' | translate }}
+      </button>
+      <button class="btn-export btn-export--ghost" type="button" (click)="exportDashboardPdf()" [disabled]="exporting || !dashboard">
+        {{ 'ADMIN_AUDIT.EXPORT_DASHBOARD_PDF' | translate }}
+      </button>
+      <button class="btn-export btn-export--primary" type="button" (click)="exportPdf()" [disabled]="exporting">
+        {{ exporting ? ('ADMIN_AUDIT.EXPORTING' | translate) : ('ADMIN_AUDIT.EXPORT_PDF' | translate) }}
+      </button>
+    </div>
+  </div>
+
   <p *ngIf="loading" class="empty-text">{{ 'ADMIN_AUDIT.LOADING' | translate }}</p>
   <p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
 
-  <div class="card">
-    <table class="data-table" *ngIf="logs.length">
+  <div class="analysis-grid" *ngIf="!loading">
+    <div class="card chart-card">
+      <div class="chart-head">
+        <div>
+          <h3 class="section-title">{{ 'ADMIN_AUDIT.WEEKLY_TREND' | translate }}</h3>
+          <p class="chart-sub">{{ 'ADMIN_AUDIT.WEEKLY_TREND_SUB' | translate }}</p>
+        </div>
+        <div class="tag-row">
+          <span class="tag tag--red">HU32</span>
+          <span class="tag tag--blue">HU35</span>
+        </div>
+      </div>
+
+      <div class="bar-chart" *ngIf="weeklyBars.length; else noTrend">
+        <div class="bar-item" *ngFor="let bar of weeklyBars">
+          <div class="bar-tooltip" *ngIf="bar.highlight !== 'default'">{{ bar.value }}</div>
+          <div
+            class="bar"
+            [class.bar--accent]="bar.highlight === 'accent'"
+            [class.bar--peak]="bar.highlight === 'peak'"
+            [style.height.%]="bar.height"
+            [attr.title]="bar.value">
+          </div>
+          <span class="bar-label">{{ bar.label }}</span>
+        </div>
+      </div>
+      <ng-template #noTrend>
+        <p class="empty-text">{{ 'ADMIN_AUDIT.NO_TREND' | translate }}</p>
+      </ng-template>
+    </div>
+
+    <div class="card chart-card">
+      <div class="chart-head">
+        <div>
+          <h3 class="section-title">{{ 'ADMIN_AUDIT.DISABILITY_DIST' | translate }}</h3>
+          <p class="chart-sub">{{ 'ADMIN_AUDIT.DISABILITY_DIST_SUB' | translate }}</p>
+        </div>
+      </div>
+
+      <div class="donut-wrap" *ngIf="disabilitySlices.length; else noDist">
+        <div class="donut" [style.background]="donutGradient">
+          <div class="donut-center">
+            <strong>{{ totalUsersLabel }}</strong>
+            <span>{{ 'ADMIN_AUDIT.TOTAL_USERS' | translate }}</span>
+          </div>
+        </div>
+        <ul class="legend">
+          <li *ngFor="let slice of disabilitySlices">
+            <span class="dot" [style.background]="slice.color"></span>
+            <span class="legend-label">{{ slice.label }}</span>
+            <span class="legend-value">{{ slice.percent }}%</span>
+          </li>
+        </ul>
+      </div>
+      <ng-template #noDist>
+        <p class="empty-text">{{ 'ADMIN_AUDIT.NO_DIST' | translate }}</p>
+      </ng-template>
+    </div>
+  </div>
+
+  <div class="card log-card" *ngIf="!loading">
+    <div class="log-head">
+      <div class="log-title-wrap">
+        <h3 class="section-title">{{ 'ADMIN_AUDIT.ACTIVITY_LOG' | translate }}</h3>
+        <span class="tag tag--muted">HU29</span>
+      </div>
+      <div class="filters">
+        <select [(ngModel)]="rangeFilter" (ngModelChange)="applyFilters()">
+          <option value="7">{{ 'ADMIN_AUDIT.LAST_7' | translate }}</option>
+          <option value="30">{{ 'ADMIN_AUDIT.LAST_30' | translate }}</option>
+          <option value="90">{{ 'ADMIN_AUDIT.LAST_90' | translate }}</option>
+          <option value="all">{{ 'ADMIN_AUDIT.ALL_TIME' | translate }}</option>
+        </select>
+        <select [(ngModel)]="actionFilter" (ngModelChange)="applyFilters()">
+          <option value="ALL">{{ 'ADMIN_AUDIT.ALL_ACTIONS' | translate }}</option>
+          <option *ngFor="let action of availableActions" [value]="action">{{ formatAction(action) }}</option>
+        </select>
+      </div>
+    </div>
+
+    <table class="data-table" *ngIf="pagedLogs.length">
       <thead>
         <tr>
           <th>{{ 'ADMIN_AUDIT.DATE' | translate }}</th>
-          <th>{{ 'ADMIN_AUDIT.ADMIN' | translate }}</th>
           <th>{{ 'ADMIN_AUDIT.ACTION' | translate }}</th>
-          <th>{{ 'ADMIN_AUDIT.TARGET' | translate }}</th>
+          <th>{{ 'ADMIN_AUDIT.ADMIN' | translate }}</th>
+          <th>{{ 'ADMIN_AUDIT.IP' | translate }}</th>
           <th>{{ 'ADMIN_AUDIT.DETAIL' | translate }}</th>
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let log of logs">
+        <tr *ngFor="let log of pagedLogs">
           <td>{{ formatDate(log.createdAt) }}</td>
-          <td>{{ log.adminEmail }}</td>
-          <td>{{ formatAction(log.action) }}</td>
-          <td>{{ log.targetEmail || log.targetUserId || ('COMMON.NONE' | translate) }}</td>
-          <td>{{ formatDetails(log.details) }}</td>
+          <td><span [ngClass]="actionClass(log.action)">{{ log.action || '—' }}</span></td>
+          <td>
+            <div class="user-cell">
+              <span class="avatar">{{ initials(log.adminEmail) }}</span>
+              <span>{{ log.adminEmail || ('COMMON.NONE' | translate) }}</span>
+            </div>
+          </td>
+          <td class="mono">{{ log.ipAddress || '—' }}</td>
+          <td>
+            <button class="detail-btn" type="button" (click)="openDetail(log)" [attr.aria-label]="'ADMIN_AUDIT.DETAIL' | translate">
+              i
+            </button>
+          </td>
         </tr>
       </tbody>
     </table>
-    <p *ngIf="!loading && !logs.length" class="empty-text">{{ 'ADMIN_AUDIT.EMPTY' | translate }}</p>
+
+    <p *ngIf="!pagedLogs.length" class="empty-text">{{ 'ADMIN_AUDIT.EMPTY' | translate }}</p>
+
+    <div class="log-footer" *ngIf="filteredLogs.length">
+      <span>
+        {{ 'ADMIN_AUDIT.SHOWING' | translate:{ start: rangeStart, end: rangeEnd, total: filteredLogs.length } }}
+      </span>
+      <div class="pager">
+        <button type="button" (click)="goToPage(page - 1)" [disabled]="page <= 1">‹</button>
+        <button
+          type="button"
+          *ngFor="let p of visiblePages"
+          [class.active]="page === p"
+          (click)="goToPage(p)">
+          {{ p }}
+        </button>
+        <button type="button" (click)="goToPage(page + 1)" [disabled]="page >= totalPages">›</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="detail-modal" *ngIf="selectedDetail" (click)="closeDetail()">
+    <div class="detail-panel" (click)="$event.stopPropagation()">
+      <div class="detail-head">
+        <h3>{{ 'ADMIN_AUDIT.DETAIL' | translate }}</h3>
+        <button type="button" class="btn-secondary" (click)="closeDetail()">×</button>
+      </div>
+      <p><strong>{{ 'ADMIN_AUDIT.ACTION' | translate }}:</strong> {{ selectedDetail.action }}</p>
+      <p><strong>{{ 'ADMIN_AUDIT.ADMIN' | translate }}:</strong> {{ selectedDetail.adminEmail }}</p>
+      <p><strong>{{ 'ADMIN_AUDIT.TARGET' | translate }}:</strong> {{ selectedDetail.targetEmail || selectedDetail.targetUserId || ('COMMON.NONE' | translate) }}</p>
+      <p><strong>{{ 'ADMIN_AUDIT.IP' | translate }}:</strong> {{ selectedDetail.ipAddress || '—' }}</p>
+      <p><strong>{{ 'ADMIN_AUDIT.DATE' | translate }}:</strong> {{ formatDate(selectedDetail.createdAt) }}</p>
+      <p class="detail-body">{{ formatDetails(selectedDetail.details) }}</p>
+    </div>
   </div>
 </app-panel-shell>

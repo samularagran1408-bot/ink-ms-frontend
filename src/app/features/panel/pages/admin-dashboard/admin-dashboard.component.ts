@@ -5,8 +5,10 @@ import { catchError } from 'rxjs/operators';
 
 import { EventItem } from '../../../../core/models/sports';
 import { UserProfile } from '../../../../core/models/user-profile';
+import { DashboardResponse } from '../../../../core/models/reports';
 import { UsersService } from '../../../../core/services/users.service';
 import { SportsService } from '../../../../core/services/sports.service';
+import { ReportsService } from '../../../../core/services/reports.service';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -22,16 +24,21 @@ export class AdminDashboardComponent implements OnInit {
   recentUsers: UserProfile[] = [];
   events: EventItem[] = [];
   disabilitiesCount = 0;
+  weeklyTrend: { date: string; count: number }[] = [];
+  eventCounts: { type: string; count: number }[] = [];
+  exporting = false;
   errorMessage: string | null = null;
 
   constructor(
     private usersService: UsersService,
     private sportsService: SportsService,
+    private reportsService: ReportsService,
     private router: Router
   ) {}
 
   ngOnInit(): void {
     forkJoin({
+      dashboard: this.reportsService.getDashboard().pipe(catchError(() => of(null as DashboardResponse | null))),
       totalUsers: this.usersService.countUsers().pipe(catchError(() => of(0))),
       activeUsers: this.usersService.countActiveUsers().pipe(catchError(() => of(0))),
       activeEvents: this.sportsService.countActiveEvents().pipe(catchError(() => of(0))),
@@ -41,10 +48,15 @@ export class AdminDashboardComponent implements OnInit {
       disabilities: this.sportsService.getDisabilities().pipe(catchError(() => of([])))
     }).subscribe({
       next: (data) => {
-        this.totalUsers = data.totalUsers;
-        this.activeUsers = data.activeUsers;
-        this.activeEvents = data.activeEvents;
-        this.sportsCount = data.sportsCount;
+        if (data.dashboard) {
+          this.applyDashboard(data.dashboard);
+        } else {
+          this.totalUsers = data.totalUsers;
+          this.activeUsers = data.activeUsers;
+          this.activeEvents = data.activeEvents;
+          this.sportsCount = data.sportsCount;
+          this.errorMessage = 'No se pudo cargar /api/dashboard. Mostrando datos parciales.';
+        }
         this.recentUsers = data.users.slice(0, 6);
         this.events = data.events.slice(0, 4);
         this.disabilitiesCount = data.disabilities.length;
@@ -61,6 +73,20 @@ export class AdminDashboardComponent implements OnInit {
     this.router.navigate([path]);
   }
 
+  exportPdf(): void {
+    this.exporting = true;
+    this.reportsService.exportDashboardPdf().subscribe({
+      next: (blob) => {
+        this.reportsService.downloadBlob(blob, `inklusport-dashboard-${new Date().toISOString().slice(0, 10)}.pdf`);
+        this.exporting = false;
+      },
+      error: () => {
+        this.errorMessage = 'No se pudo exportar el dashboard a PDF.';
+        this.exporting = false;
+      }
+    });
+  }
+
   statusClass(user: UserProfile): string {
     if (user.blockedPermanently || user.blockReason) return 'status-pill--bad';
     if (user.isActive === false) return 'status-pill--warn';
@@ -71,5 +97,19 @@ export class AdminDashboardComponent implements OnInit {
     if (user.blockedPermanently || user.blockReason) return 'COMMON.BLOCKED';
     if (user.isActive === false) return 'COMMON.INACTIVE';
     return 'COMMON.ACTIVE';
+  }
+
+  private applyDashboard(dashboard: DashboardResponse): void {
+    this.totalUsers = dashboard.metrics?.total_users ?? 0;
+    this.activeUsers = dashboard.metrics?.active_users ?? 0;
+    this.activeEvents = dashboard.metrics?.active_events ?? 0;
+    this.sportsCount = dashboard.metrics?.total_sports ?? 0;
+    this.weeklyTrend = Object.entries(dashboard.weeklyTrend || {})
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, count]) => ({ date, count: Number(count) || 0 }));
+    this.eventCounts = Object.entries(dashboard.eventCounts || {})
+      .sort((a, b) => Number(b[1]) - Number(a[1]))
+      .slice(0, 6)
+      .map(([type, count]) => ({ type, count: Number(count) || 0 }));
   }
 }

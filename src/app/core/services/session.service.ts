@@ -11,6 +11,13 @@ import { LanguageService } from './language.service';
 
 const TOKEN_KEY = 'auth_token';
 
+/**
+ * sessionStorage: cada pestaña tiene su propio JWT.
+ * Evita que un login con otro rol en otra pestaña pise la sesión admin
+ * (localStorage es compartido entre todas las pestañas del mismo origen).
+ */
+const tokenStore: Storage = sessionStorage;
+
 @Injectable({
   providedIn: 'root'
 })
@@ -26,6 +33,7 @@ export class SessionService {
     private router: Router,
     private injector: Injector
   ) {
+    this.migrateLegacyLocalToken();
     const token = this.getToken();
     if (token && !isTokenExpired(token)) {
       this.hydrateRolesFromToken(token);
@@ -35,7 +43,7 @@ export class SessionService {
   }
 
   getToken(): string | null {
-    return localStorage.getItem(TOKEN_KEY);
+    return tokenStore.getItem(TOKEN_KEY);
   }
 
   isAuthenticated(): boolean {
@@ -71,14 +79,30 @@ export class SessionService {
   }
 
   setSession(token: string): void {
-    localStorage.setItem(TOKEN_KEY, token);
+    tokenStore.setItem(TOKEN_KEY, token);
+    // Limpia el token legado para que otra pestaña no reutilice un JWT viejo de localStorage
+    localStorage.removeItem(TOKEN_KEY);
     this.hydrateRolesFromToken(token);
   }
 
   clearSession(): void {
+    tokenStore.removeItem(TOKEN_KEY);
     localStorage.removeItem(TOKEN_KEY);
     this.profileSubject.next(null);
     this.rolesSubject.next([]);
+  }
+
+  /** Una sola vez: pasa auth_token de localStorage → sessionStorage si existe. */
+  private migrateLegacyLocalToken(): void {
+    if (tokenStore.getItem(TOKEN_KEY)) {
+      return;
+    }
+    const legacy = localStorage.getItem(TOKEN_KEY);
+    if (!legacy) {
+      return;
+    }
+    tokenStore.setItem(TOKEN_KEY, legacy);
+    localStorage.removeItem(TOKEN_KEY);
   }
 
   logout(): void {
