@@ -4,6 +4,10 @@
   <p *ngIf="loading" class="empty-text">Cargando...</p>
   <p *ngIf="successMessage" class="empty-text">{{ successMessage }}</p>
   <p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
+  <p *ngIf="!loading && !quizPassed" class="error-text">
+    Completa el quiz de aptitud para crear eventos y gestionar inscritos.
+    <button class="btn-primary" type="button" (click)="goQuiz()" style="margin-left: 8px;">Ir al quiz</button>
+  </p>
 
   <div class="kpi-grid">
     <div class="kpi-card">
@@ -31,7 +35,7 @@
   <div class="grid-2">
     <div class="card">
       <h3 class="section-title">Crear evento</h3>
-      <form class="form-grid" [formGroup]="form" (ngSubmit)="createEvent()">
+      <form class="form-grid" [formGroup]="form" (ngSubmit)="createEvent()" [class.disabled-form]="!quizPassed">
         <label>Deporte
           <select formControlName="sportId">
             <option *ngFor="let sport of sports" [ngValue]="sport.id">{{ sport.name }}</option>

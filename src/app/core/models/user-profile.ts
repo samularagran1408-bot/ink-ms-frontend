@@ -30,9 +30,14 @@ export interface UserProfile {
   organizerVerificationStatus?: string;
   certificationFile?: string;
   experienceMonths?: number;
+  experienceYears?: number;
   eventsAsTrainer?: number;
   trainerQuizScore?: number;
   trainerQuizPassed?: boolean;
+  trainerQuizAttempts?: number;
+  organizerQuizAttempts?: number;
+  quizDisciplines?: string;
+  disciplineSportIds?: number[];
   identityDocument?: string;
   trainerVerificationStatus?: string;
   verifiedRoles?: string;

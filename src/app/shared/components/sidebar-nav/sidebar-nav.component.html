@@ -3,9 +3,7 @@
   <header class="top-nav">
     <div class="nav-left">
       <button class="hamburger-btn" type="button" (click)="openSidebar()" [attr.aria-label]="'COMMON.OPEN_MENU' | translate">
-        <span class="hamburger-line"></span>
-        <span class="hamburger-line"></span>
-        <span class="hamburger-line"></span>
+        <app-icon name="bars-3" [size]="22"></app-icon>
       </button>
       <a [routerLink]="sessionHome" class="brand-logo">{{ brandTitle }}</a>
     </div>
@@ -22,10 +20,7 @@
         [attr.aria-label]="'COMMON.LOGOUT' | translate"
       >
         <img *ngIf="profilePicture" [src]="profilePicture" alt="" class="avatar-img" />
-        <svg *ngIf="!profilePicture" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E11D48" stroke-width="2">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-          <circle cx="12" cy="7" r="4"/>
-        </svg>
+        <app-icon *ngIf="!profilePicture" name="user" [size]="18"></app-icon>
       </button>
     </div>
   </header>
@@ -40,15 +35,13 @@
       [attr.title]="'COMMON.CLOSE_MENU' | translate"
       [attr.aria-label]="'COMMON.CLOSE_MENU' | translate"
     >
-      &times;
+      <app-icon name="x-mark" [size]="22"></app-icon>
     </button>
 
     <div class="sidebar-profile-section">
       <div class="sidebar-avatar-box" [class.sidebar-avatar-box--photo]="!!profilePicture">
         <img *ngIf="profilePicture" [src]="profilePicture" alt="" class="avatar-img" />
-        <svg *ngIf="!profilePicture" width="54" height="54" viewBox="0 0 24 24" fill="#0D9488">
-          <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-        </svg>
+        <app-icon *ngIf="!profilePicture" name="user-circle" [size]="54"></app-icon>
       </div>
       <h3 class="sidebar-user-name">{{ displayName }}</h3>
       <p class="sidebar-user-role">{{ roleKey | translate }}</p>
@@ -63,7 +56,10 @@
         class="sidebar-nav-item"
         (click)="closeSidebar()"
       >
-        <span>{{ item.labelKey | translate }}</span>
+        <span class="nav-item-main">
+          <app-icon [name]="item.icon" [size]="20"></app-icon>
+          <span>{{ item.labelKey | translate }}</span>
+        </span>
         <span *ngIf="item.showBadge && unreadCount > 0" class="nav-badge">{{ unreadCount }}</span>
       </a>
     </nav>
@@ -77,9 +73,7 @@
   <div class="role-profile-card">
     <div class="role-avatar" [class.role-avatar--photo]="!!profilePicture">
       <img *ngIf="profilePicture" [src]="profilePicture" alt="" class="avatar-img" />
-      <svg *ngIf="!profilePicture" width="28" height="28" viewBox="0 0 24 24" fill="#64748B">
-        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-      </svg>
+      <app-icon *ngIf="!profilePicture" name="user" [size]="28"></app-icon>
     </div>
     <div>
       <div class="role-profile-name">{{ displayName }}</div>
@@ -95,7 +89,10 @@
       [routerLinkActiveOptions]="{ exact: !!item.exact }"
       class="role-nav-item"
     >
-      <span>{{ item.labelKey | translate }}</span>
+      <span class="nav-item-main">
+        <app-icon [name]="item.icon" [size]="20"></app-icon>
+        <span>{{ item.labelKey | translate }}</span>
+      </span>
       <span *ngIf="item.showBadge && unreadCount > 0" class="nav-badge">{{ unreadCount }}</span>
     </a>
 
@@ -108,13 +105,17 @@
         [routerLinkActiveOptions]="{ exact: !!item.exact }"
         class="role-nav-item"
       >
-        <span>{{ item.labelKey | translate }}</span>
+        <span class="nav-item-main">
+          <app-icon [name]="item.icon" [size]="20"></app-icon>
+          <span>{{ item.labelKey | translate }}</span>
+        </span>
         <span *ngIf="item.showBadge && unreadCount > 0" class="nav-badge">{{ unreadCount }}</span>
       </a>
     </ng-container>
   </nav>
 
   <button class="role-logout-btn" type="button" (click)="handleLogout()">
-    {{ 'COMMON.LOGOUT' | translate }}
+    <app-icon name="arrow-right-on-rectangle" [size]="18"></app-icon>
+    <span>{{ 'COMMON.LOGOUT' | translate }}</span>
   </button>
 </aside>

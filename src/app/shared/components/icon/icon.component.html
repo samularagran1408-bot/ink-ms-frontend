@@ -1,0 +1,20 @@
+<svg
+  class="app-icon"
+  xmlns="http://www.w3.org/2000/svg"
+  fill="none"
+  viewBox="0 0 24 24"
+  [attr.width]="pixelSize"
+  [attr.height]="pixelSize"
+  [attr.stroke-width]="strokeWidth"
+  stroke="currentColor"
+  [attr.aria-hidden]="label ? null : 'true'"
+  [attr.role]="label ? 'img' : null"
+  [attr.aria-label]="label || null"
+>
+  <path
+    *ngFor="let d of paths"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    [attr.d]="d"
+  />
+</svg>

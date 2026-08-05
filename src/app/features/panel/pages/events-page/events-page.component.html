@@ -71,7 +71,7 @@
     <p *ngIf="!loading && !events.length" class="empty-text">No hay eventos.</p>
   </div>
 
-  <!-- Vista gestión: ocupación + waitlist -->
+  <!-- Vista gestión: ocupación + waitlist + editar fecha/lugar -->
   <div class="card" *ngIf="mode === 'manage'">
     <div *ngFor="let row of manageRows" style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #F1F5F9;">
       <div class="list-item" style="border-bottom: none;">
@@ -79,17 +79,43 @@
           <strong>{{ row.event.name }}</strong>
           <div class="kpi-sub">
             {{ row.event.sportName || 'Deporte' }} · {{ row.event.eventDate }} {{ row.event.eventTime }} ·
+            {{ row.event.location || 'Sin ubicación' }} ·
             {{ occupied(row.event) }}/{{ row.event.maxCapacity }} ocupados ·
             Waitlist: {{ row.waitlist.length }}
           </div>
         </div>
         <div>
           <span class="status-pill status-pill--ok">{{ row.event.status || 'active' }}</span>
+          <button class="btn-secondary" type="button" style="margin-left: 8px;" (click)="startEdit(row)" *ngIf="!row.editing">
+            Editar fecha/lugar
+          </button>
           <button class="btn-secondary" type="button" style="margin-left: 8px;" (click)="toggleWaitlist(row)">
             {{ row.showWaitlist ? 'Ocultar waitlist' : 'Ver waitlist' }}
           </button>
         </div>
       </div>
+
+      <form *ngIf="row.editing" class="form-grid" [formGroup]="row.editForm" (ngSubmit)="saveEventChanges(row)" style="margin-top: 8px;">
+        <label>
+          Fecha
+          <input type="date" formControlName="eventDate" />
+        </label>
+        <label>
+          Hora
+          <input type="time" formControlName="eventTime" />
+        </label>
+        <label>
+          Ubicación
+          <input formControlName="location" />
+        </label>
+        <div style="display: flex; gap: 8px; align-items: end;">
+          <button class="btn-primary" type="submit" [disabled]="row.saving">
+            {{ row.saving ? 'Guardando...' : 'Guardar cambios' }}
+          </button>
+          <button class="btn-secondary" type="button" (click)="cancelEdit(row)" [disabled]="row.saving">Cancelar</button>
+        </div>
+      </form>
+
       <div *ngIf="row.showWaitlist" style="padding-left: 8px;">
         <div class="list-item" *ngFor="let item of row.waitlist">
           <div>

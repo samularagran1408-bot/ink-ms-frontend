@@ -1,0 +1,160 @@
+@import '../../styles/panel-common.scss';
+
+.quiz-page {
+  max-width: 820px;
+}
+
+.quiz-header {
+  margin-bottom: 8px;
+}
+
+.banner {
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  font-size: 14px;
+
+  &.error {
+    background: #FEF2F2;
+    color: #991B1B;
+    border: 1px solid #FECACA;
+  }
+
+  &.info {
+    background: #F0F9FF;
+    color: #075985;
+    border: 1px solid #BAE6FD;
+  }
+}
+
+.card h2 {
+  margin: 0 0 8px;
+  font-size: 20px;
+  color: #0F172A;
+}
+
+.hint {
+  margin: 0 0 16px;
+  color: #64748B;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.prep-form {
+  display: grid;
+  gap: 18px;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+
+  input {
+    max-width: 160px;
+    border: 1px solid #CBD5E1;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 15px;
+  }
+}
+
+.disciplines {
+  border: none;
+  padding: 0;
+  margin: 0;
+
+  legend {
+    font-size: 13px;
+    font-weight: 700;
+    color: #334155;
+    margin-bottom: 10px;
+  }
+}
+
+.sport-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sport-chip {
+  border: 1px solid #CBD5E1;
+  background: #F8FAFC;
+  color: #0F172A;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 13px;
+  cursor: pointer;
+
+  &.selected {
+    background: #0F172A;
+    border-color: #0F172A;
+    color: #fff;
+  }
+}
+
+.attempts {
+  margin: 0;
+  font-size: 13px;
+  color: #64748B;
+}
+
+.question {
+  padding: 16px 0;
+  border-top: 1px solid #E2E8F0;
+
+  h3 {
+    margin: 0 0 12px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #0F172A;
+    line-height: 1.4;
+  }
+}
+
+.options {
+  display: grid;
+  gap: 8px;
+}
+
+.option {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #334155;
+
+  &.selected {
+    border-color: #0F172A;
+    background: #F8FAFC;
+  }
+
+  input {
+    margin-top: 2px;
+  }
+}
+
+.result .score {
+  font-size: 16px;
+  color: #0F172A;
+}
+
+.topics {
+  margin: 0 0 16px;
+  padding-left: 18px;
+  color: #64748B;
+  font-size: 14px;
+}
+
+@media (max-width: 640px) {
+  .field input {
+    max-width: none;
+  }
+}

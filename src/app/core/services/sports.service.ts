@@ -64,6 +64,10 @@ export class SportsService {
     return this.http.post<EventItem>(this.eventsUrl, payload);
   }
 
+  updateEvent(id: string, payload: Partial<EventRequest>): Observable<EventItem> {
+    return this.http.put<EventItem>(`${this.eventsUrl}/${id}`, payload);
+  }
+
   countActiveEvents(): Observable<number> {
     return this.http.get<number>(`${this.eventsUrl}/active/count`);
   }

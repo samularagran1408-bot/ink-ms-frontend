@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
@@ -21,11 +22,13 @@ export class OrganizerDashboardComponent implements OnInit {
   form: FormGroup;
   errorMessage: string | null = null;
   successMessage: string | null = null;
+  quizPassed = false;
 
   constructor(
     private session: SessionService,
     private sportsService: SportsService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private router: Router
   ) {
     this.form = this.fb.group({
       sportId: [null, Validators.required],
@@ -48,7 +51,8 @@ export class OrganizerDashboardComponent implements OnInit {
       ? of(this.session.getProfile())
       : this.session.loadProfile();
 
-    profile$.subscribe(() => {
+    profile$.subscribe((profile) => {
+      this.quizPassed = !!profile?.organizerQuizPassed;
       forkJoin({
         events: this.sportsService.getEvents().pipe(catchError(() => of([] as EventItem[]))),
         activeEvents: this.sportsService.countActiveEvents().pipe(catchError(() => of(0))),
@@ -76,7 +80,22 @@ export class OrganizerDashboardComponent implements OnInit {
     });
   }
 
+  /**
+   * Navega a la pantalla de quiz de aptitud del organizador.
+   */
+  goQuiz(): void {
+    this.router.navigate(['/organizer/quiz']);
+  }
+
+  /**
+   * Crea un evento; si el quiz no está aprobado, redirige al flujo de aptitud.
+   */
   createEvent(): void {
+    if (!this.quizPassed) {
+      this.errorMessage = 'Debes completar el quiz de aptitud antes de crear eventos.';
+      this.goQuiz();
+      return;
+    }
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;

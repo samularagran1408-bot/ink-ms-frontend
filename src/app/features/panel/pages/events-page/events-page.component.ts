@@ -12,6 +12,9 @@ interface EventManageRow {
   event: EventItem;
   waitlist: Registration[];
   showWaitlist: boolean;
+  editing: boolean;
+  editForm: FormGroup;
+  saving: boolean;
 }
 
 @Component({
@@ -133,6 +136,48 @@ export class EventsPageComponent implements OnInit {
     });
   }
 
+  startEdit(row: EventManageRow): void {
+    row.editing = true;
+    row.editForm.patchValue({
+      eventDate: row.event.eventDate,
+      eventTime: (row.event.eventTime || '').substring(0, 5),
+      location: row.event.location || ''
+    });
+  }
+
+  cancelEdit(row: EventManageRow): void {
+    row.editing = false;
+  }
+
+  saveEventChanges(row: EventManageRow): void {
+    if (row.editForm.invalid) {
+      row.editForm.markAllAsTouched();
+      return;
+    }
+
+    row.saving = true;
+    const payload = {
+      eventDate: row.editForm.value.eventDate,
+      eventTime: row.editForm.value.eventTime,
+      location: row.editForm.value.location
+    };
+
+    this.sportsService.updateEvent(row.event.id, payload).subscribe({
+      next: () => {
+        row.saving = false;
+        row.editing = false;
+        this.successMessage = 'Evento actualizado. Se notificó a los inscritos si cambió fecha o lugar.';
+        this.errorMessage = null;
+        this.reload();
+      },
+      error: (error) => {
+        row.saving = false;
+        this.successMessage = null;
+        this.errorMessage = error?.error?.message || 'No se pudo actualizar el evento.';
+      }
+    });
+  }
+
   register(event: EventItem): void {
     const ensureProfile$ = this.session.getProfile()
       ? of(this.session.getProfile())
@@ -173,6 +218,14 @@ export class EventsPageComponent implements OnInit {
     return Math.max((event.maxCapacity || 0) - (event.availableCapacity ?? (event.maxCapacity || 0)), 0);
   }
 
+  private buildEditForm(event: EventItem): FormGroup {
+    return this.fb.group({
+      eventDate: [event.eventDate, Validators.required],
+      eventTime: [(event.eventTime || '').substring(0, 5), Validators.required],
+      location: [event.location || '']
+    });
+  }
+
   private loadWaitlists(events: EventItem[]): void {
     if (!events.length) {
       this.manageRows = [];
@@ -189,7 +242,10 @@ export class EventsPageComponent implements OnInit {
         this.manageRows = events.map((event, index) => ({
           event,
           waitlist: waitlists[index] || [],
-          showWaitlist: false
+          showWaitlist: false,
+          editing: false,
+          editForm: this.buildEditForm(event),
+          saving: false
         }));
         this.loading = false;
       },
@@ -197,7 +253,10 @@ export class EventsPageComponent implements OnInit {
         this.manageRows = events.map((event) => ({
           event,
           waitlist: [],
-          showWaitlist: false
+          showWaitlist: false,
+          editing: false,
+          editForm: this.buildEditForm(event),
+          saving: false
         }));
         this.loading = false;
       }

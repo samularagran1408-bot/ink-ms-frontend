@@ -18,6 +18,7 @@ export class TrainerDashboardComponent implements OnInit {
   disabilities: Disability[] = [];
   athleteIds = new Set<string>();
   errorMessage: string | null = null;
+  quizPassed = false;
 
   constructor(
     private session: SessionService,
@@ -37,6 +38,7 @@ export class TrainerDashboardComponent implements OnInit {
 
     bootstrap$.pipe(
       switchMap((profile) => {
+        this.quizPassed = !!profile?.trainerQuizPassed;
         const trainerId = profile?.id || '';
         return forkJoin({
           routines: trainerId
@@ -61,6 +63,13 @@ export class TrainerDashboardComponent implements OnInit {
 
   get publishedCount(): number {
     return this.routines.filter((routine) => routine.status === 'published').length;
+  }
+
+  /**
+   * Navega a la pantalla de quiz de aptitud del entrenador.
+   */
+  goQuiz(): void {
+    this.router.navigate(['/trainer/quiz']);
   }
 
   goSessions(): void {

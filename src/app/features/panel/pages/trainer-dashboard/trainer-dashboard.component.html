@@ -3,6 +3,10 @@
   <p class="page-subtitle">Sesiones, atletas inscritos y enfoque por discapacidad.</p>
   <p *ngIf="loading" class="empty-text">Cargando...</p>
   <p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
+  <p *ngIf="!loading && !quizPassed" class="error-text">
+    Completa el quiz de aptitud para gestionar sesiones, deportes y asociaciones.
+    <button class="btn-primary" type="button" (click)="goQuiz()" style="margin-left: 8px;">Ir al quiz</button>
+  </p>
 
   <div class="kpi-grid">
     <div class="kpi-card">
@@ -28,10 +32,11 @@
   </div>
 
   <div class="actions-row">
-    <button class="btn-primary" type="button" (click)="goSessions()">Gestionar sesiones</button>
-    <button class="btn-secondary" type="button" (click)="goSports()">Deportes</button>
-    <button class="btn-secondary" type="button" (click)="goDisabilities()">Discapacidades</button>
-    <button class="btn-secondary" type="button" (click)="goAssociations()">Asociaciones</button>
+    <button class="btn-primary" type="button" (click)="goQuiz()" *ngIf="!quizPassed">Hacer quiz de aptitud</button>
+    <button class="btn-primary" type="button" (click)="goSessions()" [disabled]="!quizPassed">Gestionar sesiones</button>
+    <button class="btn-secondary" type="button" (click)="goSports()" [disabled]="!quizPassed">Deportes</button>
+    <button class="btn-secondary" type="button" (click)="goDisabilities()" [disabled]="!quizPassed">Discapacidades</button>
+    <button class="btn-secondary" type="button" (click)="goAssociations()" [disabled]="!quizPassed">Asociaciones</button>
   </div>
 
   <div class="grid-2">

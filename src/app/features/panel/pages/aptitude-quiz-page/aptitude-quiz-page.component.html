@@ -1,0 +1,122 @@
+<section class="quiz-page" *ngIf="!loading; else loadingTpl">
+  <header class="quiz-header">
+    <h1 class="page-title">Quiz de aptitud · {{ roleLabel }}</h1>
+    <p class="page-subtitle">
+      Debes aprobar este quiz (umbral {{ umbral }}%) para gestionar
+      {{ rolePath === 'trainer' ? 'rutinas y atletas' : 'eventos e inscritos' }}.
+      Tienes hasta {{ prep?.maxAttempts || 3 }} intentos.
+    </p>
+  </header>
+
+  <p class="banner error" *ngIf="errorMessage" role="alert">{{ errorMessage }}</p>
+  <p class="banner info" *ngIf="infoMessage && !errorMessage">{{ infoMessage }}</p>
+
+  <!-- PREP -->
+  <div class="card" *ngIf="step === 'prep'">
+    <h2>Antes de empezar</h2>
+    <p class="hint">Indica tus años de experiencia y las disciplinas en las que te desempeñas.</p>
+
+    <form [formGroup]="prepForm" (ngSubmit)="submitPrep()" class="prep-form">
+      <label class="field">
+        <span>Años de experiencia</span>
+        <input type="number" formControlName="experienceYears" min="0" max="80" />
+      </label>
+
+      <fieldset class="disciplines">
+        <legend>Disciplinas</legend>
+        <div class="sport-grid" *ngIf="sports.length; else noSports">
+          <button
+            type="button"
+            class="sport-chip"
+            *ngFor="let sport of sports"
+            [class.selected]="isSportSelected(sport.id)"
+            (click)="toggleSport(sport.id)"
+          >
+            {{ sport.name }}
+          </button>
+        </div>
+        <ng-template #noSports>
+          <p class="hint">No hay deportes activos en el catálogo.</p>
+        </ng-template>
+      </fieldset>
+
+      <p class="attempts" *ngIf="prep">
+        Intentos usados: {{ prep.attemptsUsed }} / {{ prep.maxAttempts }}
+        · Restantes: {{ prep.attemptsRemaining }}
+      </p>
+
+      <div class="actions-row">
+        <button type="submit" class="btn-primary" [disabled]="busy || prep?.attemptsRemaining === 0">
+          {{ busy ? 'Procesando…' : 'Continuar al quiz' }}
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- QUIZ -->
+  <div class="card" *ngIf="step === 'quiz' && quiz">
+    <h2>Preguntas</h2>
+    <p class="hint">{{ quiz.mensaje }}</p>
+
+    <article class="question" *ngFor="let pregunta of quiz.preguntas; let i = index">
+      <h3>{{ i + 1 }}. {{ pregunta.enunciado }}</h3>
+      <div class="options">
+        <label
+          class="option"
+          *ngFor="let opcion of pregunta.opciones"
+          [class.selected]="answers[pregunta.id] === opcion.id"
+        >
+          <input
+            type="radio"
+            [name]="'q-' + pregunta.id"
+            [value]="opcion.id"
+            [checked]="answers[pregunta.id] === opcion.id"
+            (change)="selectAnswer(pregunta.id, opcion.id)"
+          />
+          <span>{{ opcion.id | uppercase }}) {{ opcion.texto }}</span>
+        </label>
+      </div>
+    </article>
+
+    <div class="actions-row">
+      <button type="button" class="btn-primary" (click)="submitQuiz()" [disabled]="busy">
+        {{ busy ? 'Evaluando…' : 'Enviar respuestas' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- RESULT -->
+  <div class="card result" *ngIf="step === 'result' && result">
+    <h2>{{ result.aprobado ? 'Quiz aprobado' : 'Quiz no aprobado' }}</h2>
+    <p class="score" *ngIf="result.total">
+      Puntaje: <strong>{{ result.score }}%</strong>
+      ({{ result.correctas }}/{{ result.total }}) · Umbral {{ result.umbral_aprobacion }}%
+    </p>
+    <p class="score" *ngIf="!result.total && result.aprobado">
+      Puntaje registrado: <strong>{{ result.score }}%</strong>
+    </p>
+    <p class="hint">{{ result.siguiente_paso }}</p>
+
+    <ul class="topics" *ngIf="result.temas_a_reforzar?.length">
+      <li *ngFor="let tema of result.temas_a_reforzar">Reforzar: {{ tema }}</li>
+    </ul>
+
+    <div class="actions-row">
+      <button type="button" class="btn-primary" *ngIf="result.aprobado" (click)="goHome()">
+        Ir al panel
+      </button>
+      <button
+        type="button"
+        class="btn-secondary"
+        *ngIf="!result.aprobado && (prep?.attemptsRemaining ?? 1) > 0"
+        (click)="retry()"
+      >
+        Reintentar
+      </button>
+    </div>
+  </div>
+</section>
+
+<ng-template #loadingTpl>
+  <p class="page-subtitle">Cargando quiz…</p>
+</ng-template>

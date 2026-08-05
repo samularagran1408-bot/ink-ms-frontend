@@ -21,17 +21,18 @@
   background: none;
   border: none;
   cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 4px;
+  color: #0F172A;
 }
 
-.hamburger-line {
-  display: block;
-  width: 22px;
-  height: 2px;
-  background-color: #0F172A;
+.nav-item-main {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
 }
 
 .brand-logo {
@@ -74,6 +75,7 @@
   border-radius: 50%;
   background-color: #FEF2F2;
   border: 1px solid #FCA5A5;
+  color: #E11D48;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -134,11 +136,13 @@
   align-self: flex-end;
   background: none;
   border: none;
-  font-size: 22px;
   line-height: 1;
   cursor: pointer;
   color: #64748B;
   padding: 4px 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .sidebar-profile-section {
@@ -156,6 +160,7 @@
   height: 72px;
   border-radius: 16px;
   background-color: #CCFBF1;
+  color: #0D9488;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -264,6 +269,7 @@
   height: 42px;
   border-radius: 50%;
   background: #E2E8F0;
+  color: #64748B;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -359,6 +365,10 @@
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .role-logout-btn:hover {

@@ -6,12 +6,14 @@ import { TranslateModule } from '@ngx-translate/core';
 import { SpaceBackgroundComponent } from './components/space-background/space-background.component';
 import { AccessibilityWidgetComponent } from './components/accessibility-widget/accessibility-widget.component';
 import { SidebarNavComponent } from './components/sidebar-nav/sidebar-nav.component';
+import { IconComponent } from './components/icon/icon.component';
 
 @NgModule({
   declarations: [
     SpaceBackgroundComponent,
     AccessibilityWidgetComponent,
-    SidebarNavComponent
+    SidebarNavComponent,
+    IconComponent
   ],
   imports: [
     CommonModule,
@@ -22,6 +24,7 @@ import { SidebarNavComponent } from './components/sidebar-nav/sidebar-nav.compon
     SpaceBackgroundComponent,
     AccessibilityWidgetComponent,
     SidebarNavComponent,
+    IconComponent,
     TranslateModule
   ]
 })

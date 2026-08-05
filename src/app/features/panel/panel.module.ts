@@ -21,6 +21,7 @@ import { AssociationsPageComponent } from './pages/associations-page/association
 import { NotificationsPageComponent } from './pages/notifications-page/notifications-page.component';
 import { PanelShellComponent } from './components/panel-shell/panel-shell.component';
 import { UserInterfaceComponent } from '../auth/pages/user-interface/user-interface.component';
+import { AptitudeQuizPageComponent } from './pages/aptitude-quiz-page/aptitude-quiz-page.component';
 
 @NgModule({
   declarations: [
@@ -40,7 +41,8 @@ import { UserInterfaceComponent } from '../auth/pages/user-interface/user-interf
     TrainerDashboardComponent,
     SessionsPageComponent,
     OrganizerDashboardComponent,
-    AthletesPageComponent
+    AthletesPageComponent,
+    AptitudeQuizPageComponent
   ],
   imports: [
     CommonModule,
