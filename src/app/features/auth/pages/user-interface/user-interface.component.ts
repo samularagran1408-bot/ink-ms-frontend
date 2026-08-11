@@ -13,6 +13,7 @@ import { NotificationAnnounceService } from '../../../../core/services/notificat
 import { TtsService } from '../../../../core/services/tts.service';
 import { LanguageService } from '../../../../core/services/language.service';
 import { UnreadNotificationsService } from '../../../../core/services/unread-notifications.service';
+import { resolveEventImage } from '../../../../core/utils/event-image.util';
 
 @Component({
   selector: 'app-user-interface',
@@ -170,6 +171,10 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
 
   isRegistered(eventId: string): boolean {
     return this.registrations.some((reg) => reg.eventId === eventId);
+  }
+
+  eventImage(event: EventItem): string {
+    return resolveEventImage(event);
   }
 
   formatDate(value?: string): string {

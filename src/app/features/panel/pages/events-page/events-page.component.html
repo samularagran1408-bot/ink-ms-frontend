@@ -32,13 +32,17 @@
         <input type="time" formControlName="eventTime" />
       </label>
       <label>
-        Ubicación
-        <input formControlName="location" />
-      </label>
-      <label>
         Cupo
         <input type="number" formControlName="maxCapacity" min="1" />
       </label>
+      <div style="grid-column: 1 / -1;">
+        <app-place-location-picker
+          [address]="form.value.location || ''"
+          [latitude]="form.value.latitude"
+          [longitude]="form.value.longitude"
+          (placeChange)="onCreatePlaceChange($event)"
+        ></app-place-location-picker>
+      </div>
       <label style="grid-column: 1 / -1;">
         Descripción
         <textarea rows="2" formControlName="description"></textarea>
@@ -51,22 +55,32 @@
 
   <!-- Vista usuario: inscripción -->
   <div class="card" *ngIf="mode === 'user'">
-    <div class="list-item" *ngFor="let event of events">
-      <div>
-        <strong>{{ event.name }}</strong>
-        <div class="kpi-sub">
-          {{ event.sportName || 'Deporte' }} · {{ event.eventDate }} {{ event.eventTime }} ·
-          {{ event.availableCapacity ?? 0 }}/{{ event.maxCapacity }} cupos
+    <div class="event-user-row" *ngFor="let event of events">
+      <div class="list-item event-list-item" style="border-bottom: none;">
+        <div class="event-thumb" [style.background-image]="'url(' + eventImage(event) + ')'"></div>
+        <div class="event-list-body">
+          <strong>{{ event.name }}</strong>
+          <div class="kpi-sub">
+            {{ event.sportName || 'Deporte' }} · {{ event.eventDate }} {{ event.eventTime }} ·
+            {{ event.availableCapacity ?? 0 }}/{{ event.maxCapacity }} cupos
+          </div>
         </div>
+        <button
+          class="btn-primary"
+          type="button"
+          [disabled]="registeringId === event.id || isRegistered(event.id) || (event.availableCapacity ?? 0) <= 0"
+          (click)="register(event)"
+        >
+          {{ isRegistered(event.id) ? 'Inscrito' : 'Inscribirse' }}
+        </button>
       </div>
-      <button
-        class="btn-primary"
-        type="button"
-        [disabled]="registeringId === event.id || isRegistered(event.id) || (event.availableCapacity ?? 0) <= 0"
-        (click)="register(event)"
-      >
-        {{ isRegistered(event.id) ? 'Inscrito' : 'Inscribirse' }}
-      </button>
+      <app-event-location-map
+        *ngIf="event.location || (event.latitude != null && event.longitude != null)"
+        [location]="event.location"
+        [latitude]="event.latitude"
+        [longitude]="event.longitude"
+        [compact]="true"
+      ></app-event-location-map>
     </div>
     <p *ngIf="!loading && !events.length" class="empty-text">No hay eventos.</p>
   </div>
@@ -74,15 +88,23 @@
   <!-- Vista gestión: ocupación + waitlist + editar fecha/lugar -->
   <div class="card" *ngIf="mode === 'manage'">
     <div *ngFor="let row of manageRows" style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #F1F5F9;">
-      <div class="list-item" style="border-bottom: none;">
-        <div>
+      <div class="list-item event-list-item" style="border-bottom: none;">
+        <div class="event-thumb" [style.background-image]="'url(' + eventImage(row.event) + ')'"></div>
+        <div class="event-list-body">
           <strong>{{ row.event.name }}</strong>
           <div class="kpi-sub">
             {{ row.event.sportName || 'Deporte' }} · {{ row.event.eventDate }} {{ row.event.eventTime }} ·
-            {{ row.event.location || 'Sin ubicación' }} ·
             {{ occupied(row.event) }}/{{ row.event.maxCapacity }} ocupados ·
             Waitlist: {{ row.waitlist.length }}
           </div>
+          <app-event-location-map
+            *ngIf="row.event.location || (row.event.latitude != null && row.event.longitude != null)"
+            style="margin-top: 8px; display: block;"
+            [location]="row.event.location"
+            [latitude]="row.event.latitude"
+            [longitude]="row.event.longitude"
+            [compact]="true"
+          ></app-event-location-map>
         </div>
         <div>
           <span class="status-pill status-pill--ok">{{ row.event.status || 'active' }}</span>
@@ -104,10 +126,14 @@
           Hora
           <input type="time" formControlName="eventTime" />
         </label>
-        <label>
-          Ubicación
-          <input formControlName="location" />
-        </label>
+        <div style="grid-column: 1 / -1;">
+          <app-place-location-picker
+            [address]="row.editForm.value.location || ''"
+            [latitude]="row.editForm.value.latitude"
+            [longitude]="row.editForm.value.longitude"
+            (placeChange)="onEditPlaceChange(row, $event)"
+          ></app-place-location-picker>
+        </div>
         <div style="display: flex; gap: 8px; align-items: end;">
           <button class="btn-primary" type="submit" [disabled]="row.saving">
             {{ row.saving ? 'Guardando...' : 'Guardar cambios' }}

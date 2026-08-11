@@ -25,6 +25,9 @@ export interface EventItem {
   eventDate: string;
   eventTime: string;
   location?: string;
+  imageUrl?: string;
+  latitude?: number | null;
+  longitude?: number | null;
   maxCapacity: number;
   availableCapacity?: number;
   status?: string;
@@ -39,6 +42,9 @@ export interface EventRequest {
   eventDate: string;
   eventTime: string;
   location?: string;
+  imageUrl?: string;
+  latitude?: number | null;
+  longitude?: number | null;
   maxCapacity: number;
   createdBy?: string;
 }

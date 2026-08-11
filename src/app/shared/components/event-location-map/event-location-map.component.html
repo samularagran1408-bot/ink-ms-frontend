@@ -1,0 +1,24 @@
+<div class="event-loc" *ngIf="hasLocation" [class.event-loc--compact]="compact">
+  <div class="event-loc-text">
+    <span class="event-loc-address">{{ location || ('Lat ' + latitude + ', Lng ' + longitude) }}</span>
+    <a
+      *ngIf="directionsUrl"
+      class="event-loc-link"
+      [href]="directionsUrl"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      Cómo llegar
+    </a>
+  </div>
+
+  <div
+    #mapHost
+    class="event-loc-map"
+    *ngIf="hasCoords && mapsReady"
+  ></div>
+
+  <p class="event-loc-fallback" *ngIf="hasCoords && !mapsReady && directionsUrl">
+    Mapa no disponible (falta API key). Usa “Cómo llegar” para abrir Google Maps.
+  </p>
+</div>

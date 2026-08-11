@@ -197,6 +197,25 @@
   border-bottom: none;
 }
 
+.event-list-item {
+  align-items: center;
+}
+
+.event-thumb {
+  width: 72px;
+  height: 54px;
+  border-radius: 10px;
+  background-size: cover;
+  background-position: center;
+  background-color: #FEE2E2;
+  flex-shrink: 0;
+}
+
+.event-list-body {
+  flex: 1;
+  min-width: 0;
+}
+
 @media (max-width: 1000px) {
   .kpi-grid,
   .grid-2,

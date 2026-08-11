@@ -7,13 +7,17 @@ import { SpaceBackgroundComponent } from './components/space-background/space-ba
 import { AccessibilityWidgetComponent } from './components/accessibility-widget/accessibility-widget.component';
 import { SidebarNavComponent } from './components/sidebar-nav/sidebar-nav.component';
 import { IconComponent } from './components/icon/icon.component';
+import { PlaceLocationPickerComponent } from './components/place-location-picker/place-location-picker.component';
+import { EventLocationMapComponent } from './components/event-location-map/event-location-map.component';
 
 @NgModule({
   declarations: [
     SpaceBackgroundComponent,
     AccessibilityWidgetComponent,
     SidebarNavComponent,
-    IconComponent
+    IconComponent,
+    PlaceLocationPickerComponent,
+    EventLocationMapComponent
   ],
   imports: [
     CommonModule,
@@ -25,6 +29,8 @@ import { IconComponent } from './components/icon/icon.component';
     AccessibilityWidgetComponent,
     SidebarNavComponent,
     IconComponent,
+    PlaceLocationPickerComponent,
+    EventLocationMapComponent,
     TranslateModule
   ]
 })

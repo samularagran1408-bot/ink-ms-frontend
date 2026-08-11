@@ -1,13 +1,44 @@
 <app-panel-shell>
   <h1 class="page-title">Users</h1>
-  <p class="page-subtitle">Gestión de usuarios, bloqueos y activaciones.</p>
+  <p class="page-subtitle">Gestión de usuarios, bloqueos y eliminaciones.</p>
+  <p *ngIf="successMessage" class="empty-text">{{ successMessage }}</p>
   <p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
   <p *ngIf="loading" class="empty-text">Cargando usuarios...</p>
+
+  <div class="toolbar" *ngIf="!loading">
+    <div class="filter-group">
+      <button type="button" class="filter-btn" [class.filter-btn--active]="filter === 'active'" (click)="setFilter('active')">
+        Activos
+      </button>
+      <button type="button" class="filter-btn" [class.filter-btn--active]="filter === 'inactive'" (click)="setFilter('inactive')">
+        Inactivos
+      </button>
+      <button type="button" class="filter-btn" [class.filter-btn--active]="filter === 'all'" (click)="setFilter('all')">
+        Todos
+      </button>
+    </div>
+    <button
+      class="btn-danger"
+      type="button"
+      [disabled]="!selectedCount || bulkLoading"
+      (click)="deleteSelected()"
+    >
+      {{ bulkLoading ? 'Eliminando...' : ('Eliminar seleccionados (' + selectedCount + ')') }}
+    </button>
+  </div>
 
   <div class="card">
     <table class="data-table" *ngIf="users.length">
       <thead>
         <tr>
+          <th class="col-check">
+            <input
+              type="checkbox"
+              [checked]="allVisibleSelected"
+              (change)="toggleAll($any($event.target).checked)"
+              aria-label="Seleccionar todos"
+            />
+          </th>
           <th>Nombre</th>
           <th>Email</th>
           <th>Roles</th>
@@ -16,17 +47,27 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let user of users">
+        <tr *ngFor="let user of users" [class.row-selected]="isSelected(user.email)">
+          <td class="col-check">
+            <input
+              type="checkbox"
+              [checked]="isSelected(user.email)"
+              (change)="toggleOne(user.email, $any($event.target).checked)"
+              [attr.aria-label]="'Seleccionar ' + user.email"
+            />
+          </td>
           <td>{{ user.fullName || '—' }}</td>
           <td>{{ user.email }}</td>
           <td>{{ rolesLabel(user) }}</td>
-          <td>{{ user.isActive === false || user.blockReason ? 'Inactivo/Bloqueado' : 'Activo' }}</td>
-          <td>
-            <button class="btn-danger" type="button" [disabled]="actionEmail === user.email" (click)="block(user)">Bloquear</button>
-            <button class="btn-secondary" type="button" [disabled]="actionEmail === user.email" (click)="activate(user)">Activar</button>
+          <td>{{ isInactive(user) ? 'Inactivo/Bloqueado' : 'Activo' }}</td>
+          <td class="actions">
+            <button class="btn-danger" type="button" [disabled]="actionEmail === user.email || bulkLoading" (click)="block(user)">Bloquear</button>
+            <button class="btn-secondary" type="button" [disabled]="actionEmail === user.email || bulkLoading" (click)="activate(user)">Activar</button>
+            <button class="btn-danger" type="button" [disabled]="actionEmail === user.email || bulkLoading" (click)="deleteOne(user)">Eliminar</button>
           </td>
         </tr>
       </tbody>
     </table>
+    <p *ngIf="!loading && !users.length" class="empty-text">No hay usuarios en este filtro.</p>
   </div>
 </app-panel-shell>

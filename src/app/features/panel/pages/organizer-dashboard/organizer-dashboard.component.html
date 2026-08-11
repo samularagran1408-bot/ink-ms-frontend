@@ -44,8 +44,15 @@
         <label>Nombre <input formControlName="name" /></label>
         <label>Fecha <input type="date" formControlName="eventDate" /></label>
         <label>Hora <input type="time" formControlName="eventTime" /></label>
-        <label>Ubicación <input formControlName="location" /></label>
         <label>Cupo <input type="number" formControlName="maxCapacity" /></label>
+        <div style="grid-column: 1 / -1;">
+          <app-place-location-picker
+            [address]="form.value.location || ''"
+            [latitude]="form.value.latitude"
+            [longitude]="form.value.longitude"
+            (placeChange)="onPlaceChange($event)"
+          ></app-place-location-picker>
+        </div>
         <label style="grid-column: 1 / -1;">Descripción <textarea rows="2" formControlName="description"></textarea></label>
         <div><button class="btn-primary" type="submit">Crear evento</button></div>
       </form>
@@ -53,15 +60,25 @@
 
     <div class="card">
       <h3 class="section-title">Eventos</h3>
-      <div class="list-item" *ngFor="let event of events">
-        <div>
-          <strong>{{ event.name }}</strong>
-          <div class="kpi-sub">
-            {{ event.eventDate }} {{ event.eventTime }} ·
-            {{ event.availableCapacity ?? 0 }}/{{ event.maxCapacity }} libres
+      <div class="org-event-row" *ngFor="let event of events">
+        <div class="list-item event-list-item" style="border-bottom: none;">
+          <div class="event-thumb" [style.background-image]="'url(' + eventImage(event) + ')'"></div>
+          <div class="event-list-body">
+            <strong>{{ event.name }}</strong>
+            <div class="kpi-sub">
+              {{ event.eventDate }} {{ event.eventTime }} ·
+              {{ event.availableCapacity ?? 0 }}/{{ event.maxCapacity }} libres
+            </div>
           </div>
+          <span class="status-pill status-pill--ok">{{ event.status || 'active' }}</span>
         </div>
-        <span class="status-pill status-pill--ok">{{ event.status || 'active' }}</span>
+        <app-event-location-map
+          *ngIf="event.location || (event.latitude != null && event.longitude != null)"
+          [location]="event.location"
+          [latitude]="event.latitude"
+          [longitude]="event.longitude"
+          [compact]="true"
+        ></app-event-location-map>
       </div>
       <p *ngIf="!events.length" class="empty-text">Sin eventos todavía.</p>
     </div>

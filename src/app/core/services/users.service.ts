@@ -65,6 +65,30 @@ export class UsersService {
     return this.http.post<UserProfile>(`${this.adminUrl}/${encodeURIComponent(email)}/deactivate`, body || {});
   }
 
+  getInactiveUsers(): Observable<UserProfile[]> {
+    return this.http.get<UserProfile[]>(`${this.adminUrl}/inactive`);
+  }
+
+  deleteUser(email: string): Observable<void> {
+    return this.http.delete<void>(`${this.adminUrl}/${encodeURIComponent(email)}`);
+  }
+
+  bulkDeleteUsers(emails: string[]): Observable<{
+    succeeded: number;
+    failed: number;
+    succeededEmails?: string[];
+    failedEmails?: string[];
+    errors?: string[];
+  }> {
+    return this.http.post<{
+      succeeded: number;
+      failed: number;
+      succeededEmails?: string[];
+      failedEmails?: string[];
+      errors?: string[];
+    }>(`${this.adminUrl}/bulk/delete`, { emails });
+  }
+
   getRoles(): Observable<RoleInfo[]> {
     return this.http.get<RoleInfo[]>(`${this.adminUrl}/roles`);
   }

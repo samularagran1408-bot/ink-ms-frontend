@@ -1,0 +1,47 @@
+.event-loc {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.event-loc-text {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.event-loc-address {
+  font-size: 13px;
+  color: #334155;
+}
+
+.event-loc-link {
+  font-size: 12px;
+  font-weight: 700;
+  color: #E11D48;
+  text-decoration: none;
+}
+
+.event-loc-link:hover {
+  text-decoration: underline;
+}
+
+.event-loc-map {
+  height: 200px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #E2E8F0;
+  background: #F8FAFC;
+}
+
+.event-loc--compact .event-loc-map {
+  height: 140px;
+}
+
+.event-loc-fallback {
+  margin: 0;
+  font-size: 11px;
+  color: #94A3B8;
+}

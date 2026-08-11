@@ -108,7 +108,11 @@
         <p *ngIf="!loading && !events.length" class="empty-text">{{ 'HOME.NO_EVENTS' | translate }}</p>
 
         <div class="event-card" *ngFor="let event of events">
-          <div class="event-image event-image--fallback">
+          <div
+            class="event-image"
+            [class.event-image--fallback]="!eventImage(event)"
+            [style.background-image]="'url(' + eventImage(event) + ')'"
+          >
             <span class="event-tag">{{ event.sportName || ('COMMON.SPORT' | translate | uppercase) }}</span>
           </div>
           <div class="event-card-body">
@@ -121,8 +125,13 @@
                 <div class="event-meta-item">
                   <span>{{ formatTime(event.eventTime) }}</span>
                 </div>
-                <div class="event-meta-item">
-                  <span>{{ event.location || ('HOME.LOCATION_TBD' | translate) }}</span>
+                <div class="event-meta-item event-meta-item--location">
+                  <app-event-location-map
+                    [location]="event.location"
+                    [latitude]="event.latitude"
+                    [longitude]="event.longitude"
+                    [compact]="true"
+                  ></app-event-location-map>
                 </div>
               </div>
             </div>

@@ -7,6 +7,8 @@ import { catchError, switchMap } from 'rxjs/operators';
 import { EventItem, Registration, Sport } from '../../../../core/models/sports';
 import { SessionService } from '../../../../core/services/session.service';
 import { SportsService } from '../../../../core/services/sports.service';
+import { resolveEventImage } from '../../../../core/utils/event-image.util';
+import { EventPlaceLocation } from '../../../../core/utils/maps.util';
 
 interface EventManageRow {
   event: EventItem;
@@ -47,6 +49,8 @@ export class EventsPageComponent implements OnInit {
       eventDate: ['', Validators.required],
       eventTime: ['', Validators.required],
       location: [''],
+      latitude: [null as number | null],
+      longitude: [null as number | null],
       maxCapacity: [20, [Validators.required, Validators.min(1)]]
     });
   }
@@ -125,7 +129,13 @@ export class EventsPageComponent implements OnInit {
         next: () => {
           this.successMessage = 'Evento creado.';
           this.errorMessage = null;
-          this.form.patchValue({ name: '', description: '', location: '' });
+          this.form.patchValue({
+            name: '',
+            description: '',
+            location: '',
+            latitude: null,
+            longitude: null
+          });
           this.reload();
         },
         error: (error) => {
@@ -136,12 +146,30 @@ export class EventsPageComponent implements OnInit {
     });
   }
 
+  onCreatePlaceChange(place: EventPlaceLocation): void {
+    this.form.patchValue({
+      location: place.address,
+      latitude: place.latitude,
+      longitude: place.longitude
+    });
+  }
+
+  onEditPlaceChange(row: EventManageRow, place: EventPlaceLocation): void {
+    row.editForm.patchValue({
+      location: place.address,
+      latitude: place.latitude,
+      longitude: place.longitude
+    });
+  }
+
   startEdit(row: EventManageRow): void {
     row.editing = true;
     row.editForm.patchValue({
       eventDate: row.event.eventDate,
       eventTime: (row.event.eventTime || '').substring(0, 5),
-      location: row.event.location || ''
+      location: row.event.location || '',
+      latitude: row.event.latitude ?? null,
+      longitude: row.event.longitude ?? null
     });
   }
 
@@ -159,7 +187,9 @@ export class EventsPageComponent implements OnInit {
     const payload = {
       eventDate: row.editForm.value.eventDate,
       eventTime: row.editForm.value.eventTime,
-      location: row.editForm.value.location
+      location: row.editForm.value.location,
+      latitude: row.editForm.value.latitude,
+      longitude: row.editForm.value.longitude
     };
 
     this.sportsService.updateEvent(row.event.id, payload).subscribe({
@@ -210,6 +240,10 @@ export class EventsPageComponent implements OnInit {
     return this.registrations.some((reg) => reg.eventId === eventId);
   }
 
+  eventImage(event: EventItem): string {
+    return resolveEventImage(event);
+  }
+
   toggleWaitlist(row: EventManageRow): void {
     row.showWaitlist = !row.showWaitlist;
   }
@@ -222,7 +256,9 @@ export class EventsPageComponent implements OnInit {
     return this.fb.group({
       eventDate: [event.eventDate, Validators.required],
       eventTime: [(event.eventTime || '').substring(0, 5), Validators.required],
-      location: [event.location || '']
+      location: [event.location || ''],
+      latitude: [event.latitude ?? null],
+      longitude: [event.longitude ?? null]
     });
   }
 

@@ -208,8 +208,17 @@
   position: relative;
   background-size: cover;
   background-position: center;
+  background-color: #FEE2E2;
   flex-shrink: 0;
   min-height: 160px;
+}
+
+.event-image::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(15, 23, 42, 0.25), transparent 55%);
+  pointer-events: none;
 }
 
 .event-tag {
@@ -574,6 +583,12 @@
 .event-image--fallback {
   background: linear-gradient(135deg, #FEE2E2, #FECACA);
   min-height: 140px;
+}
+
+.event-meta-item--location {
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
 }
 
 .cal-cell--event {

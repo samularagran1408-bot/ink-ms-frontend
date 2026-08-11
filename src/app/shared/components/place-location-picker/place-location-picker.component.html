@@ -1,0 +1,25 @@
+<label class="place-label">{{ label }}</label>
+
+<input
+  #searchInput
+  class="place-input"
+  type="text"
+  [placeholder]="placeholder"
+  [value]="address"
+  (input)="onManualInput($any($event.target).value)"
+  autocomplete="off"
+/>
+
+<p class="place-hint" *ngIf="mapsReady && !mapsError">{{ hint }}</p>
+<p class="place-error" *ngIf="mapsError">{{ mapsError }}</p>
+
+<div
+  #previewMap
+  class="place-map"
+  [class.place-map--empty]="latitude == null || longitude == null"
+  *ngIf="mapsReady"
+></div>
+
+<p class="place-coords" *ngIf="latitude != null && longitude != null">
+  Coordenadas: {{ latitude | number:'1.5-5' }}, {{ longitude | number:'1.5-5' }}
+</p>

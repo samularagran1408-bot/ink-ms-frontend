@@ -1,6 +1,50 @@
 @import '../../styles/panel-common.scss';
 
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.filter-group {
+  display: flex;
+  gap: 6px;
+}
+
+.filter-btn {
+  border: 1px solid #E2E8F0;
+  background: #FFFFFF;
+  color: #475569;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.filter-btn--active {
+  background: #0F172A;
+  border-color: #0F172A;
+  color: #FFFFFF;
+}
+
+.col-check {
+  width: 36px;
+}
+
+.row-selected {
+  background: #FFF7ED;
+}
+
+.actions {
+  white-space: nowrap;
+}
+
 .btn-secondary,
 .btn-danger {
   margin-right: 6px;
+  margin-bottom: 4px;
 }

@@ -7,6 +7,8 @@ import { catchError } from 'rxjs/operators';
 import { EventItem, Sport } from '../../../../core/models/sports';
 import { SessionService } from '../../../../core/services/session.service';
 import { SportsService } from '../../../../core/services/sports.service';
+import { resolveEventImage } from '../../../../core/utils/event-image.util';
+import { EventPlaceLocation } from '../../../../core/utils/maps.util';
 
 @Component({
   selector: 'app-organizer-dashboard',
@@ -37,6 +39,8 @@ export class OrganizerDashboardComponent implements OnInit {
       eventDate: ['', Validators.required],
       eventTime: ['', Validators.required],
       location: [''],
+      latitude: [null as number | null],
+      longitude: [null as number | null],
       maxCapacity: [30, [Validators.required, Validators.min(1)]]
     });
   }
@@ -117,7 +121,13 @@ export class OrganizerDashboardComponent implements OnInit {
         next: () => {
           this.successMessage = 'Evento creado.';
           this.errorMessage = null;
-          this.form.patchValue({ name: '', description: '', location: '' });
+          this.form.patchValue({
+            name: '',
+            description: '',
+            location: '',
+            latitude: null,
+            longitude: null
+          });
           this.reload();
         },
         error: (error) => {
@@ -126,6 +136,18 @@ export class OrganizerDashboardComponent implements OnInit {
         }
       });
     });
+  }
+
+  onPlaceChange(place: EventPlaceLocation): void {
+    this.form.patchValue({
+      location: place.address,
+      latitude: place.latitude,
+      longitude: place.longitude
+    });
+  }
+
+  eventImage(event: EventItem): string {
+    return resolveEventImage(event);
   }
 
   private loadAthleteCount(events: EventItem[]): void {
