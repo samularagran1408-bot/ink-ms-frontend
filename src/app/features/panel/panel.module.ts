@@ -22,6 +22,7 @@ import { NotificationsPageComponent } from './pages/notifications-page/notificat
 import { PanelShellComponent } from './components/panel-shell/panel-shell.component';
 import { UserInterfaceComponent } from '../auth/pages/user-interface/user-interface.component';
 import { AptitudeQuizPageComponent } from './pages/aptitude-quiz-page/aptitude-quiz-page.component';
+import { AttendanceCheckinPageComponent } from './pages/attendance-checkin-page/attendance-checkin-page.component';
 
 @NgModule({
   declarations: [
@@ -42,7 +43,8 @@ import { AptitudeQuizPageComponent } from './pages/aptitude-quiz-page/aptitude-q
     SessionsPageComponent,
     OrganizerDashboardComponent,
     AthletesPageComponent,
-    AptitudeQuizPageComponent
+    AptitudeQuizPageComponent,
+    AttendanceCheckinPageComponent
   ],
   imports: [
     CommonModule,

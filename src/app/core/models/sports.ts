@@ -90,6 +90,51 @@ export interface Registration {
   message?: string;
 }
 
+export interface AttendanceActionResponse {
+  status: string;
+  message: string;
+}
+
+export interface QrAttendanceInfo {
+  qrCode?: string;
+  registrationId?: string;
+  eventId?: string;
+  eventName?: string;
+  eventDate?: string;
+  eventTime?: string;
+  location?: string;
+  attended?: boolean;
+  ownedByCurrentUser?: boolean;
+}
+
+export interface AttendanceReportAttendee {
+  registrationId: string;
+  userId?: string;
+  fullName?: string;
+  email?: string;
+  checkInTime?: string;
+  checkInMethod?: string;
+  verifiedBy?: string;
+}
+
+export interface AttendanceReportAbsent {
+  registrationId: string;
+  userId?: string;
+  fullName?: string;
+  email?: string;
+}
+
+export interface AttendanceReport {
+  eventId: string;
+  eventName?: string;
+  totalRegistered: number;
+  totalAttended: number;
+  totalAbsent?: number;
+  attendanceRatePercent?: number;
+  attendees: AttendanceReportAttendee[];
+  absentees?: AttendanceReportAbsent[];
+}
+
 export interface Routine {
   id: string;
   trainerId?: string;

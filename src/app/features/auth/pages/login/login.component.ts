@@ -1,7 +1,8 @@
 import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Location } from '@angular/common';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
+import { isSafeReturnUrl } from '../../../../core/utils/qr-attendance.util';
 
 import { AuthService } from '../../services/auth.service';
 import { LoginRequest } from '../../models/login-request';
@@ -29,6 +30,7 @@ export class LoginComponent {
     private location: Location,
     private authService: AuthService,
     private session: SessionService,
+    private route: ActivatedRoute,
     private router: Router,
     public accessibilityService: AccessibilityService,
     private notificationAnnounce: NotificationAnnounceService
@@ -71,13 +73,13 @@ export class LoginComponent {
             this.isSubmitting = false;
             this.loginSuccess = true;
             this.notificationAnnounce.start();
-            this.router.navigate([home]);
+            this.navigateAfterLogin(home);
           },
           error: () => {
             this.isSubmitting = false;
             this.loginSuccess = true;
             this.notificationAnnounce.start();
-            this.router.navigate([this.session.homeForCurrentUser()]);
+            this.navigateAfterLogin(this.session.homeForCurrentUser());
           }
         });
       },
@@ -101,5 +103,14 @@ export class LoginComponent {
 
   onNeedHelp(): void {
     alert('Contáctanos en soporte@inklusport.com');
+  }
+
+  private navigateAfterLogin(home: string): void {
+    const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+    if (isSafeReturnUrl(returnUrl)) {
+      void this.router.navigateByUrl(returnUrl as string);
+      return;
+    }
+    void this.router.navigate([home]);
   }
 }

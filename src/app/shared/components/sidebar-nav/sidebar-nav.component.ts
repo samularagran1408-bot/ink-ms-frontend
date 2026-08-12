@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
 import { TranslateService } from '@ngx-translate/core';
 import { Subscription } from 'rxjs';
@@ -23,12 +23,16 @@ export interface SidebarNavItem {
   styleUrl: './sidebar-nav.component.scss'
 })
 export class SidebarNavComponent implements OnInit, OnDestroy {
+  private static readonly MOBILE_BREAKPOINT = 700;
+
   sidebarOpen = false;
   role: AppRole = 'USUARIO';
   displayName = 'Usuario';
   roleKey = 'ROLES.USUARIO';
   brandTitle = 'INKLUSPORT';
-  layout: 'drawer' | 'fixed' = 'drawer';
+  /** Preferencia por rol: atletas siempre drawer; staff fija en desktop. */
+  preferredLayout: 'drawer' | 'fixed' = 'drawer';
+  isMobileViewport = false;
   profilePicture: string | null = null;
   navItems: SidebarNavItem[] = [];
   secondaryItems: SidebarNavItem[] = [];
@@ -43,7 +47,16 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
     private unreadNotifications: UnreadNotificationsService
   ) {}
 
+  /** En móvil el staff también usa drawer + hamburguesa. */
+  get layout(): 'drawer' | 'fixed' {
+    if (this.preferredLayout === 'drawer') {
+      return 'drawer';
+    }
+    return this.isMobileViewport ? 'drawer' : 'fixed';
+  }
+
   ngOnInit(): void {
+    this.updateViewport();
     this.refreshFromSession();
     this.unreadNotifications.start();
     this.subs.add(this.session.profile$.subscribe(() => this.refreshFromSession()));
@@ -72,6 +85,11 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
     this.subs.unsubscribe();
   }
 
+  @HostListener('window:resize')
+  onWindowResize(): void {
+    this.updateViewport();
+  }
+
   openSidebar(): void {
     this.sidebarOpen = true;
   }
@@ -93,12 +111,26 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
       .join('') || 'U';
   }
 
+  private updateViewport(): void {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const mobile = window.innerWidth <= SidebarNavComponent.MOBILE_BREAKPOINT;
+    if (mobile === this.isMobileViewport) {
+      return;
+    }
+    this.isMobileViewport = mobile;
+    if (!mobile) {
+      this.sidebarOpen = false;
+    }
+  }
+
   private refreshFromSession(): void {
     this.role = this.session.getPrimaryRole();
     this.displayName = this.session.getDisplayName();
     this.roleKey = `ROLES.${this.role}`;
     this.profilePicture = this.session.getProfile()?.profilePicture || null;
-    this.layout = this.role === 'USUARIO' ? 'drawer' : 'fixed';
+    this.preferredLayout = this.role === 'USUARIO' ? 'drawer' : 'fixed';
     this.brandTitle = this.role === 'ADMIN' ? 'INKLUSPORT ADMIN' : 'INKLUSPORT';
     this.applyMenuByRole();
     if (this.session.isAuthenticated()) {

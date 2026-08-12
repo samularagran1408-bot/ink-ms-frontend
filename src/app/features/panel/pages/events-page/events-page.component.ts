@@ -1,14 +1,23 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
+import QRCode from 'qrcode';
+import { Html5Qrcode } from 'html5-qrcode';
 import { forkJoin, of } from 'rxjs';
 import { catchError, switchMap } from 'rxjs/operators';
 
-import { EventItem, Registration, Sport } from '../../../../core/models/sports';
+import {
+  AttendanceReport,
+  EventItem,
+  Registration,
+  Sport
+} from '../../../../core/models/sports';
 import { SessionService } from '../../../../core/services/session.service';
 import { SportsService } from '../../../../core/services/sports.service';
+import { ReportsService } from '../../../../core/services/reports.service';
 import { resolveEventImage } from '../../../../core/utils/event-image.util';
 import { EventPlaceLocation } from '../../../../core/utils/maps.util';
+import { buildAttendanceCheckinUrl, extractQrCode, eventDateTimeMs } from '../../../../core/utils/qr-attendance.util';
 
 interface EventManageRow {
   event: EventItem;
@@ -19,15 +28,23 @@ interface EventManageRow {
   saving: boolean;
 }
 
+interface MyPassRow {
+  registration: Registration;
+  event: EventItem | null;
+  qrDataUrl: string | null;
+  loadingQr: boolean;
+}
+
 @Component({
   selector: 'app-events-page',
   templateUrl: './events-page.component.html',
   styleUrl: './events-page.component.scss'
 })
-export class EventsPageComponent implements OnInit {
+export class EventsPageComponent implements OnInit, OnDestroy {
   mode: 'user' | 'manage' = 'user';
   events: EventItem[] = [];
   registrations: Registration[] = [];
+  myPasses: MyPassRow[] = [];
   manageRows: EventManageRow[] = [];
   sports: Sport[] = [];
   form: FormGroup;
@@ -35,11 +52,41 @@ export class EventsPageComponent implements OnInit {
   errorMessage: string | null = null;
   successMessage: string | null = null;
   registeringId: string | null = null;
+  nowMs = Date.now();
+
+  checkInOpen = false;
+  checkInEvent: EventItem | null = null;
+  manualQrCode = '';
+  checkInBusy = false;
+  checkInMessage: string | null = null;
+  checkInError: string | null = null;
+  scannerRunning = false;
+  scannerError: string | null = null;
+
+  reportOpen = false;
+  reportLoading = false;
+  reportError: string | null = null;
+  attendanceReport: AttendanceReport | null = null;
+
+  myAttendanceOpen = false;
+  myAttendanceEvent: EventItem | null = null;
+  myAttendancePass: MyPassRow | null = null;
+  attendanceSurvey = {
+    present: false,
+    readyForCheckIn: false,
+    notes: ''
+  };
+
+  private clockTimer: ReturnType<typeof setInterval> | null = null;
+  private html5Qr: Html5Qrcode | null = null;
+  private readonly scannerElementId = 'attendance-qr-reader';
 
   constructor(
     private route: ActivatedRoute,
+    private router: Router,
     private sportsService: SportsService,
     private session: SessionService,
+    private reportsService: ReportsService,
     private fb: FormBuilder
   ) {
     this.form = this.fb.group({
@@ -57,7 +104,20 @@ export class EventsPageComponent implements OnInit {
 
   ngOnInit(): void {
     this.mode = (this.route.snapshot.data['mode'] as 'user' | 'manage') || 'user';
+    this.clockTimer = setInterval(() => {
+      this.nowMs = Date.now();
+      if (this.mode === 'user') {
+        void this.refreshPassQrImages();
+      }
+    }, 30_000);
     this.reload();
+  }
+
+  ngOnDestroy(): void {
+    if (this.clockTimer) {
+      clearInterval(this.clockTimer);
+    }
+    void this.stopScanner();
   }
 
   get canManage(): boolean {
@@ -93,6 +153,10 @@ export class EventsPageComponent implements OnInit {
         this.sports = sports;
         if (sports.length && !this.form.value.sportId) {
           this.form.patchValue({ sportId: sports[0].id });
+        }
+        if (this.mode === 'user') {
+          this.buildMyPasses();
+          void this.refreshPassQrImages();
         }
         if (this.canManage && this.mode === 'manage') {
           this.loadWaitlists(events);
@@ -237,7 +301,67 @@ export class EventsPageComponent implements OnInit {
   }
 
   isRegistered(eventId: string): boolean {
-    return this.registrations.some((reg) => reg.eventId === eventId);
+    return this.registrations.some((reg) => reg.eventId === eventId && reg.waitlistPosition == null);
+  }
+
+  registrationFor(eventId: string): Registration | null {
+    return this.registrations.find((reg) => reg.eventId === eventId && reg.waitlistPosition == null) || null;
+  }
+
+  hasAttended(eventId: string): boolean {
+    return !!this.registrationFor(eventId)?.attended;
+  }
+
+  /** Inscrito confirmado y aún no asistió. */
+  canFillAttendance(event: EventItem): boolean {
+    return this.isRegistered(event.id) && !this.hasAttended(event.id);
+  }
+
+  catalogButtonLabel(event: EventItem): string {
+    if (this.hasAttended(event.id)) {
+      return 'Asistió';
+    }
+    if (this.canFillAttendance(event)) {
+      return 'Llenar asistencia';
+    }
+    if (this.isRegistered(event.id)) {
+      return 'Inscrito';
+    }
+    return 'Inscribirse';
+  }
+
+  onCatalogAction(event: EventItem): void {
+    if (this.canFillAttendance(event)) {
+      this.openMyAttendance(event);
+      return;
+    }
+    if (!this.isRegistered(event.id)) {
+      this.register(event);
+    }
+  }
+
+  openMyAttendance(event: EventItem): void {
+    const registration = this.registrationFor(event.id);
+    if (!registration?.qrCode) {
+      this.errorMessage = 'No se encontró tu inscripción para este evento.';
+      return;
+    }
+    void this.router.navigate(['/asistencia'], {
+      queryParams: {
+        code: registration.qrCode,
+        eventId: event.id
+      }
+    });
+  }
+
+  closeMyAttendance(): void {
+    this.myAttendanceOpen = false;
+    this.myAttendanceEvent = null;
+    this.myAttendancePass = null;
+  }
+
+  get surveyReady(): boolean {
+    return this.attendanceSurvey.present && this.attendanceSurvey.readyForCheckIn;
   }
 
   eventImage(event: EventItem): string {
@@ -250,6 +374,268 @@ export class EventsPageComponent implements OnInit {
 
   occupied(event: EventItem): number {
     return Math.max((event.maxCapacity || 0) - (event.availableCapacity ?? (event.maxCapacity || 0)), 0);
+  }
+
+  eventHasStarted(event: EventItem | null | undefined): boolean {
+    if (!event?.eventDate) {
+      return false;
+    }
+    const start = this.eventStartMs(event);
+    return start != null && this.nowMs >= start;
+  }
+
+  eventStartLabel(event: EventItem | null | undefined): string {
+    if (!event) {
+      return 'hora del evento';
+    }
+    const start = this.eventStartMs(event);
+    if (start == null) {
+      return 'hora del evento';
+    }
+    const parsed = new Date(start);
+    const date = `${parsed.getFullYear()}-${String(parsed.getMonth() + 1).padStart(2, '0')}-${String(parsed.getDate()).padStart(2, '0')}`;
+    const time = `${String(parsed.getHours()).padStart(2, '0')}:${String(parsed.getMinutes()).padStart(2, '0')}`;
+    return `${date} ${time}`;
+  }
+
+  openCheckIn(event: EventItem): void {
+    this.checkInEvent = event;
+    this.checkInOpen = true;
+    this.manualQrCode = '';
+    this.checkInMessage = null;
+    this.checkInError = null;
+    this.scannerError = null;
+  }
+
+  closeCheckIn(): void {
+    this.checkInOpen = false;
+    this.checkInEvent = null;
+    this.manualQrCode = '';
+    this.checkInMessage = null;
+    this.checkInError = null;
+    this.scannerError = null;
+    void this.stopScanner();
+  }
+
+  async startScanner(): Promise<void> {
+    this.scannerError = null;
+    try {
+      await this.stopScanner();
+      this.html5Qr = new Html5Qrcode(this.scannerElementId);
+      await this.html5Qr.start(
+        { facingMode: 'environment' },
+        { fps: 8, qrbox: { width: 220, height: 220 } },
+        (decoded) => {
+          void this.submitQrCode(decoded);
+        },
+        () => undefined
+      );
+      this.scannerRunning = true;
+    } catch (error: unknown) {
+      this.scannerRunning = false;
+      this.scannerError = error instanceof Error
+        ? error.message
+        : 'No se pudo abrir la cámara. Usa el código manual o una imagen.';
+    }
+  }
+
+  async stopScanner(): Promise<void> {
+    if (!this.html5Qr) {
+      this.scannerRunning = false;
+      return;
+    }
+    try {
+      if (this.html5Qr.isScanning) {
+        await this.html5Qr.stop();
+      }
+      await this.html5Qr.clear();
+    } catch {
+      // ignore cleanup errors
+    }
+    this.html5Qr = null;
+    this.scannerRunning = false;
+  }
+
+  async onScanFileSelected(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) {
+      return;
+    }
+
+    this.scannerError = null;
+    this.checkInError = null;
+
+    try {
+      await this.stopScanner();
+      const scanner = new Html5Qrcode(this.scannerElementId);
+      this.html5Qr = scanner;
+      const decoded = await scanner.scanFile(file, true);
+      await this.submitQrCode(decoded);
+    } catch (error: unknown) {
+      this.scannerError = error instanceof Error
+        ? error.message
+        : 'No se pudo leer el QR del archivo. Prueba con una imagen (PNG/JPG).';
+    } finally {
+      await this.stopScanner();
+    }
+  }
+
+  submitManualQr(): void {
+    void this.submitQrCode(this.manualQrCode);
+  }
+
+  openAttendanceReport(event: EventItem): void {
+    this.reportOpen = true;
+    this.attendanceReport = null;
+    this.reportError = null;
+    this.reportLoading = true;
+
+    this.sportsService.getAttendanceReport(event.id).subscribe({
+      next: (report) => {
+        this.attendanceReport = report;
+        this.reportLoading = false;
+      },
+      error: (error) => {
+        this.reportLoading = false;
+        this.reportError = error?.error?.message || 'No se pudo cargar el reporte de asistencia.';
+      }
+    });
+  }
+
+  closeAttendanceReport(): void {
+    this.reportOpen = false;
+    this.attendanceReport = null;
+    this.reportError = null;
+  }
+
+  printAttendanceReport(): void {
+    window.print();
+  }
+
+  exportAttendanceCsv(): void {
+    const report = this.attendanceReport;
+    if (!report) {
+      return;
+    }
+
+    const header = ['Evento', 'Estado', 'Nombre', 'Email', 'UserId', 'CheckIn', 'Metodo', 'VerificadoPor'];
+    const attendedRows = (report.attendees || []).map((row) => [
+      report.eventName || report.eventId,
+      'ASISTIO',
+      row.fullName || '',
+      row.email || '',
+      row.userId || '',
+      row.checkInTime || '',
+      row.checkInMethod || '',
+      row.verifiedBy || ''
+    ]);
+    const absentRows = (report.absentees || []).map((row) => [
+      report.eventName || report.eventId,
+      'AUSENTE',
+      row.fullName || '',
+      row.email || '',
+      row.userId || '',
+      '',
+      '',
+      ''
+    ]);
+
+    const csv = [header, ...attendedRows, ...absentRows]
+      .map((cols) => cols.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const slug = (report.eventName || report.eventId || 'evento')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
+    this.reportsService.downloadBlob(blob, `asistencia-${slug}-${new Date().toISOString().slice(0, 10)}.csv`);
+  }
+
+  attendanceRateLabel(report: AttendanceReport | null): string {
+    if (!report) {
+      return '0%';
+    }
+    const rate = report.attendanceRatePercent
+      ?? (report.totalRegistered
+        ? Math.round((report.totalAttended * 10000) / report.totalRegistered) / 100
+        : 0);
+    return `${rate}%`;
+  }
+
+  private async submitQrCode(rawCode: string): Promise<void> {
+    const qrCode = extractQrCode(rawCode);
+    if (!qrCode || this.checkInBusy) {
+      return;
+    }
+
+    this.checkInBusy = true;
+    this.checkInError = null;
+    this.checkInMessage = null;
+
+    const verifiedBy = this.session.getProfile()?.id || this.session.getDisplayName();
+    this.sportsService.markAttendanceByQr(qrCode, verifiedBy).subscribe({
+      next: (response) => {
+        this.checkInBusy = false;
+        this.checkInMessage = response?.message || 'Asistencia registrada.';
+        this.manualQrCode = '';
+        void this.stopScanner();
+      },
+      error: (error) => {
+        this.checkInBusy = false;
+        this.checkInError = error?.error?.message || 'No se pudo registrar la asistencia.';
+      }
+    });
+  }
+
+  private buildMyPasses(): void {
+    this.myPasses = this.registrations
+      .filter((reg) => reg.waitlistPosition == null)
+      .map((registration) => ({
+        registration,
+        event: this.events.find((event) => event.id === registration.eventId) || null,
+        qrDataUrl: null,
+        loadingQr: false
+      }));
+  }
+
+  private async refreshPassQrImages(): Promise<void> {
+    for (const pass of this.myPasses) {
+      await this.ensurePassQr(pass);
+    }
+    if (this.myAttendancePass) {
+      await this.ensurePassQr(this.myAttendancePass);
+    }
+  }
+
+  private async ensurePassQr(pass: MyPassRow): Promise<void> {
+    const code = pass.registration.qrCode;
+    const ready = !!code && !pass.registration.attended;
+    if (!ready) {
+      pass.qrDataUrl = null;
+      pass.loadingQr = false;
+      return;
+    }
+    if (pass.qrDataUrl || pass.loadingQr) {
+      return;
+    }
+    pass.loadingQr = true;
+    try {
+      pass.qrDataUrl = await QRCode.toDataURL(buildAttendanceCheckinUrl(code as string, pass.event?.id), {
+        width: 220,
+        margin: 1,
+        errorCorrectionLevel: 'M'
+      });
+    } catch {
+      pass.qrDataUrl = null;
+    } finally {
+      pass.loadingQr = false;
+    }
+  }
+
+  private eventStartMs(event: EventItem): number | null {
+    return eventDateTimeMs(event.eventDate, event.eventTime);
   }
 
   private buildEditForm(event: EventItem): FormGroup {

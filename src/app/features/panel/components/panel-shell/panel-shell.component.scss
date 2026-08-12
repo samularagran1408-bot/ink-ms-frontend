@@ -22,8 +22,9 @@
 }
 
 @media (max-width: 700px) {
+  /* En móvil el staff pasa a drawer (sin sidebar fija): sin margen lateral. */
   .panel-shell--fixed .panel-main {
     margin-left: 0;
-    padding-top: 16px;
+    padding: 16px 16px 24px;
   }
 }

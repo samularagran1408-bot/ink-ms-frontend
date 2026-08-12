@@ -1,0 +1,56 @@
+<app-panel-shell [fixedSidebar]="false">
+  <h1 class="page-title">Encuesta de asistencia</h1>
+  <p class="page-subtitle">
+    Confirma que estás en el evento. Al enviar, queda registrada tu asistencia.
+  </p>
+
+  <p *ngIf="loading" class="empty-text">Cargando encuesta...</p>
+  <p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
+  <p *ngIf="successMessage" class="empty-text">{{ successMessage }}</p>
+
+  <div class="card" *ngIf="!loading && (info || registration)">
+    <h3 class="section-title">{{ eventTitle }}</h3>
+    <p class="kpi-sub" *ngIf="eventWhen">{{ eventWhen }}</p>
+    <p class="kpi-sub" *ngIf="info?.location || event?.location">
+      {{ info?.location || event?.location }}
+    </p>
+
+    <div class="attendance-survey" *ngIf="!alreadyAttended && !successMessage">
+      <label class="survey-check">
+        <input type="checkbox" [(ngModel)]="survey.present" name="surveyPresent" />
+        Confirmo que estoy en el lugar del evento
+      </label>
+      <label class="survey-check">
+        <input type="checkbox" [(ngModel)]="survey.readyForCheckIn" name="surveyReady" />
+        Estoy listo/a para el check-in
+      </label>
+      <label class="survey-notes">
+        Comentario (opcional)
+        <textarea
+          rows="2"
+          [(ngModel)]="survey.notes"
+          name="surveyNotes"
+          placeholder="Ej. llegué con acompañante, necesito apoyo de acceso..."
+        ></textarea>
+      </label>
+
+      <button
+        class="btn-primary"
+        type="button"
+        [disabled]="!surveyReady || submitting"
+        (click)="submit()"
+      >
+        {{ submitting ? 'Registrando...' : 'Enviar asistencia' }}
+      </button>
+      <p *ngIf="!surveyReady" class="kpi-sub">Marca las dos casillas para enviar.</p>
+    </div>
+
+    <div *ngIf="alreadyAttended || successMessage">
+      <span class="status-pill status-pill--ok">Asistencia confirmada</span>
+    </div>
+  </div>
+
+  <div class="actions-row" style="margin-top: 16px;">
+    <button class="btn-secondary" type="button" (click)="goEvents()">Volver a eventos</button>
+  </div>
+</app-panel-shell>

@@ -26,6 +26,14 @@
       <div class="kpi-sub">Estimado por capacidad</div>
     </div>
     <div class="kpi-card">
+      <div class="kpi-label">Tasa asistencia</div>
+      <div class="kpi-value">{{ attendanceRatePercent == null ? '—' : (attendanceRatePercent + '%') }}</div>
+      <div class="kpi-sub">
+        {{ attendanceSampledEvents ? ('Muestra ' + attendanceSampledEvents + ' eventos') : 'Sin eventos' }}
+        · <button class="linkish" type="button" (click)="goAttendanceReports()">Ver reportes</button>
+      </div>
+    </div>
+    <div class="kpi-card">
       <div class="kpi-label">Deportes</div>
       <div class="kpi-value">{{ sports.length }}</div>
       <div class="kpi-sub">Disponibles</div>

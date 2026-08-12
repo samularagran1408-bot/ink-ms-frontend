@@ -21,6 +21,8 @@ export class OrganizerDashboardComponent implements OnInit {
   sports: Sport[] = [];
   activeEvents = 0;
   athleteCount = 0;
+  attendanceRatePercent: number | null = null;
+  attendanceSampledEvents = 0;
   form: FormGroup;
   errorMessage: string | null = null;
   successMessage: string | null = null;
@@ -74,6 +76,7 @@ export class OrganizerDashboardComponent implements OnInit {
             this.form.patchValue({ sportId: sports[0].id });
           }
           this.loadAthleteCount(this.events);
+          this.loadAttendanceRate(this.events);
           this.loading = false;
         },
         error: () => {
@@ -89,6 +92,10 @@ export class OrganizerDashboardComponent implements OnInit {
    */
   goQuiz(): void {
     this.router.navigate(['/organizer/quiz']);
+  }
+
+  goAttendanceReports(): void {
+    this.router.navigate(['/organizer/events']);
   }
 
   /**
@@ -160,5 +167,34 @@ export class OrganizerDashboardComponent implements OnInit {
       const taken = (event.maxCapacity || 0) - (event.availableCapacity ?? (event.maxCapacity || 0));
       return acc + Math.max(taken, 0);
     }, 0);
+  }
+
+  private loadAttendanceRate(events: EventItem[]): void {
+    const sample = events.slice(0, 8);
+    this.attendanceSampledEvents = sample.length;
+    if (!sample.length) {
+      this.attendanceRatePercent = null;
+      return;
+    }
+
+    forkJoin(
+      sample.map((event) =>
+        this.sportsService.getAttendanceReport(event.id).pipe(
+          catchError(() => of({ totalRegistered: 0, totalAttended: 0 }))
+        )
+      )
+    ).subscribe((reports) => {
+      const totals = reports.reduce(
+        (acc, report) => {
+          acc.registered += Number(report.totalRegistered || 0);
+          acc.attended += Number(report.totalAttended || 0);
+          return acc;
+        },
+        { registered: 0, attended: 0 }
+      );
+      this.attendanceRatePercent = totals.registered
+        ? Math.round((totals.attended * 10000) / totals.registered) / 100
+        : 0;
+    });
   }
 }

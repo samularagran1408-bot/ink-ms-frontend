@@ -1,8 +1,9 @@
 import { Injectable } from '@angular/core';
-import { ActivatedRouteSnapshot, CanActivate, Router, UrlTree } from '@angular/router';
+import { ActivatedRouteSnapshot, CanActivate, Router, RouterStateSnapshot, UrlTree } from '@angular/router';
 
 import { AppRole } from '../models/app-role';
 import { SessionService } from '../services/session.service';
+import { isSafeReturnUrl } from '../utils/qr-attendance.util';
 
 @Injectable({
   providedIn: 'root'
@@ -13,9 +14,12 @@ export class RoleGuard implements CanActivate {
     private router: Router
   ) {}
 
-  canActivate(route: ActivatedRouteSnapshot): boolean | UrlTree {
+  canActivate(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): boolean | UrlTree {
     if (!this.session.isAuthenticated()) {
-      return this.router.createUrlTree(['/login']);
+      const returnUrl = state.url;
+      return this.router.createUrlTree(['/login'], {
+        queryParams: isSafeReturnUrl(returnUrl) ? { returnUrl } : undefined
+      });
     }
 
     const allowed = (route.data['roles'] as AppRole[] | undefined) ?? [];

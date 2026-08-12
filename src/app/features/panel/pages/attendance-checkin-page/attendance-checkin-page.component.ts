@@ -1,0 +1,138 @@
+import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
+import { forkJoin, of } from 'rxjs';
+import { catchError, switchMap } from 'rxjs/operators';
+
+import { EventItem, QrAttendanceInfo, Registration } from '../../../../core/models/sports';
+import { SessionService } from '../../../../core/services/session.service';
+import { SportsService } from '../../../../core/services/sports.service';
+import { extractQrCode } from '../../../../core/utils/qr-attendance.util';
+
+@Component({
+  selector: 'app-attendance-checkin-page',
+  templateUrl: './attendance-checkin-page.component.html',
+  styleUrl: './attendance-checkin-page.component.scss'
+})
+export class AttendanceCheckinPageComponent implements OnInit {
+  loading = true;
+  submitting = false;
+  errorMessage: string | null = null;
+  successMessage: string | null = null;
+
+  qrCode = '';
+  info: QrAttendanceInfo | null = null;
+  event: EventItem | null = null;
+  registration: Registration | null = null;
+
+  survey = {
+    present: false,
+    readyForCheckIn: false,
+    notes: ''
+  };
+
+  constructor(
+    private route: ActivatedRoute,
+    private router: Router,
+    private session: SessionService,
+    private sportsService: SportsService
+  ) {}
+
+  ngOnInit(): void {
+    this.qrCode = extractQrCode(this.route.snapshot.queryParamMap.get('code') || '');
+    if (!this.qrCode) {
+      this.loading = false;
+      this.errorMessage = 'Este enlace no incluye un código de asistencia válido.';
+      return;
+    }
+    this.reload();
+  }
+
+  get surveyReady(): boolean {
+    return this.survey.present && this.survey.readyForCheckIn;
+  }
+
+  get alreadyAttended(): boolean {
+    return !!this.info?.attended || !!this.registration?.attended;
+  }
+
+  get eventTitle(): string {
+    return this.info?.eventName || this.event?.name || 'Evento';
+  }
+
+  get eventWhen(): string {
+    const date = this.info?.eventDate || this.event?.eventDate || '';
+    const time = (this.info?.eventTime || this.event?.eventTime || '').toString().substring(0, 5);
+    return `${date} ${time}`.trim();
+  }
+
+  reload(): void {
+    this.loading = true;
+    this.errorMessage = null;
+
+    const profile$ = this.session.getProfile()
+      ? of(this.session.getProfile())
+      : this.session.loadProfile();
+
+    profile$.pipe(
+      switchMap((profile) => {
+        const userId = profile?.id;
+        return forkJoin({
+          info: this.sportsService.getAttendanceQrInfo(this.qrCode).pipe(catchError(() => of(null))),
+          events: this.sportsService.getEvents().pipe(catchError(() => of([] as EventItem[]))),
+          registrations: userId
+            ? this.sportsService.getRegistrationsByUser(userId).pipe(catchError(() => of([] as Registration[])))
+            : of([] as Registration[])
+        });
+      })
+    ).subscribe({
+      next: ({ info, events, registrations }) => {
+        this.info = info;
+        const eventId = info?.eventId || this.route.snapshot.queryParamMap.get('eventId');
+        this.event = events.find((item) => item.id === eventId) || null;
+        this.registration = registrations.find((reg) => {
+          const code = extractQrCode(reg.qrCode);
+          return code && code === this.qrCode;
+        }) || registrations.find((reg) => eventId && reg.eventId === eventId && reg.waitlistPosition == null) || null;
+        this.loading = false;
+        if (!this.info && !this.registration) {
+          this.errorMessage = 'No encontramos una inscripción válida para este código QR.';
+        }
+      },
+      error: (error) => {
+        this.loading = false;
+        this.errorMessage = error?.error?.message || 'No se pudo cargar la encuesta de asistencia.';
+      }
+    });
+  }
+
+  submit(): void {
+    if (!this.surveyReady || this.submitting || this.alreadyAttended) {
+      return;
+    }
+
+    this.submitting = true;
+    this.errorMessage = null;
+    const verifiedBy = this.session.getProfile()?.id || this.session.getDisplayName();
+    this.sportsService.markAttendanceByQr(this.qrCode, verifiedBy).subscribe({
+      next: (response) => {
+        this.submitting = false;
+        this.successMessage = response?.message || 'Asistencia registrada. ¡Gracias!';
+        if (this.info) {
+          this.info = { ...this.info, attended: true };
+        }
+        if (this.registration) {
+          this.registration = { ...this.registration, attended: true };
+        }
+      },
+      error: (error) => {
+        this.submitting = false;
+        this.errorMessage = error?.error?.message || 'No se pudo registrar la asistencia.';
+      }
+    });
+  }
+
+  goEvents(): void {
+    const home = this.session.homeForCurrentUser();
+    this.router.navigate([`${home}/events`.replace(/\/\/+/g, '/')]);
+  }
+}

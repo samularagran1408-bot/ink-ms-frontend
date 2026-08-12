@@ -4,7 +4,10 @@ import { Observable } from 'rxjs';
 
 import { API_BASE_URL } from '../config/api.config';
 import {
+  AttendanceActionResponse,
+  AttendanceReport,
   Disability,
+  QrAttendanceInfo,
   DisabilityRequest,
   EventItem,
   EventRequest,
@@ -27,6 +30,7 @@ export class SportsService {
   private readonly disabilitiesUrl = `${API_BASE_URL}/api/disabilities`;
   private readonly sportDisabilitiesUrl = `${API_BASE_URL}/api/sport-disabilities`;
   private readonly registrationsUrl = `${API_BASE_URL}/api/registrations`;
+  private readonly attendanceUrl = `${API_BASE_URL}/api/attendance`;
   private readonly routinesUrl = `${API_BASE_URL}/api/routines`;
   private readonly routineRegistrationsUrl = `${API_BASE_URL}/api/routine-registrations`;
 
@@ -118,6 +122,37 @@ export class SportsService {
 
   getEventWaitlist(eventId: string): Observable<Registration[]> {
     return this.http.get<Registration[]>(`${this.registrationsUrl}/${eventId}/waitlist`);
+  }
+
+  markAttendanceByQr(qrCode: string, verifiedBy?: string): Observable<AttendanceActionResponse> {
+    return this.http.post<AttendanceActionResponse>(`${this.attendanceUrl}/qr`, {
+      qrCode,
+      verifiedBy
+    });
+  }
+
+  getAttendanceQrInfo(qrCode: string): Observable<QrAttendanceInfo> {
+    return this.http.get<QrAttendanceInfo>(`${this.attendanceUrl}/qr-info`, {
+      params: { qrCode }
+    });
+  }
+
+  markAttendance(
+    registrationId: string,
+    checkInMethod: 'qr' | 'manual' | 'admin' = 'manual',
+    verifiedBy?: string
+  ): Observable<AttendanceActionResponse> {
+    return this.http.post<AttendanceActionResponse>(this.attendanceUrl, {
+      registrationId,
+      checkInMethod,
+      verifiedBy
+    });
+  }
+
+  getAttendanceReport(eventId: string): Observable<AttendanceReport> {
+    return this.http.get<AttendanceReport>(`${this.attendanceUrl}/report`, {
+      params: { eventId }
+    });
   }
 
   getRoutines(): Observable<Routine[]> {

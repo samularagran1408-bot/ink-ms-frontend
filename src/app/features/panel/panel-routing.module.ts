@@ -21,6 +21,7 @@ import { OrganizerDashboardComponent } from './pages/organizer-dashboard/organiz
 import { AthletesPageComponent } from './pages/athletes-page/athletes-page.component';
 import { AssociationsPageComponent } from './pages/associations-page/associations-page.component';
 import { AptitudeQuizPageComponent } from './pages/aptitude-quiz-page/aptitude-quiz-page.component';
+import { AttendanceCheckinPageComponent } from './pages/attendance-checkin-page/attendance-checkin-page.component';
 
 const accountChildren = [
   { path: 'profile', component: ProfilePageComponent },
@@ -29,6 +30,11 @@ const accountChildren = [
 ];
 
 const routes: Routes = [
+  {
+    path: 'asistencia',
+    component: AttendanceCheckinPageComponent,
+    canActivate: [AuthGuard]
+  },
   {
     path: 'home',
     canActivate: [AuthGuard, RoleGuard],

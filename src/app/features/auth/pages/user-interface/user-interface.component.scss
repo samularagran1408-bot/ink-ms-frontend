@@ -291,6 +291,15 @@
   font-weight: 700;
   letter-spacing: 0.5px;
   cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+a.register-event-btn:hover {
+  color: #FFFFFF;
+  filter: brightness(0.95);
 }
 
 .right-column {

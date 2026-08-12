@@ -138,12 +138,36 @@
             <div class="event-card-footer">
               <span class="spots-available">{{ 'HOME.SPOTS' | translate:{ count: event.availableCapacity ?? 0 } }}</span>
               <button
+                *ngIf="!isRegistered(event.id)"
                 class="register-event-btn"
                 type="button"
-                [disabled]="isRegistered(event.id) || registeringId === event.id"
+                [disabled]="registeringId === event.id || (event.availableCapacity ?? 0) <= 0"
                 (click)="onRegisterEvent(event)"
               >
-                {{ isRegistered(event.id) ? ('HOME.REGISTERED' | translate) : (registeringId === event.id ? '...' : ('HOME.REGISTER' | translate)) }}
+                {{ registeringId === event.id ? '...' : ('HOME.REGISTER' | translate) }}
+              </button>
+              <button
+                *ngIf="isRegistered(event.id) && !canFillAttendance(event) && !hasAttended(event.id)"
+                class="register-event-btn"
+                type="button"
+                disabled
+              >
+                {{ 'HOME.REGISTERED' | translate }}
+              </button>
+              <a
+                *ngIf="canFillAttendance(event)"
+                class="register-event-btn"
+                routerLink="/home/events"
+              >
+                Llenar asistencia
+              </a>
+              <button
+                *ngIf="hasAttended(event.id)"
+                class="register-event-btn"
+                type="button"
+                disabled
+              >
+                Asistió
               </button>
             </div>
           </div>

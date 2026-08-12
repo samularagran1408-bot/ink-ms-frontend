@@ -1,9 +1,10 @@
 import { Injectable } from '@angular/core';
-import { ActivatedRouteSnapshot, CanActivate, Router, UrlTree } from '@angular/router';
+import { ActivatedRouteSnapshot, CanActivate, Router, RouterStateSnapshot, UrlTree } from '@angular/router';
 import { Observable, of } from 'rxjs';
 import { catchError, switchMap } from 'rxjs/operators';
 
 import { SessionService } from '../services/session.service';
+import { isSafeReturnUrl } from '../utils/qr-attendance.util';
 
 /**
  * Bloquea rutas de gestión de entrenador/organizador hasta aprobar el quiz.
@@ -21,9 +22,12 @@ export class QuizCompletedGuard implements CanActivate {
   /**
    * Permite la ruta si el quiz del rol está aprobado; si no, redirige a /quiz.
    */
-  canActivate(route: ActivatedRouteSnapshot): Observable<boolean | UrlTree> | boolean | UrlTree {
+  canActivate(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): Observable<boolean | UrlTree> | boolean | UrlTree {
     if (!this.session.isAuthenticated()) {
-      return this.router.createUrlTree(['/login']);
+      const returnUrl = state.url;
+      return this.router.createUrlTree(['/login'], {
+        queryParams: isSafeReturnUrl(returnUrl) ? { returnUrl } : undefined
+      });
     }
     if (this.session.hasRole('ADMIN')) {
       return true;

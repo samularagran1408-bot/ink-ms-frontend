@@ -2,8 +2,8 @@
   <h1 class="page-title">{{ mode === 'user' ? 'Eventos' : 'Gestión de eventos' }}</h1>
   <p class="page-subtitle">
     {{ mode === 'user'
-      ? 'Catálogo de eventos e inscripciones.'
-      : 'Crear eventos, ver ocupación y listas de espera.' }}
+      ? 'Catálogo de eventos, inscripciones y pase QR de asistencia.'
+      : 'Crear eventos, check-in por QR y reportes de asistencia.' }}
   </p>
 
   <p *ngIf="successMessage" class="empty-text">{{ successMessage }}</p>
@@ -53,8 +53,51 @@
     </form>
   </div>
 
+  <!-- Usuario: pases QR (el celular abre la encuesta de asistencia) -->
+  <div class="card" *ngIf="mode === 'user'" style="margin-bottom: 16px;">
+    <h3 class="section-title">Mi pase de asistencia</h3>
+    <p class="kpi-sub" style="margin-bottom: 12px;">
+      Escanea este QR con el celular para abrir la encuesta de asistencia, o muéstralo al organizador.
+    </p>
+
+    <div class="pass-row" *ngFor="let pass of myPasses">
+      <div class="pass-info">
+        <strong>{{ pass.event?.name || pass.registration.eventName || 'Evento' }}</strong>
+        <div class="kpi-sub">
+          {{ eventStartLabel(pass.event) }}
+          <span *ngIf="pass.registration.attended"> · Asistencia confirmada</span>
+        </div>
+      </div>
+
+      <div class="pass-qr" *ngIf="!pass.registration.attended">
+        <img *ngIf="pass.qrDataUrl" [src]="pass.qrDataUrl" alt="Código QR de asistencia" />
+        <p *ngIf="pass.loadingQr" class="empty-text">Generando QR...</p>
+        <p *ngIf="!pass.loadingQr && !pass.qrDataUrl" class="error-text">
+          No hay QR disponible para esta inscripción.
+        </p>
+        <button
+          class="btn-primary"
+          type="button"
+          *ngIf="pass.event"
+          (click)="openMyAttendance(pass.event)"
+        >
+          Llenar asistencia
+        </button>
+      </div>
+
+      <div class="pass-qr" *ngIf="pass.registration.attended">
+        <span class="status-pill status-pill--ok">Asistió</span>
+      </div>
+    </div>
+
+    <p *ngIf="!loading && !myPasses.length" class="empty-text">
+      Aún no tienes inscripciones confirmadas.
+    </p>
+  </div>
+
   <!-- Vista usuario: inscripción -->
   <div class="card" *ngIf="mode === 'user'">
+    <h3 class="section-title">Catálogo</h3>
     <div class="event-user-row" *ngFor="let event of events">
       <div class="list-item event-list-item" style="border-bottom: none;">
         <div class="event-thumb" [style.background-image]="'url(' + eventImage(event) + ')'"></div>
@@ -66,12 +109,37 @@
           </div>
         </div>
         <button
+          *ngIf="!isRegistered(event.id)"
           class="btn-primary"
           type="button"
-          [disabled]="registeringId === event.id || isRegistered(event.id) || (event.availableCapacity ?? 0) <= 0"
+          [disabled]="registeringId === event.id || (event.availableCapacity ?? 0) <= 0"
           (click)="register(event)"
         >
-          {{ isRegistered(event.id) ? 'Inscrito' : 'Inscribirse' }}
+          {{ registeringId === event.id ? 'Inscribiendo...' : 'Inscribirse' }}
+        </button>
+        <button
+          *ngIf="isRegistered(event.id) && !canFillAttendance(event) && !hasAttended(event.id)"
+          class="btn-primary"
+          type="button"
+          disabled
+        >
+          Inscrito
+        </button>
+        <button
+          *ngIf="canFillAttendance(event)"
+          class="btn-primary"
+          type="button"
+          (click)="openMyAttendance(event)"
+        >
+          Llenar asistencia
+        </button>
+        <button
+          *ngIf="hasAttended(event.id)"
+          class="btn-secondary"
+          type="button"
+          disabled
+        >
+          Asistió
         </button>
       </div>
       <app-event-location-map
@@ -85,7 +153,7 @@
     <p *ngIf="!loading && !events.length" class="empty-text">No hay eventos.</p>
   </div>
 
-  <!-- Vista gestión: ocupación + waitlist + editar fecha/lugar -->
+  <!-- Vista gestión: ocupación + waitlist + asistencia -->
   <div class="card" *ngIf="mode === 'manage'">
     <div *ngFor="let row of manageRows" style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #F1F5F9;">
       <div class="list-item event-list-item" style="border-bottom: none;">
@@ -106,12 +174,18 @@
             [compact]="true"
           ></app-event-location-map>
         </div>
-        <div>
+        <div class="manage-actions">
           <span class="status-pill status-pill--ok">{{ row.event.status || 'active' }}</span>
-          <button class="btn-secondary" type="button" style="margin-left: 8px;" (click)="startEdit(row)" *ngIf="!row.editing">
+          <button class="btn-primary" type="button" (click)="openCheckIn(row.event)">
+            Check-in QR
+          </button>
+          <button class="btn-secondary" type="button" (click)="openAttendanceReport(row.event)">
+            Reporte asistencia
+          </button>
+          <button class="btn-secondary" type="button" (click)="startEdit(row)" *ngIf="!row.editing">
             Editar fecha/lugar
           </button>
-          <button class="btn-secondary" type="button" style="margin-left: 8px;" (click)="toggleWaitlist(row)">
+          <button class="btn-secondary" type="button" (click)="toggleWaitlist(row)">
             {{ row.showWaitlist ? 'Ocultar waitlist' : 'Ver waitlist' }}
           </button>
         </div>
@@ -153,5 +227,188 @@
       </div>
     </div>
     <p *ngIf="!loading && !manageRows.length" class="empty-text">No hay eventos.</p>
+  </div>
+
+  <!-- Modal usuario: encuesta + QR de asistencia -->
+  <div class="detail-modal" *ngIf="myAttendanceOpen" (click)="closeMyAttendance()">
+    <div class="detail-panel detail-panel--wide" (click)="$event.stopPropagation()">
+      <div class="detail-head">
+        <h3>Llenar asistencia · {{ myAttendanceEvent?.name }}</h3>
+        <button type="button" class="btn-secondary" (click)="closeMyAttendance()">×</button>
+      </div>
+
+      <p class="kpi-sub">
+        Completa la encuesta y muestra tu QR al organizador para confirmar que asististe.
+      </p>
+
+      <div class="attendance-survey">
+        <h4 class="section-title">Encuesta de asistencia</h4>
+        <label class="survey-check">
+          <input type="checkbox" [(ngModel)]="attendanceSurvey.present" name="surveyPresent" />
+          Confirmo que estoy en el lugar del evento
+        </label>
+        <label class="survey-check">
+          <input type="checkbox" [(ngModel)]="attendanceSurvey.readyForCheckIn" name="surveyReady" />
+          Estoy listo/a para el check-in
+        </label>
+        <label class="survey-notes">
+          Comentario (opcional)
+          <textarea
+            rows="2"
+            [(ngModel)]="attendanceSurvey.notes"
+            name="surveyNotes"
+            placeholder="Ej. llegué con acompañante, necesito apoyo de acceso..."
+          ></textarea>
+        </label>
+      </div>
+
+      <div class="pass-qr" *ngIf="surveyReady && myAttendancePass as pass">
+        <p class="empty-text" *ngIf="pass.loadingQr">Generando QR...</p>
+        <img *ngIf="pass.qrDataUrl" [src]="pass.qrDataUrl" alt="Código QR de asistencia" />
+        <p *ngIf="!pass.loadingQr && !pass.qrDataUrl" class="error-text">
+          No hay QR disponible para esta inscripción.
+        </p>
+        <code *ngIf="pass.registration.qrCode" class="qr-code-text">{{ pass.registration.qrCode }}</code>
+        <p class="kpi-sub">Muestra este código al organizador para registrar tu asistencia.</p>
+      </div>
+
+      <p *ngIf="!surveyReady" class="kpi-sub" style="margin-top: 12px;">
+        Marca las casillas de la encuesta para revelar tu QR.
+      </p>
+    </div>
+  </div>
+
+  <!-- Modal check-in organizador -->
+  <div class="detail-modal" *ngIf="checkInOpen" (click)="closeCheckIn()">
+    <div class="detail-panel detail-panel--wide" (click)="$event.stopPropagation()">
+      <div class="detail-head">
+        <h3>Check-in · {{ checkInEvent?.name }}</h3>
+        <button type="button" class="btn-secondary" (click)="closeCheckIn()">×</button>
+      </div>
+
+      <p class="kpi-sub">Escanea el QR del inscrito con la cámara, súbelo desde una imagen, o escribe el código.</p>
+
+      <div class="checkin-actions">
+        <button class="btn-primary" type="button" (click)="startScanner()" [disabled]="scannerRunning || checkInBusy">
+          {{ scannerRunning ? 'Cámara activa' : 'Abrir cámara' }}
+        </button>
+        <button class="btn-secondary" type="button" (click)="stopScanner()" [disabled]="!scannerRunning">
+          Detener cámara
+        </button>
+        <label class="btn-secondary file-btn">
+          Escanear imagen
+          <input type="file" accept="image/*" hidden (change)="onScanFileSelected($event)" />
+        </label>
+      </div>
+
+      <div [id]="'attendance-qr-reader'" class="qr-reader"></div>
+      <p *ngIf="scannerError" class="error-text">{{ scannerError }}</p>
+
+      <div class="manual-qr">
+        <label>
+          Código QR manual
+          <input [(ngModel)]="manualQrCode" name="manualQrCode" placeholder="QR_...." [disabled]="checkInBusy" />
+        </label>
+        <button class="btn-primary" type="button" (click)="submitManualQr()" [disabled]="checkInBusy || !manualQrCode.trim()">
+          {{ checkInBusy ? 'Registrando...' : 'Registrar asistencia' }}
+        </button>
+      </div>
+
+      <p *ngIf="checkInMessage" class="empty-text">{{ checkInMessage }}</p>
+      <p *ngIf="checkInError" class="error-text">{{ checkInError }}</p>
+    </div>
+  </div>
+
+  <!-- Modal reporte (imprimible a PDF + CSV) -->
+  <div class="detail-modal" *ngIf="reportOpen" (click)="closeAttendanceReport()">
+    <div class="detail-panel detail-panel--wide attendance-report-print" (click)="$event.stopPropagation()">
+      <div class="detail-head no-print">
+        <h3>Reporte de asistencia</h3>
+        <button type="button" class="btn-secondary" (click)="closeAttendanceReport()">×</button>
+      </div>
+
+      <p *ngIf="reportLoading" class="empty-text">Cargando reporte...</p>
+      <p *ngIf="reportError" class="error-text">{{ reportError }}</p>
+
+      <ng-container *ngIf="attendanceReport as report">
+        <h2 class="report-title">{{ report.eventName || 'Evento' }}</h2>
+
+        <div class="kpi-grid report-kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-label">Inscritos</div>
+            <div class="kpi-value">{{ report.totalRegistered }}</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Asistieron</div>
+            <div class="kpi-value">{{ report.totalAttended }}</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Ausentes</div>
+            <div class="kpi-value">{{ report.totalAbsent ?? (report.totalRegistered - report.totalAttended) }}</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Tasa</div>
+            <div class="kpi-value">{{ attendanceRateLabel(report) }}</div>
+          </div>
+        </div>
+
+        <div class="report-actions no-print">
+          <button class="btn-primary" type="button" (click)="printAttendanceReport()">
+            Imprimir / Guardar PDF
+          </button>
+          <button class="btn-secondary" type="button" (click)="exportAttendanceCsv()">
+            Descargar CSV
+          </button>
+        </div>
+
+        <h3 class="section-title">Asistentes</h3>
+        <div class="table-wrap" *ngIf="report.attendees?.length; else noAttendees">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Email</th>
+                <th>Check-in</th>
+                <th>Método</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let attendee of report.attendees">
+                <td>{{ attendee.fullName || attendee.userId || 'Usuario' }}</td>
+                <td>{{ attendee.email || '—' }}</td>
+                <td>{{ attendee.checkInTime || '—' }}</td>
+                <td>{{ attendee.checkInMethod || '—' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <ng-template #noAttendees>
+          <p class="empty-text">Aún no hay asistencias registradas.</p>
+        </ng-template>
+
+        <h3 class="section-title" style="margin-top: 18px;">Sin check-in</h3>
+        <div class="table-wrap" *ngIf="report.absentees?.length; else noAbsentees">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Email</th>
+                <th>User ID</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let absent of report.absentees">
+                <td>{{ absent.fullName || absent.userId || 'Usuario' }}</td>
+                <td>{{ absent.email || '—' }}</td>
+                <td>{{ absent.userId || '—' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <ng-template #noAbsentees>
+          <p class="empty-text">Todos los inscritos confirmados hicieron check-in.</p>
+        </ng-template>
+      </ng-container>
+    </div>
   </div>
 </app-panel-shell>

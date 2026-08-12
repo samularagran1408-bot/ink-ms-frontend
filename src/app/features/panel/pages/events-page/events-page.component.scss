@@ -11,3 +11,263 @@
 .event-user-row:last-child {
   border-bottom: none;
 }
+
+.pass-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 14px 0;
+  border-bottom: 1px solid #F1F5F9;
+}
+
+.pass-row:last-child {
+  border-bottom: none;
+}
+
+.pass-info {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.pass-qr {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-width: 180px;
+}
+
+.pass-qr img {
+  width: 180px;
+  height: 180px;
+  border-radius: 12px;
+  border: 1px solid #E2E8F0;
+  background: #fff;
+}
+
+.pass-qr--locked .qr-placeholder {
+  width: 180px;
+  height: 180px;
+  border-radius: 12px;
+  border: 1px dashed #CBD5E1;
+  background: #F8FAFC;
+  color: #94A3B8;
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.qr-code-text {
+  max-width: 220px;
+  font-size: 11px;
+  color: #64748B;
+  word-break: break-all;
+  text-align: center;
+}
+
+.manage-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+  align-items: center;
+  max-width: 420px;
+}
+
+.detail-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: grid;
+  place-items: center;
+  z-index: 40;
+  padding: 20px;
+}
+
+.detail-panel {
+  width: min(520px, 100%);
+  background: #fff;
+  border-radius: 14px;
+  padding: 18px;
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.18);
+  max-height: min(90vh, 900px);
+  overflow: auto;
+}
+
+.detail-panel--wide {
+  width: min(640px, 100%);
+}
+
+.detail-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  gap: 12px;
+}
+
+.detail-head h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.checkin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.file-btn {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.qr-reader {
+  width: 100%;
+  min-height: 40px;
+  margin-bottom: 12px;
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+.manual-qr {
+  display: grid;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.manual-qr label {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.manual-qr input {
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+}
+
+.report-title {
+  margin: 0 0 6px;
+  font-size: 20px;
+}
+
+.report-actions {
+  margin: 12px 0 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.report-kpi-grid {
+  margin: 12px 0 8px;
+}
+
+.attendance-survey {
+  margin: 12px 0 16px;
+  display: grid;
+  gap: 10px;
+}
+
+.survey-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.survey-check input {
+  margin-top: 3px;
+}
+
+.survey-notes {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.survey-notes textarea {
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font: inherit;
+  resize: vertical;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.data-table th,
+.data-table td {
+  text-align: left;
+  padding: 10px 8px;
+  border-bottom: 1px solid #F1F5F9;
+}
+
+.data-table th {
+  color: #64748B;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+@media (max-width: 700px) {
+  .manage-actions {
+    max-width: none;
+    justify-content: flex-start;
+  }
+
+  .pass-qr,
+  .pass-qr--locked .qr-placeholder,
+  .pass-qr img {
+    width: 160px;
+    height: 160px;
+  }
+}
+
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+
+  .attendance-report-print,
+  .attendance-report-print * {
+    visibility: visible !important;
+  }
+
+  .attendance-report-print {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-height: none !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+    background: #fff !important;
+  }
+
+  .no-print {
+    display: none !important;
+    visibility: hidden !important;
+  }
+}

@@ -1,4 +1,4 @@
-<!-- Layout atleta: top nav + drawer -->
+<!-- Layout drawer: atleta siempre; staff solo en móvil -->
 <ng-container *ngIf="layout === 'drawer'">
   <header class="top-nav">
     <div class="nav-left">
@@ -62,11 +62,39 @@
         </span>
         <span *ngIf="item.showBadge && unreadCount > 0" class="nav-badge">{{ unreadCount }}</span>
       </a>
+
+      <ng-container *ngIf="secondaryItems.length">
+        <div class="drawer-nav-divider"></div>
+        <a
+          *ngFor="let item of secondaryItems"
+          [routerLink]="item.route"
+          routerLinkActive="sidebar-nav-item--active"
+          [routerLinkActiveOptions]="{ exact: !!item.exact }"
+          class="sidebar-nav-item"
+          (click)="closeSidebar()"
+        >
+          <span class="nav-item-main">
+            <app-icon [name]="item.icon" [size]="20"></app-icon>
+            <span>{{ item.labelKey | translate }}</span>
+          </span>
+          <span *ngIf="item.showBadge && unreadCount > 0" class="nav-badge">{{ unreadCount }}</span>
+        </a>
+      </ng-container>
     </nav>
+
+    <button
+      *ngIf="preferredLayout === 'fixed'"
+      class="drawer-logout-btn"
+      type="button"
+      (click)="handleLogout()"
+    >
+      <app-icon name="arrow-right-on-rectangle" [size]="18"></app-icon>
+      <span>{{ 'COMMON.LOGOUT' | translate }}</span>
+    </button>
   </aside>
 </ng-container>
 
-<!-- Layout admin / entrenador / organizador: sidebar fijo -->
+<!-- Layout admin / entrenador / organizador: sidebar fijo (desktop) -->
 <aside *ngIf="layout === 'fixed'" class="role-sidebar">
   <div class="role-sidebar-brand">{{ brandTitle }}</div>
 

@@ -170,7 +170,21 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
   }
 
   isRegistered(eventId: string): boolean {
-    return this.registrations.some((reg) => reg.eventId === eventId);
+    return this.registrations.some((reg) => reg.eventId === eventId && reg.waitlistPosition == null);
+  }
+
+  hasAttended(eventId: string): boolean {
+    return !!this.registrations.find((reg) => reg.eventId === eventId && reg.waitlistPosition == null)?.attended;
+  }
+
+  canFillAttendance(event: EventItem): boolean {
+    if (!this.isRegistered(event.id) || this.hasAttended(event.id) || !event.eventDate) {
+      return false;
+    }
+    const time = ((event.eventTime || '00:00:00').trim()).substring(0, 8);
+    const normalized = time.length === 5 ? `${time}:00` : time;
+    const start = Date.parse(`${event.eventDate}T${normalized}`);
+    return !Number.isNaN(start) && Date.now() >= start;
   }
 
   eventImage(event: EventItem): string {

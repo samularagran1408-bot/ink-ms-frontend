@@ -16,3 +16,14 @@
   opacity: 0.55;
   pointer-events: none;
 }
+
+.linkish {
+  border: none;
+  background: none;
+  color: #A30D11;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
