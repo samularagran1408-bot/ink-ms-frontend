@@ -1,0 +1,85 @@
+<app-panel-shell>
+  <h1 class="page-title">{{ 'CHAT.TITLE' | translate }}</h1>
+  <p class="page-subtitle">{{ 'CHAT.SUBTITLE' | translate }}</p>
+
+  <p class="mcp-banner" *ngIf="mcpNota">{{ mcpNota }}</p>
+
+  <div class="chat-toolbar">
+    <button class="btn-secondary" type="button" (click)="nuevaConversacion()">
+      {{ 'CHAT.NEW' | translate }}
+    </button>
+  </div>
+
+  <div
+    #timeline
+    class="chat-timeline"
+    role="log"
+    aria-live="polite"
+    aria-relevant="additions"
+  >
+    <p *ngIf="!mensajes.length" class="empty-text">{{ 'CHAT.EMPTY' | translate }}</p>
+
+    <article
+      *ngFor="let msg of mensajes"
+      class="chat-bubble"
+      [class.chat-bubble--user]="msg.remitente === 'usuario'"
+      [class.chat-bubble--bot]="msg.remitente === 'asistente'"
+    >
+      <p class="chat-text">{{ msg.texto }}</p>
+
+      <p class="chat-meta" *ngIf="msg.remitente === 'asistente'">
+        <span>{{ etiquetaFuente(msg.fuente) }}</span>
+        <span *ngIf="msg.mcp?.llm_eligio_tools"> · MCP tools</span>
+        <span *ngIf="msg.herramientas?.length"> · {{ msg.herramientas!.join(', ') }}</span>
+      </p>
+
+      <div class="card-grid" *ngIf="msg.cards?.length">
+        <div class="action-card" *ngFor="let card of msg.cards">
+          <span class="action-card-type">{{ card.tipo }}</span>
+          <strong>{{ card.titulo }}</strong>
+          <p *ngIf="card.subtitulo" class="kpi-sub">{{ card.subtitulo }}</p>
+          <p *ngIf="card.meta?.length" class="kpi-sub">{{ card.meta!.join(' · ') }}</p>
+          <button
+            *ngIf="card.cta"
+            class="btn-primary"
+            type="button"
+            (click)="irACard(card)"
+          >
+            {{ card.cta.label }}
+          </button>
+        </div>
+      </div>
+
+      <div class="chips" *ngIf="msg.sugerencias?.length">
+        <button
+          *ngFor="let s of msg.sugerencias"
+          class="chip"
+          type="button"
+          (click)="usarSugerencia(s)"
+        >
+          {{ s }}
+        </button>
+      </div>
+    </article>
+  </div>
+
+  <p class="sr-only" aria-live="polite">{{ estadoA11y }}</p>
+  <p *ngIf="error" class="error-text" role="alert">{{ error }}</p>
+  <p *ngIf="enviando" class="empty-text">{{ 'CHAT.SENDING' | translate }}</p>
+
+  <div class="chat-composer">
+    <label class="sr-only" for="chat-input">{{ 'CHAT.INPUT' | translate }}</label>
+    <textarea
+      #inputEl
+      id="chat-input"
+      rows="2"
+      [(ngModel)]="borrador"
+      (keydown)="onKeydown($event)"
+      [disabled]="enviando"
+      [placeholder]="'CHAT.PLACEHOLDER' | translate"
+    ></textarea>
+    <button class="btn-primary" type="button" (click)="enviar()" [disabled]="enviando || !borrador.trim()">
+      {{ 'CHAT.SEND' | translate }}
+    </button>
+  </div>
+</app-panel-shell>

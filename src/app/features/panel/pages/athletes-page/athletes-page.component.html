@@ -1,22 +1,80 @@
 <app-panel-shell>
-  <h1 class="page-title">Atletas</h1>
-  <p class="page-subtitle">Ocupación y waitlist por evento del organizador.</p>
+  <h1 class="page-title">Atletas inscritos</h1>
+  <p class="page-subtitle">Usuarios inscritos por evento, con filtro por estado de asistencia.</p>
   <p *ngIf="loading" class="empty-text">Cargando...</p>
   <p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
 
   <div class="card" *ngFor="let summary of summaries" style="margin-bottom: 12px;">
     <h3 class="section-title">{{ summary.event.name }}</h3>
     <div class="kpi-sub" style="margin-bottom: 10px;">
-      {{ summary.occupied }}/{{ summary.event.maxCapacity }} cupos ocupados ·
+      {{ summary.occupied }}/{{ summary.event.maxCapacity }} inscritos ·
       Waitlist: {{ summary.waitlist.length }}
     </div>
-    <div class="list-item" *ngFor="let item of summary.waitlist">
-      <div>
-        <strong>User {{ item.userId }}</strong>
-        <div class="kpi-sub">Posición {{ item.waitlistPosition ?? '—' }}</div>
+
+    <div class="filter-chips">
+      <button
+        type="button"
+        class="filter-chip"
+        [class.filter-chip--active]="summary.filter === 'all'"
+        (click)="setFilter(summary, 'all')"
+      >
+        Todos ({{ summary.enrolled.length }})
+      </button>
+      <button
+        type="button"
+        class="filter-chip"
+        [class.filter-chip--active]="summary.filter === 'attended'"
+        (click)="setFilter(summary, 'attended')"
+      >
+        Asistieron ({{ attendedCount(summary) }})
+      </button>
+      <button
+        type="button"
+        class="filter-chip"
+        [class.filter-chip--active]="summary.filter === 'absent'"
+        (click)="setFilter(summary, 'absent')"
+      >
+        Ausentes ({{ absentCount(summary) }})
+      </button>
+    </div>
+
+    <div class="table-wrap" *ngIf="filteredEnrolled(summary).length; else noEnrolled">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Email</th>
+            <th>Estado</th>
+            <th>Check-in</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let row of filteredEnrolled(summary)">
+            <td>{{ row.fullName || row.userId || 'Usuario' }}</td>
+            <td>{{ row.email || '—' }}</td>
+            <td>
+              <span class="status-pill" [class.status-pill--ok]="row.attended" [class.status-pill--warn]="!row.attended">
+                {{ row.attended ? 'Asistió' : 'Sin check-in' }}
+              </span>
+            </td>
+            <td>{{ row.checkInTime || '—' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <ng-template #noEnrolled>
+      <p class="empty-text">No hay inscritos con ese filtro.</p>
+    </ng-template>
+
+    <div *ngIf="summary.waitlist.length" style="margin-top: 16px;">
+      <h4 class="section-title">Waitlist</h4>
+      <div class="list-item" *ngFor="let item of summary.waitlist">
+        <div>
+          <strong>{{ item.eventName || ('User ' + item.userId) }}</strong>
+          <div class="kpi-sub">Posición {{ item.waitlistPosition ?? '—' }} · User {{ item.userId }}</div>
+        </div>
       </div>
     </div>
-    <p *ngIf="!summary.waitlist.length" class="empty-text">Sin waitlist para este evento.</p>
   </div>
 
   <p *ngIf="!loading && !summaries.length" class="empty-text">No hay eventos para mostrar atletas.</p>

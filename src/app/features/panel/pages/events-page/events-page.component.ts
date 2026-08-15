@@ -15,6 +15,8 @@ import {
 import { SessionService } from '../../../../core/services/session.service';
 import { SportsService } from '../../../../core/services/sports.service';
 import { ReportsService } from '../../../../core/services/reports.service';
+import { PreferencesApiService } from '../../../../core/services/preferences-api.service';
+import { AttendanceCheckInMethod, normalizeAttendanceCheckInMethod } from '../../../../core/models/accessibility-api';
 import { resolveEventImage } from '../../../../core/utils/event-image.util';
 import { EventPlaceLocation } from '../../../../core/utils/maps.util';
 import { buildAttendanceCheckinUrl, extractQrCode, eventDateTimeMs } from '../../../../core/utils/qr-attendance.util';
@@ -35,6 +37,18 @@ interface MyPassRow {
   loadingQr: boolean;
 }
 
+type AttendanceFilter = 'all' | 'attended' | 'absent';
+
+interface EnrolledUserRow {
+  registrationId: string;
+  userId?: string;
+  fullName?: string;
+  email?: string;
+  attended: boolean;
+  checkInTime?: string;
+  checkInMethod?: string;
+}
+
 @Component({
   selector: 'app-events-page',
   templateUrl: './events-page.component.html',
@@ -52,6 +66,8 @@ export class EventsPageComponent implements OnInit, OnDestroy {
   errorMessage: string | null = null;
   successMessage: string | null = null;
   registeringId: string | null = null;
+  highlightedEventId: string | null = null;
+  attendanceCheckInMethod: AttendanceCheckInMethod = 'qr';
   nowMs = Date.now();
 
   checkInOpen = false;
@@ -67,6 +83,13 @@ export class EventsPageComponent implements OnInit, OnDestroy {
   reportLoading = false;
   reportError: string | null = null;
   attendanceReport: AttendanceReport | null = null;
+
+  enrolledOpen = false;
+  enrolledEvent: EventItem | null = null;
+  enrolledFilter: AttendanceFilter = 'all';
+  enrolledRows: EnrolledUserRow[] = [];
+  enrolledLoading = false;
+  enrolledError: string | null = null;
 
   myAttendanceOpen = false;
   myAttendanceEvent: EventItem | null = null;
@@ -87,6 +110,7 @@ export class EventsPageComponent implements OnInit, OnDestroy {
     private sportsService: SportsService,
     private session: SessionService,
     private reportsService: ReportsService,
+    private preferencesApi: PreferencesApiService,
     private fb: FormBuilder
   ) {
     this.form = this.fb.group({
@@ -104,6 +128,7 @@ export class EventsPageComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.mode = (this.route.snapshot.data['mode'] as 'user' | 'manage') || 'user';
+    this.highlightedEventId = this.route.snapshot.queryParamMap.get('eventoId');
     this.clockTimer = setInterval(() => {
       this.nowMs = Date.now();
       if (this.mode === 'user') {
@@ -143,14 +168,18 @@ export class EventsPageComponent implements OnInit, OnDestroy {
             : of([] as Registration[]),
           sports: this.canManage
             ? this.sportsService.getActiveSports().pipe(catchError(() => of([] as Sport[])))
-            : of([] as Sport[])
+            : of([] as Sport[]),
+          preferences: this.mode === 'user'
+            ? this.preferencesApi.getPreferences().pipe(catchError(() => of(null)))
+            : of(null)
         });
       })
     ).subscribe({
-      next: ({ events, registrations, sports }) => {
+      next: ({ events, registrations, sports, preferences }) => {
         this.events = events;
         this.registrations = registrations;
         this.sports = sports;
+        this.attendanceCheckInMethod = normalizeAttendanceCheckInMethod(preferences?.attendanceCheckInMethod);
         if (sports.length && !this.form.value.sportId) {
           this.form.patchValue({ sportId: sports[0].id });
         }
@@ -163,6 +192,7 @@ export class EventsPageComponent implements OnInit, OnDestroy {
         } else {
           this.loading = false;
         }
+        this.scrollToHighlighted();
       },
       error: (error) => {
         this.errorMessage = error?.error?.message || 'No se pudieron cargar eventos.';
@@ -304,6 +334,25 @@ export class EventsPageComponent implements OnInit, OnDestroy {
     return this.registrations.some((reg) => reg.eventId === eventId && reg.waitlistPosition == null);
   }
 
+  isHighlighted(eventId: string | number | undefined): boolean {
+    if (this.highlightedEventId == null || eventId == null) {
+      return false;
+    }
+    return String(eventId) === String(this.highlightedEventId);
+  }
+
+  private scrollToHighlighted(): void {
+    if (!this.highlightedEventId || typeof document === 'undefined') {
+      return;
+    }
+    setTimeout(() => {
+      document.getElementById(`evento-${this.highlightedEventId}`)?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center'
+      });
+    }, 50);
+  }
+
   registrationFor(eventId: string): Registration | null {
     return this.registrations.find((reg) => reg.eventId === eventId && reg.waitlistPosition == null) || null;
   }
@@ -312,9 +361,13 @@ export class EventsPageComponent implements OnInit, OnDestroy {
     return !!this.registrationFor(eventId)?.attended;
   }
 
-  /** Inscrito confirmado y aún no asistió. */
+  get attendanceByQr(): boolean {
+    return this.attendanceCheckInMethod === 'qr';
+  }
+
+  /** Inscrito confirmado, aún no asistió y eligió el formulario. */
   canFillAttendance(event: EventItem): boolean {
-    return this.isRegistered(event.id) && !this.hasAttended(event.id);
+    return this.isRegistered(event.id) && !this.hasAttended(event.id) && !this.attendanceByQr;
   }
 
   catalogButtonLabel(event: EventItem): string {
@@ -484,6 +537,71 @@ export class EventsPageComponent implements OnInit, OnDestroy {
 
   submitManualQr(): void {
     void this.submitQrCode(this.manualQrCode);
+  }
+
+  openEnrolledList(event: EventItem): void {
+    this.enrolledEvent = event;
+    this.enrolledOpen = true;
+    this.enrolledFilter = 'all';
+    this.enrolledRows = [];
+    this.enrolledError = null;
+    this.enrolledLoading = true;
+
+    this.sportsService.getAttendanceReport(event.id).subscribe({
+      next: (report) => {
+        const attendees: EnrolledUserRow[] = (report.attendees || []).map((row) => ({
+          registrationId: row.registrationId,
+          userId: row.userId,
+          fullName: row.fullName,
+          email: row.email,
+          attended: true,
+          checkInTime: row.checkInTime,
+          checkInMethod: row.checkInMethod
+        }));
+        const absentees: EnrolledUserRow[] = (report.absentees || []).map((row) => ({
+          registrationId: row.registrationId,
+          userId: row.userId,
+          fullName: row.fullName,
+          email: row.email,
+          attended: false
+        }));
+        this.enrolledRows = [...attendees, ...absentees];
+        this.enrolledLoading = false;
+      },
+      error: (error) => {
+        this.enrolledLoading = false;
+        this.enrolledError = error?.error?.message || 'No se pudo cargar la lista de inscritos.';
+      }
+    });
+  }
+
+  closeEnrolledList(): void {
+    this.enrolledOpen = false;
+    this.enrolledEvent = null;
+    this.enrolledRows = [];
+    this.enrolledError = null;
+  }
+
+  setEnrolledFilter(filter: AttendanceFilter): void {
+    this.enrolledFilter = filter;
+  }
+
+  get filteredEnrolledRows(): EnrolledUserRow[] {
+    if (this.enrolledFilter === 'attended') {
+      return this.enrolledRows.filter((row) => row.attended);
+    }
+    if (this.enrolledFilter === 'absent') {
+      return this.enrolledRows.filter((row) => !row.attended);
+    }
+    return this.enrolledRows;
+  }
+
+  get enrolledAttendedCount(): number {
+    return this.enrolledRows.filter((row) => row.attended).length;
+  }
+
+  get enrolledAbsentCount(): number {
+    return this.enrolledRows.filter((row) => !row.attended).length;
   }
 
   openAttendanceReport(event: EventItem): void {

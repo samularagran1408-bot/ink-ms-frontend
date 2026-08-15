@@ -1,3 +1,5 @@
+export type AttendanceCheckInMethod = 'form' | 'qr';
+
 export interface Preference {
   disabilityType?: string;
   language?: string;
@@ -11,6 +13,7 @@ export interface Preference {
   voiceCommandsEnabled?: boolean;
   ttsEnabled?: boolean;
   voiceLanguage?: string;
+  attendanceCheckInMethod?: AttendanceCheckInMethod | string;
   notificationPreferences?: unknown;
   trainingPreferences?: unknown;
 }
@@ -28,6 +31,13 @@ export interface PreferenceRequest {
   voiceCommandsEnabled?: boolean;
   ttsEnabled?: boolean;
   voiceLanguage?: string;
+  attendanceCheckInMethod?: AttendanceCheckInMethod | string;
+}
+
+export function normalizeAttendanceCheckInMethod(
+  value: string | null | undefined
+): AttendanceCheckInMethod {
+  return value === 'form' ? 'form' : 'qr';
 }
 
 export interface AppNotification {

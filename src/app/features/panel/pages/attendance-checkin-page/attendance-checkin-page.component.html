@@ -1,10 +1,13 @@
 <app-panel-shell [fixedSidebar]="false">
-  <h1 class="page-title">Encuesta de asistencia</h1>
+  <h1 class="page-title">{{ attendanceByQr ? 'Check-in por QR' : 'Encuesta de asistencia' }}</h1>
   <p class="page-subtitle">
-    Confirma que estás en el evento. Al enviar, queda registrada tu asistencia.
+    {{ attendanceByQr
+      ? 'Al escanear el código, tu asistencia se registra de inmediato.'
+      : 'Confirma que estás en el evento. Al enviar, queda registrada tu asistencia.' }}
   </p>
 
-  <p *ngIf="loading" class="empty-text">Cargando encuesta...</p>
+  <p *ngIf="loading" class="empty-text">Cargando asistencia...</p>
+  <p *ngIf="submitting && attendanceByQr" class="empty-text">Registrando asistencia...</p>
   <p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
   <p *ngIf="successMessage" class="empty-text">{{ successMessage }}</p>
 
@@ -15,7 +18,7 @@
       {{ info?.location || event?.location }}
     </p>
 
-    <div class="attendance-survey" *ngIf="!alreadyAttended && !successMessage">
+    <div class="attendance-survey" *ngIf="!attendanceByQr && !alreadyAttended && !successMessage">
       <label class="survey-check">
         <input type="checkbox" [(ngModel)]="survey.present" name="surveyPresent" />
         Confirmo que estoy en el lugar del evento

@@ -24,7 +24,8 @@
   cursor: pointer;
 }
 
-.checkbox-row input[type='checkbox'] {
+.checkbox-row input[type='checkbox'],
+.checkbox-row input[type='radio'] {
   width: 16px;
   height: 16px;
   margin: 0;
@@ -34,6 +35,10 @@
 
 .checkbox-row span {
   line-height: 1.3;
+}
+
+.attendance-method-grid {
+  grid-template-columns: 1fr;
 }
 
 @media (max-width: 700px) {

@@ -3,7 +3,9 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { catchError, switchMap } from 'rxjs/operators';
 
+import { AttendanceCheckInMethod, normalizeAttendanceCheckInMethod, Preference } from '../../../../core/models/accessibility-api';
 import { EventItem, QrAttendanceInfo, Registration } from '../../../../core/models/sports';
+import { PreferencesApiService } from '../../../../core/services/preferences-api.service';
 import { SessionService } from '../../../../core/services/session.service';
 import { SportsService } from '../../../../core/services/sports.service';
 import { extractQrCode } from '../../../../core/utils/qr-attendance.util';
@@ -23,6 +25,7 @@ export class AttendanceCheckinPageComponent implements OnInit {
   info: QrAttendanceInfo | null = null;
   event: EventItem | null = null;
   registration: Registration | null = null;
+  attendanceCheckInMethod: AttendanceCheckInMethod = 'qr';
 
   survey = {
     present: false,
@@ -34,7 +37,8 @@ export class AttendanceCheckinPageComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private session: SessionService,
-    private sportsService: SportsService
+    private sportsService: SportsService,
+    private preferencesApi: PreferencesApiService
   ) {}
 
   ngOnInit(): void {
@@ -53,6 +57,11 @@ export class AttendanceCheckinPageComponent implements OnInit {
 
   get alreadyAttended(): boolean {
     return !!this.info?.attended || !!this.registration?.attended;
+  }
+
+  get attendanceByQr(): boolean {
+    return this.attendanceCheckInMethod === 'qr'
+      || this.session.hasRole('ADMIN', 'ORGANIZADOR', 'ENTRENADOR');
   }
 
   get eventTitle(): string {
@@ -81,12 +90,14 @@ export class AttendanceCheckinPageComponent implements OnInit {
           events: this.sportsService.getEvents().pipe(catchError(() => of([] as EventItem[]))),
           registrations: userId
             ? this.sportsService.getRegistrationsByUser(userId).pipe(catchError(() => of([] as Registration[])))
-            : of([] as Registration[])
+            : of([] as Registration[]),
+          preferences: this.preferencesApi.getPreferences().pipe(catchError(() => of(null as Preference | null)))
         });
       })
     ).subscribe({
-      next: ({ info, events, registrations }) => {
+      next: ({ info, events, registrations, preferences }) => {
         this.info = info;
+        this.attendanceCheckInMethod = normalizeAttendanceCheckInMethod(preferences?.attendanceCheckInMethod);
         const eventId = info?.eventId || this.route.snapshot.queryParamMap.get('eventId');
         this.event = events.find((item) => item.id === eventId) || null;
         this.registration = registrations.find((reg) => {
@@ -96,17 +107,33 @@ export class AttendanceCheckinPageComponent implements OnInit {
         this.loading = false;
         if (!this.info && !this.registration) {
           this.errorMessage = 'No encontramos una inscripción válida para este código QR.';
+          return;
+        }
+        if (!this.alreadyAttended && this.attendanceByQr) {
+          this.submitAttendance();
         }
       },
       error: (error) => {
         this.loading = false;
-        this.errorMessage = error?.error?.message || 'No se pudo cargar la encuesta de asistencia.';
+        this.errorMessage = error?.error?.message || 'No se pudo cargar la asistencia.';
       }
     });
   }
 
   submit(): void {
-    if (!this.surveyReady || this.submitting || this.alreadyAttended) {
+    if (!this.surveyReady) {
+      return;
+    }
+    this.submitAttendance();
+  }
+
+  goEvents(): void {
+    const home = this.session.homeForCurrentUser();
+    this.router.navigate([`${home}/events`.replace(/\/\/+/g, '/')]);
+  }
+
+  private submitAttendance(): void {
+    if (this.submitting || this.alreadyAttended) {
       return;
     }
 
@@ -129,10 +156,5 @@ export class AttendanceCheckinPageComponent implements OnInit {
         this.errorMessage = error?.error?.message || 'No se pudo registrar la asistencia.';
       }
     });
-  }
-
-  goEvents(): void {
-    const home = this.session.homeForCurrentUser();
-    this.router.navigate([`${home}/events`.replace(/\/\/+/g, '/')]);
   }
 }

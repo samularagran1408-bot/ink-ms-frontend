@@ -5,6 +5,7 @@ import { LoginRequest } from '../models/login-request';
 import { LoginResponse } from '../models/login-response';
 import { ForgotPasswordRequest } from '../models/forgot-password-request';
 import { ForgotPasswordResponse } from '../models/forgot-password-response';
+import { ResetPasswordRequest } from '../models/reset-password-request';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { catchError, map, switchMap } from 'rxjs/operators';
@@ -80,6 +81,14 @@ export class AuthService {
 
   forgotPassword(data: ForgotPasswordRequest): Observable<ForgotPasswordResponse> {
     return this.http.post<ForgotPasswordResponse>(`${this.apiUrlAuth}/forgot-password`, data);
+  }
+
+  verifyResetCode(token: string): Observable<{ valid: boolean; message: string }> {
+    return this.http.post<{ valid: boolean; message: string }>(`${this.apiUrlAuth}/verify-reset-code`, { token });
+  }
+
+  resetPassword(data: ResetPasswordRequest): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.apiUrlAuth}/reset-password`, data);
   }
 
   logoutRemote(): Observable<{ message: string }> {

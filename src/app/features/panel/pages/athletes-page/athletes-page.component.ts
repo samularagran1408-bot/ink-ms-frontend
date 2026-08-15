@@ -2,14 +2,27 @@ import { Component, OnInit } from '@angular/core';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
-import { EventItem, Registration } from '../../../../core/models/sports';
+import { AttendanceReport, EventItem, Registration } from '../../../../core/models/sports';
 import { SessionService } from '../../../../core/services/session.service';
 import { SportsService } from '../../../../core/services/sports.service';
+
+type AttendanceFilter = 'all' | 'attended' | 'absent';
+
+interface EnrolledUserRow {
+  registrationId: string;
+  userId?: string;
+  fullName?: string;
+  email?: string;
+  attended: boolean;
+  checkInTime?: string;
+}
 
 interface EventAthleteSummary {
   event: EventItem;
   occupied: number;
   waitlist: Registration[];
+  enrolled: EnrolledUserRow[];
+  filter: AttendanceFilter;
 }
 
 @Component({
@@ -51,8 +64,29 @@ export class AthletesPageComponent implements OnInit {
     });
   }
 
+  setFilter(summary: EventAthleteSummary, filter: AttendanceFilter): void {
+    summary.filter = filter;
+  }
+
+  filteredEnrolled(summary: EventAthleteSummary): EnrolledUserRow[] {
+    if (summary.filter === 'attended') {
+      return summary.enrolled.filter((row) => row.attended);
+    }
+    if (summary.filter === 'absent') {
+      return summary.enrolled.filter((row) => !row.attended);
+    }
+    return summary.enrolled;
+  }
+
+  attendedCount(summary: EventAthleteSummary): number {
+    return summary.enrolled.filter((row) => row.attended).length;
+  }
+
+  absentCount(summary: EventAthleteSummary): number {
+    return summary.enrolled.filter((row) => !row.attended).length;
+  }
+
   private scopeEvents(events: EventItem[]): EventItem[] {
-    // Admin / entrenador ven todos; organizador prioriza los suyos.
     if (this.session.hasRole('ADMIN', 'ENTRENADOR')) {
       return events;
     }
@@ -75,18 +109,51 @@ export class AthletesPageComponent implements OnInit {
 
     forkJoin(
       events.map((event) =>
-        this.sportsService.getEventWaitlist(event.id).pipe(catchError(() => of([] as Registration[])))
+        forkJoin({
+          waitlist: this.sportsService.getEventWaitlist(event.id).pipe(catchError(() => of([] as Registration[]))),
+          report: this.sportsService.getAttendanceReport(event.id).pipe(
+            catchError(() => of({
+              eventId: event.id,
+              totalRegistered: 0,
+              totalAttended: 0,
+              attendees: [],
+              absentees: []
+            } as AttendanceReport))
+          )
+        })
       )
     ).subscribe({
-      next: (waitlists) => {
-        this.summaries = events.map((event, index) => ({
-          event,
-          occupied: Math.max(
-            (event.maxCapacity || 0) - (event.availableCapacity ?? (event.maxCapacity || 0)),
-            0
-          ),
-          waitlist: waitlists[index] || []
-        }));
+      next: (results) => {
+        this.summaries = events.map((event, index) => {
+          const report = results[index].report;
+          const enrolled: EnrolledUserRow[] = [
+            ...(report.attendees || []).map((row) => ({
+              registrationId: row.registrationId,
+              userId: row.userId,
+              fullName: row.fullName,
+              email: row.email,
+              attended: true,
+              checkInTime: row.checkInTime
+            })),
+            ...(report.absentees || []).map((row) => ({
+              registrationId: row.registrationId,
+              userId: row.userId,
+              fullName: row.fullName,
+              email: row.email,
+              attended: false
+            }))
+          ];
+          return {
+            event,
+            occupied: enrolled.length || Math.max(
+              (event.maxCapacity || 0) - (event.availableCapacity ?? (event.maxCapacity || 0)),
+              0
+            ),
+            waitlist: results[index].waitlist || [],
+            enrolled,
+            filter: 'all' as AttendanceFilter
+          };
+        });
         this.loading = false;
       },
       error: () => {

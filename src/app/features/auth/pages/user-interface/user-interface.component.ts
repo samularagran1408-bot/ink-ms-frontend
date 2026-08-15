@@ -4,7 +4,7 @@ import { Subscription, forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { TranslateService } from '@ngx-translate/core';
 
-import { EventItem, Registration } from '../../../../core/models/sports';
+import { EventItem, Registration, Routine, RoutineRegistration } from '../../../../core/models/sports';
 import { AppNotification } from '../../../../core/models/accessibility-api';
 import { SessionService } from '../../../../core/services/session.service';
 import { SportsService } from '../../../../core/services/sports.service';
@@ -25,6 +25,9 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
   errorMessage: string | null = null;
   events: EventItem[] = [];
   registrations: Registration[] = [];
+  routines: Routine[] = [];
+  routineRegistrations: RoutineRegistration[] = [];
+  registeringRoutineId: string | null = null;
   nextEvent: EventItem | null = null;
   unreadCount = 0;
   notifications: AppNotification[] = [];
@@ -77,13 +80,19 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
         registrations: userId
           ? this.sportsService.getRegistrationsByUser(userId).pipe(catchError(() => of([] as Registration[])))
           : of([] as Registration[]),
+        routines: this.sportsService.getRoutines().pipe(catchError(() => of([] as Routine[]))),
+        routineRegistrations: userId
+          ? this.sportsService.getRoutineRegistrationsByUser(userId).pipe(catchError(() => of([] as RoutineRegistration[])))
+          : of([] as RoutineRegistration[]),
         unread: this.preferencesApi.getUnreadCount().pipe(catchError(() => of(0))),
         notifications: this.preferencesApi.getNotifications().pipe(catchError(() => of([] as AppNotification[]))),
         prefs: this.notificationAnnounce.refreshPreferences()
       }).subscribe({
-        next: ({ events, registrations, unread, notifications }) => {
+        next: ({ events, registrations, routines, routineRegistrations, unread, notifications }) => {
           this.events = this.sortEvents(events).slice(0, 6);
           this.registrations = registrations;
+          this.routines = routines;
+          this.routineRegistrations = routineRegistrations;
           this.nextEvent = this.resolveNextEvent(events, registrations);
           this.unreadCount = typeof unread === 'number' ? unread : (unread?.count ?? 0);
           this.unreadNotifications.setCount(this.unreadCount);
@@ -107,7 +116,79 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
   }
 
   get confirmedCount(): number {
-    return this.registrations.length;
+    return this.confirmedRegistrations.length;
+  }
+
+  get confirmedRegistrations(): Registration[] {
+    return this.registrations.filter((reg) => reg.waitlistPosition == null);
+  }
+
+  get waitlistRegistrations(): Registration[] {
+    return this.registrations.filter((reg) => reg.waitlistPosition != null);
+  }
+
+  get attendedCount(): number {
+    return this.confirmedRegistrations.filter((reg) => !!reg.attended).length;
+  }
+
+  get attendanceProgress(): number {
+    if (!this.confirmedCount) {
+      return 0;
+    }
+    return Math.round((this.attendedCount * 100) / this.confirmedCount);
+  }
+
+  get myRoutines(): { registration: RoutineRegistration; routine: Routine | null }[] {
+    return this.routineRegistrations.map((registration) => ({
+      registration,
+      routine: this.routines.find((routine) => routine.id === registration.routineId) || null
+    }));
+  }
+
+  get availableRoutines(): Routine[] {
+    const enrolledIds = new Set(this.routineRegistrations.map((reg) => reg.routineId));
+    return this.routines.filter((routine) => !enrolledIds.has(routine.id));
+  }
+
+  routineName(routineId: string): string {
+    return this.routines.find((routine) => routine.id === routineId)?.name || this.translate.instant('HOME.ROUTINE_FALLBACK');
+  }
+
+  eventStatusLabel(reg: Registration): string {
+    if (reg.waitlistPosition != null) {
+      return this.translate.instant('HOME.WAITLIST');
+    }
+    if (reg.attended) {
+      return this.translate.instant('HOME.ATTENDED');
+    }
+    return this.translate.instant('HOME.REGISTERED_STATUS');
+  }
+
+  onRegisterRoutine(routine: Routine): void {
+    const ensureProfile$ = this.session.getProfile()
+      ? of(this.session.getProfile())
+      : this.session.loadProfile();
+
+    ensureProfile$.subscribe((profile) => {
+      const userId = profile?.id;
+      if (!userId) {
+        this.errorMessage = this.translate.instant('HOME.NO_PROFILE');
+        return;
+      }
+
+      this.registeringRoutineId = routine.id;
+      this.sportsService.registerToRoutine(userId, routine.id).subscribe({
+        next: () => {
+          this.registeringRoutineId = null;
+          this.errorMessage = null;
+          this.loadHomeData();
+        },
+        error: (error) => {
+          this.registeringRoutineId = null;
+          this.errorMessage = error?.error?.message || this.translate.instant('HOME.JOIN_ERROR');
+        }
+      });
+    });
   }
 
   onNotifications(): void {

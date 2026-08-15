@@ -39,7 +39,8 @@ export class AccessibilityPageComponent implements OnInit {
       voiceCommandsEnabled: [false],
       ttsEnabled: [false],
       voiceLanguage: [this.languageService.voiceLanguageFor(this.languageService.currentLang)],
-      disabilityType: ['']
+      disabilityType: [''],
+      attendanceCheckInMethod: ['qr']
     });
   }
 
@@ -64,7 +65,8 @@ export class AccessibilityPageComponent implements OnInit {
           voiceCommandsEnabled: !!prefs.voiceCommandsEnabled,
           ttsEnabled: !!prefs.ttsEnabled,
           voiceLanguage: prefs.voiceLanguage || this.languageService.voiceLanguageFor(language),
-          disabilityType: prefs.disabilityType || ''
+          disabilityType: prefs.disabilityType || '',
+          attendanceCheckInMethod: prefs.attendanceCheckInMethod === 'form' ? 'form' : 'qr'
         });
         this.languageService.setLanguage(language);
         this.tts.applyPreferences(this.form.value);

@@ -98,6 +98,104 @@
       </div>
     </div>
 
+    <section class="activity-panel" [attr.aria-label]="'HOME.ACTIVITY_TITLE' | translate">
+      <div class="activity-header">
+        <h2 class="activity-title">{{ 'HOME.ACTIVITY_TITLE' | translate }}</h2>
+        <p class="activity-subtitle">{{ 'HOME.PROGRESS_HINT' | translate }}</p>
+      </div>
+
+      <div class="activity-grid">
+        <article class="activity-card">
+          <h3 class="activity-card-title">{{ 'HOME.ACTIVITY_EVENTS' | translate }}</h3>
+          <p *ngIf="!registrations.length" class="empty-text">{{ 'HOME.NO_REGISTRATIONS' | translate }}</p>
+          <div class="activity-list" *ngIf="registrations.length">
+            <div class="activity-row" *ngFor="let reg of registrations.slice(0, 6)">
+              <div>
+                <strong>{{ reg.eventName || (('HOME.EVENT_FALLBACK' | translate) + ' ' + reg.eventId) }}</strong>
+                <div class="kpi-sub">{{ formatDate(reg.registrationDate) }}</div>
+              </div>
+              <span
+                class="status-pill"
+                [class.status-pill--ok]="reg.attended"
+                [class.status-pill--warn]="!reg.attended && reg.waitlistPosition == null"
+                [class.status-pill--bad]="reg.waitlistPosition != null"
+              >
+                {{ eventStatusLabel(reg) }}
+              </span>
+            </div>
+          </div>
+          <button class="talk-ai-btn" type="button" (click)="onSeeAllEvents()">
+            {{ 'HOME.SEE_EVENTS' | translate }}
+          </button>
+        </article>
+
+        <article class="activity-card">
+          <h3 class="activity-card-title">{{ 'HOME.ACTIVITY_ROUTINES' | translate }}</h3>
+          <p *ngIf="!myRoutines.length" class="empty-text">{{ 'HOME.NO_ROUTINES' | translate }}</p>
+          <div class="activity-list" *ngIf="myRoutines.length">
+            <div class="activity-row" *ngFor="let item of myRoutines.slice(0, 5)">
+              <div>
+                <strong>{{ item.routine?.name || routineName(item.registration.routineId) }}</strong>
+                <div class="kpi-sub">
+                  {{ item.routine?.sportName || item.routine?.level || ('HOME.REGISTERED_STATUS' | translate) }}
+                  <span *ngIf="item.routine?.durationMinutes"> · {{ item.routine?.durationMinutes }} min</span>
+                </div>
+              </div>
+              <span class="status-pill status-pill--ok">{{ 'HOME.JOINED' | translate }}</span>
+            </div>
+          </div>
+
+          <h4 class="activity-subhead" *ngIf="availableRoutines.length">{{ 'HOME.AVAILABLE_ROUTINES' | translate }}</h4>
+          <div class="activity-list" *ngIf="availableRoutines.length">
+            <div class="activity-row" *ngFor="let routine of availableRoutines.slice(0, 3)">
+              <div>
+                <strong>{{ routine.name }}</strong>
+                <div class="kpi-sub">{{ routine.sportName || routine.level || ('COMMON.SPORT' | translate) }}</div>
+              </div>
+              <button
+                class="register-event-btn"
+                type="button"
+                [disabled]="registeringRoutineId === routine.id || (routine.availableCapacity ?? 1) <= 0"
+                (click)="onRegisterRoutine(routine)"
+              >
+                {{ registeringRoutineId === routine.id ? '...' : ('HOME.JOIN_ROUTINE' | translate) }}
+              </button>
+            </div>
+          </div>
+          <p *ngIf="!myRoutines.length && !availableRoutines.length" class="empty-text">
+            {{ 'HOME.NO_AVAILABLE_ROUTINES' | translate }}
+          </p>
+        </article>
+
+        <article class="activity-card">
+          <h3 class="activity-card-title">{{ 'HOME.ACTIVITY_PROGRESS' | translate }}</h3>
+          <div class="progress-block">
+            <div class="progress-label-row">
+              <span>{{ 'HOME.ATTENDANCE_RATE' | translate }}</span>
+              <strong>{{ attendanceProgress }}%</strong>
+            </div>
+            <div class="progress-track" role="progressbar" [attr.aria-valuenow]="attendanceProgress" aria-valuemin="0" aria-valuemax="100">
+              <div class="progress-fill" [style.width.%]="attendanceProgress"></div>
+            </div>
+          </div>
+          <div class="progress-metrics">
+            <div class="progress-metric">
+              <span class="progress-metric-value">{{ attendedCount }} / {{ confirmedCount }}</span>
+              <span class="kpi-sub">{{ 'HOME.EVENTS_ATTENDED' | translate }}</span>
+            </div>
+            <div class="progress-metric">
+              <span class="progress-metric-value">{{ myRoutines.length }}</span>
+              <span class="kpi-sub">{{ 'HOME.ROUTINES_JOINED' | translate }}</span>
+            </div>
+            <div class="progress-metric">
+              <span class="progress-metric-value">{{ waitlistRegistrations.length }}</span>
+              <span class="kpi-sub">{{ 'NAV.WAITLIST' | translate }}</span>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
     <div class="main-grid">
       <div class="events-section">
         <div class="section-header-row">

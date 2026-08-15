@@ -156,6 +156,7 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
       case 'ADMIN':
         this.navItems = [
           { labelKey: 'NAV.DASHBOARD', route: '/admin', exact: true, icon: 'squares-2x2' },
+          { labelKey: 'NAV.ASSISTANT', route: '/admin/asistente', icon: 'chat-bubble-left-right' },
           { labelKey: 'NAV.USERS', route: '/admin/users', icon: 'users' },
           { labelKey: 'NAV.EVENTS', route: '/admin/events', icon: 'calendar-days' },
           { labelKey: 'NAV.ATHLETES_WAITLIST', route: '/admin/athletes', icon: 'user-group' },
@@ -170,6 +171,7 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
       case 'ENTRENADOR':
         this.navItems = [
           { labelKey: 'NAV.DASHBOARD', route: '/trainer', exact: true, icon: 'squares-2x2' },
+          { labelKey: 'NAV.ASSISTANT', route: '/trainer/asistente', icon: 'chat-bubble-left-right' },
           { labelKey: 'NAV.QUIZ', route: '/trainer/quiz', icon: 'academic-cap' },
           { labelKey: 'NAV.SESSIONS', route: '/trainer/sessions', icon: 'academic-cap' },
           { labelKey: 'NAV.SPORTS', route: '/trainer/sports', icon: 'trophy' },
@@ -181,6 +183,7 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
       case 'ORGANIZADOR':
         this.navItems = [
           { labelKey: 'NAV.EVENTS', route: '/organizer', exact: true, icon: 'calendar-days' },
+          { labelKey: 'NAV.ASSISTANT', route: '/organizer/asistente', icon: 'chat-bubble-left-right' },
           { labelKey: 'NAV.QUIZ', route: '/organizer/quiz', icon: 'academic-cap' },
           { labelKey: 'NAV.MANAGE_EVENTS', route: '/organizer/events', icon: 'cog-6-tooth' },
           { labelKey: 'NAV.ATHLETES_WAITLIST', route: '/organizer/athletes', icon: 'user-group' }
@@ -190,6 +193,7 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
       default:
         this.navItems = [
           { labelKey: 'NAV.HOME', route: '/home', exact: true, icon: 'home' },
+          { labelKey: 'NAV.ASSISTANT', route: '/home/asistente', icon: 'chat-bubble-left-right' },
           { labelKey: 'NAV.EVENTS', route: '/home/events', icon: 'calendar-days' },
           ...this.commonAccountItems('/home')
         ];

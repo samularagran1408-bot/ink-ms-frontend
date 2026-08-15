@@ -38,7 +38,8 @@
     "WAITLIST": "Waitlist",
     "MANAGE_EVENTS": "Manage events",
     "QUIZ": "Aptitude quiz",
-    "HOME": "Home"
+    "HOME": "Home",
+    "ASSISTANT": "Assistant"
   },
   "ACCESSIBILITY": {
     "TITLE": "Accessibility",
@@ -70,7 +71,11 @@
     "FONT_SMALL": "Small",
     "FONT_MEDIUM": "Medium",
     "FONT_LARGE": "Large",
-    "FONT_XLARGE": "XLarge"
+    "FONT_XLARGE": "XLarge",
+    "ATTENDANCE_METHOD": "How to check in",
+    "ATTENDANCE_METHOD_HINT": "Choose whether you confirm attendance with a form or by scanning a QR code.",
+    "ATTENDANCE_QR": "By QR: scanning saves attendance instantly, no survey",
+    "ATTENDANCE_FORM": "By form: you complete an attendance survey"
   },
   "NOTIFICATIONS": {
     "TITLE": "Notifications",
@@ -125,7 +130,25 @@
     "DAY_WED": "W",
     "DAY_THU": "T",
     "DAY_FRI": "F",
-    "DAY_SAT": "S"
+    "DAY_SAT": "S",
+    "ACTIVITY_TITLE": "Your activity",
+    "ACTIVITY_EVENTS": "Registered events",
+    "ACTIVITY_ROUTINES": "Routines",
+    "ACTIVITY_PROGRESS": "Progress",
+    "NO_ROUTINES": "You are not in any routine yet.",
+    "AVAILABLE_ROUTINES": "Available routines",
+    "JOIN_ROUTINE": "JOIN",
+    "JOINED": "JOINED",
+    "JOIN_ERROR": "Could not join the routine.",
+    "WAITLIST": "Waitlist",
+    "ATTENDED": "Attended",
+    "REGISTERED_STATUS": "Registered",
+    "ATTENDANCE_RATE": "Event attendance",
+    "EVENTS_ATTENDED": "Events attended",
+    "ROUTINES_JOINED": "Active routines",
+    "PROGRESS_HINT": "Registered events, routines and your progress.",
+    "NO_AVAILABLE_ROUTINES": "No published routines right now.",
+    "ROUTINE_FALLBACK": "Routine"
   },
   "PROFILE": {
     "TITLE": "Profile",
@@ -228,5 +251,15 @@
     "DETAIL": "Activity Details",
     "EMPTY": "No audit records.",
     "NO_EXTRA": "No additional detail"
+  },
+  "CHAT": {
+    "TITLE": "InkluSport assistant",
+    "SUBTITLE": "Ask about events, routines, sports or the quiz. The agent uses tools (internal MCP) and falls back to the local engine.",
+    "NEW": "New conversation",
+    "EMPTY": "Type a message. Example: what events are available for me.",
+    "SENDING": "The assistant is looking that up...",
+    "INPUT": "Message for the assistant",
+    "PLACEHOLDER": "Ask me about events, a routine or the quiz…",
+    "SEND": "Send"
   }
 }

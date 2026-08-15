@@ -8,8 +8,11 @@
   gap: 8px;
 }
 
-.event-user-row:last-child {
-  border-bottom: none;
+.event-user-row--highlight {
+  background: #FEF2F2;
+  border-radius: 12px;
+  padding: 12px;
+  outline: 2px solid #A30D11;
 }
 
 .pass-row {
@@ -170,6 +173,30 @@
 
 .report-kpi-grid {
   margin: 12px 0 8px;
+}
+
+.filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0 14px;
+}
+
+.filter-chip {
+  border: 1px solid #E2E8F0;
+  background: #fff;
+  color: #475569;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.filter-chip--active {
+  background: #A30D11;
+  color: #fff;
+  border-color: #A30D11;
 }
 
 .attendance-survey {

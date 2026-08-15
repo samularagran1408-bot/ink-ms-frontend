@@ -22,6 +22,7 @@ import { AthletesPageComponent } from './pages/athletes-page/athletes-page.compo
 import { AssociationsPageComponent } from './pages/associations-page/associations-page.component';
 import { AptitudeQuizPageComponent } from './pages/aptitude-quiz-page/aptitude-quiz-page.component';
 import { AttendanceCheckinPageComponent } from './pages/attendance-checkin-page/attendance-checkin-page.component';
+import { AssistantPageComponent } from './pages/assistant-page/assistant-page.component';
 
 const accountChildren = [
   { path: 'profile', component: ProfilePageComponent },
@@ -42,6 +43,7 @@ const routes: Routes = [
     children: [
       { path: '', component: UserInterfaceComponent },
       { path: 'events', component: EventsPageComponent, data: { mode: 'user' } },
+      { path: 'asistente', component: AssistantPageComponent },
       ...accountChildren
     ]
   },
@@ -51,6 +53,7 @@ const routes: Routes = [
     data: { roles: ['ADMIN'] },
     children: [
       { path: '', component: AdminDashboardComponent },
+      { path: 'asistente', component: AssistantPageComponent },
       { path: 'users', component: AdminUsersComponent },
       { path: 'events', component: EventsPageComponent, data: { mode: 'manage' } },
       { path: 'athletes', component: AthletesPageComponent },
@@ -68,6 +71,7 @@ const routes: Routes = [
     data: { roles: ['ENTRENADOR', 'ADMIN'] },
     children: [
       { path: '', component: TrainerDashboardComponent },
+      { path: 'asistente', component: AssistantPageComponent },
       {
         path: 'quiz',
         component: AptitudeQuizPageComponent,
@@ -106,6 +110,7 @@ const routes: Routes = [
     data: { roles: ['ORGANIZADOR', 'ADMIN'] },
     children: [
       { path: '', component: OrganizerDashboardComponent },
+      { path: 'asistente', component: AssistantPageComponent },
       {
         path: 'quiz',
         component: AptitudeQuizPageComponent,

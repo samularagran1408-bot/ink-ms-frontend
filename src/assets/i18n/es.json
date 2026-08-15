@@ -38,7 +38,8 @@
     "WAITLIST": "Waitlist",
     "MANAGE_EVENTS": "Gestionar eventos",
     "QUIZ": "Quiz de aptitud",
-    "HOME": "Inicio"
+    "HOME": "Inicio",
+    "ASSISTANT": "Asistente"
   },
   "ACCESSIBILITY": {
     "TITLE": "Accesibilidad",
@@ -70,7 +71,11 @@
     "FONT_SMALL": "Pequeño",
     "FONT_MEDIUM": "Mediano",
     "FONT_LARGE": "Grande",
-    "FONT_XLARGE": "Muy grande"
+    "FONT_XLARGE": "Muy grande",
+    "ATTENDANCE_METHOD": "Cómo registrar asistencia",
+    "ATTENDANCE_METHOD_HINT": "Elige si confirmas asistencia con un formulario o escaneando un código QR.",
+    "ATTENDANCE_QR": "Por QR: al escanear se guarda al instante, sin encuesta",
+    "ATTENDANCE_FORM": "Por formulario: completas una encuesta de asistencia"
   },
   "NOTIFICATIONS": {
     "TITLE": "Notificaciones",
@@ -125,7 +130,25 @@
     "DAY_WED": "M",
     "DAY_THU": "J",
     "DAY_FRI": "V",
-    "DAY_SAT": "S"
+    "DAY_SAT": "S",
+    "ACTIVITY_TITLE": "Tu actividad",
+    "ACTIVITY_EVENTS": "Eventos inscritos",
+    "ACTIVITY_ROUTINES": "Rutinas",
+    "ACTIVITY_PROGRESS": "Progreso",
+    "NO_ROUTINES": "Aún no estás en ninguna rutina.",
+    "AVAILABLE_ROUTINES": "Rutinas disponibles",
+    "JOIN_ROUTINE": "UNIRME",
+    "JOINED": "INSCRITO",
+    "JOIN_ERROR": "No se pudo inscribir a la rutina.",
+    "WAITLIST": "Lista de espera",
+    "ATTENDED": "Asistió",
+    "REGISTERED_STATUS": "Inscrito",
+    "ATTENDANCE_RATE": "Asistencia a eventos",
+    "EVENTS_ATTENDED": "Eventos con asistencia",
+    "ROUTINES_JOINED": "Rutinas activas",
+    "PROGRESS_HINT": "Eventos inscritos, rutinas y tu avance.",
+    "NO_AVAILABLE_ROUTINES": "No hay rutinas publicadas por ahora.",
+    "ROUTINE_FALLBACK": "Rutina"
   },
   "PROFILE": {
     "TITLE": "Perfil",
@@ -228,5 +251,15 @@
     "DETAIL": "Detalle",
     "EMPTY": "Sin registros de auditoría.",
     "NO_EXTRA": "Sin detalle adicional"
+  },
+  "CHAT": {
+    "TITLE": "Asistente InkluSport",
+    "SUBTITLE": "Pregunta por eventos, rutinas, deportes o el quiz. El agente usa tools (MCP interno) y, si fallan, el motor local.",
+    "NEW": "Nueva conversación",
+    "EMPTY": "Escribe un mensaje. Ejemplo: qué eventos hay para mí.",
+    "SENDING": "El asistente está consultando...",
+    "INPUT": "Mensaje para el asistente",
+    "PLACEHOLDER": "Pregúntame por eventos, una rutina o el quiz…",
+    "SEND": "Enviar"
   }
 }

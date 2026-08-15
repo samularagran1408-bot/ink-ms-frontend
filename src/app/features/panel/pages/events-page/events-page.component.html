@@ -57,7 +57,9 @@
   <div class="card" *ngIf="mode === 'user'" style="margin-bottom: 16px;">
     <h3 class="section-title">Mi pase de asistencia</h3>
     <p class="kpi-sub" style="margin-bottom: 12px;">
-      Escanea este QR con el celular para abrir la encuesta de asistencia, o muéstralo al organizador.
+      {{ attendanceByQr
+        ? 'Escanea este QR con el celular: tu asistencia se guarda al instante, sin encuesta.'
+        : 'Completa el formulario de asistencia o muestra el QR al organizador.' }}
     </p>
 
     <div class="pass-row" *ngFor="let pass of myPasses">
@@ -78,7 +80,7 @@
         <button
           class="btn-primary"
           type="button"
-          *ngIf="pass.event"
+          *ngIf="pass.event && !attendanceByQr"
           (click)="openMyAttendance(pass.event)"
         >
           Llenar asistencia
@@ -98,7 +100,12 @@
   <!-- Vista usuario: inscripción -->
   <div class="card" *ngIf="mode === 'user'">
     <h3 class="section-title">Catálogo</h3>
-    <div class="event-user-row" *ngFor="let event of events">
+    <div
+      class="event-user-row"
+      *ngFor="let event of events"
+      [class.event-user-row--highlight]="isHighlighted(event.id)"
+      [attr.id]="'evento-' + event.id"
+    >
       <div class="list-item event-list-item" style="border-bottom: none;">
         <div class="event-thumb" [style.background-image]="'url(' + eventImage(event) + ')'"></div>
         <div class="event-list-body">
@@ -178,6 +185,9 @@
           <span class="status-pill status-pill--ok">{{ row.event.status || 'active' }}</span>
           <button class="btn-primary" type="button" (click)="openCheckIn(row.event)">
             Check-in QR
+          </button>
+          <button class="btn-secondary" type="button" (click)="openEnrolledList(row.event)">
+            Ver inscritos
           </button>
           <button class="btn-secondary" type="button" (click)="openAttendanceReport(row.event)">
             Reporte asistencia
@@ -316,6 +326,77 @@
 
       <p *ngIf="checkInMessage" class="empty-text">{{ checkInMessage }}</p>
       <p *ngIf="checkInError" class="error-text">{{ checkInError }}</p>
+    </div>
+  </div>
+
+  <!-- Modal inscritos con filtro de asistencia -->
+  <div class="detail-modal" *ngIf="enrolledOpen" (click)="closeEnrolledList()">
+    <div class="detail-panel detail-panel--wide" (click)="$event.stopPropagation()">
+      <div class="detail-head">
+        <h3>Inscritos · {{ enrolledEvent?.name }}</h3>
+        <button type="button" class="btn-secondary" (click)="closeEnrolledList()">×</button>
+      </div>
+
+      <p class="kpi-sub">Lista de usuarios inscritos. Filtra por estado de asistencia.</p>
+      <p *ngIf="enrolledLoading" class="empty-text">Cargando inscritos...</p>
+      <p *ngIf="enrolledError" class="error-text">{{ enrolledError }}</p>
+
+      <ng-container *ngIf="!enrolledLoading && !enrolledError">
+        <div class="filter-chips">
+          <button
+            type="button"
+            class="filter-chip"
+            [class.filter-chip--active]="enrolledFilter === 'all'"
+            (click)="setEnrolledFilter('all')"
+          >
+            Todos ({{ enrolledRows.length }})
+          </button>
+          <button
+            type="button"
+            class="filter-chip"
+            [class.filter-chip--active]="enrolledFilter === 'attended'"
+            (click)="setEnrolledFilter('attended')"
+          >
+            Asistieron ({{ enrolledAttendedCount }})
+          </button>
+          <button
+            type="button"
+            class="filter-chip"
+            [class.filter-chip--active]="enrolledFilter === 'absent'"
+            (click)="setEnrolledFilter('absent')"
+          >
+            Ausentes ({{ enrolledAbsentCount }})
+          </button>
+        </div>
+
+        <div class="table-wrap" *ngIf="filteredEnrolledRows.length; else noEnrolled">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Email</th>
+                <th>Estado</th>
+                <th>Check-in</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of filteredEnrolledRows">
+                <td>{{ row.fullName || row.userId || 'Usuario' }}</td>
+                <td>{{ row.email || '—' }}</td>
+                <td>
+                  <span class="status-pill" [class.status-pill--ok]="row.attended" [class.status-pill--warn]="!row.attended">
+                    {{ row.attended ? 'Asistió' : 'Sin check-in' }}
+                  </span>
+                </td>
+                <td>{{ row.checkInTime || '—' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <ng-template #noEnrolled>
+          <p class="empty-text">No hay inscritos con ese filtro.</p>
+        </ng-template>
+      </ng-container>
     </div>
   </div>
 
