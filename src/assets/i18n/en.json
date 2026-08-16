@@ -39,6 +39,7 @@
     "MANAGE_EVENTS": "Manage events",
     "QUIZ": "Aptitude quiz",
     "HOME": "Home",
+    "HISTORY": "History",
     "ASSISTANT": "Assistant"
   },
   "ACCESSIBILITY": {
@@ -122,6 +123,8 @@
     "MY_CALENDAR": "My calendar",
     "MY_REGISTRATIONS": "My registrations",
     "NO_REGISTRATIONS": "You have no active registrations yet.",
+    "NO_HISTORY": "You have no activity history yet.",
+    "JOIN_WAITLIST": "JOIN WAITLIST",
     "EVENT_FALLBACK": "Event",
     "SEE_EVENTS": "SEE EVENTS",
     "DAY_SUN": "S",

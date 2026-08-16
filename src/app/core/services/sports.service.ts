@@ -149,6 +149,18 @@ export class SportsService {
     });
   }
 
+  markBulkAttendance(
+    registrationIds: string[],
+    checkInMethod: 'qr' | 'manual' | 'admin' = 'admin',
+    verifiedBy?: string
+  ): Observable<AttendanceActionResponse> {
+    return this.http.post<AttendanceActionResponse>(`${this.attendanceUrl}/bulk`, {
+      registrationIds,
+      checkInMethod,
+      verifiedBy
+    });
+  }
+
   getAttendanceReport(eventId: string): Observable<AttendanceReport> {
     return this.http.get<AttendanceReport>(`${this.attendanceUrl}/report`, {
       params: { eventId }

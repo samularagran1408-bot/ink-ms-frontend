@@ -81,8 +81,13 @@ export interface SportDisabilityRequest {
 export interface Registration {
   id: string;
   userId: string;
+  userFullName?: string;
+  userEmail?: string;
   eventId: string;
   eventName?: string;
+  eventDate?: string;
+  eventTime?: string;
+  eventStatus?: string;
   registrationDate?: string;
   attended?: boolean;
   waitlistPosition?: number;
@@ -93,6 +98,9 @@ export interface Registration {
 export interface AttendanceActionResponse {
   status: string;
   message: string;
+  succeeded?: number;
+  failed?: number;
+  errors?: string[];
 }
 
 export interface QrAttendanceInfo {

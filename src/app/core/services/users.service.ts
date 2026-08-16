@@ -69,8 +69,19 @@ export class UsersService {
     return this.http.get<UserProfile[]>(`${this.adminUrl}/inactive`);
   }
 
-  deleteUser(email: string): Observable<void> {
-    return this.http.delete<void>(`${this.adminUrl}/${encodeURIComponent(email)}`);
+  searchUsers(name?: string, disability?: string): Observable<UserProfile[]> {
+    const params: Record<string, string> = {};
+    if (name?.trim()) {
+      params['name'] = name.trim();
+    }
+    if (disability?.trim()) {
+      params['disability'] = disability.trim();
+    }
+    return this.http.get<UserProfile[]>(`${this.adminUrl}/search`, { params });
+  }
+
+  deleteUser(email: string): Observable<{ status?: string; message?: string }> {
+    return this.http.delete<{ status?: string; message?: string }>(`${this.adminUrl}/${encodeURIComponent(email)}`);
   }
 
   bulkDeleteUsers(emails: string[]): Observable<{

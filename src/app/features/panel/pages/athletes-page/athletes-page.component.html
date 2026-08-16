@@ -70,8 +70,8 @@
       <h4 class="section-title">Waitlist</h4>
       <div class="list-item" *ngFor="let item of summary.waitlist">
         <div>
-          <strong>{{ item.eventName || ('User ' + item.userId) }}</strong>
-          <div class="kpi-sub">Posición {{ item.waitlistPosition ?? '—' }} · User {{ item.userId }}</div>
+            <strong>{{ item.userFullName || item.userEmail || ('User ' + item.userId) }}</strong>
+            <div class="kpi-sub">Posición {{ item.waitlistPosition ?? '—' }} · {{ item.userEmail || item.userId }}</div>
         </div>
       </div>
     </div>

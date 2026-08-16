@@ -90,7 +90,7 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
       }).subscribe({
         next: ({ events, registrations, routines, routineRegistrations, unread, notifications }) => {
           this.events = this.sortEvents(events).slice(0, 6);
-          this.registrations = registrations;
+          this.registrations = this.sortRegistrations(registrations);
           this.routines = routines;
           this.routineRegistrations = routineRegistrations;
           this.nextEvent = this.resolveNextEvent(events, registrations);
@@ -254,6 +254,34 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
     return this.registrations.some((reg) => reg.eventId === eventId && reg.waitlistPosition == null);
   }
 
+  isOnWaitlist(eventId: string): boolean {
+    return this.registrations.some((reg) => reg.eventId === eventId && reg.waitlistPosition != null);
+  }
+
+  waitlistPositionFor(eventId: string): number | null {
+    return this.registrations.find((reg) => reg.eventId === eventId && reg.waitlistPosition != null)?.waitlistPosition ?? null;
+  }
+
+  canJoinEvent(eventId: string): boolean {
+    return !this.isRegistered(eventId) && !this.isOnWaitlist(eventId);
+  }
+
+  joinLabel(event: EventItem): string {
+    if (this.registeringId === event.id) {
+      return '...';
+    }
+    return (event.availableCapacity ?? 0) <= 0
+      ? this.translate.instant('HOME.JOIN_WAITLIST')
+      : this.translate.instant('HOME.REGISTER');
+  }
+
+  historyDate(reg: Registration): string {
+    if (reg.eventDate) {
+      return this.formatDate(reg.eventDate);
+    }
+    return this.formatDate(reg.registrationDate);
+  }
+
   hasAttended(eventId: string): boolean {
     return !!this.registrations.find((reg) => reg.eventId === eventId && reg.waitlistPosition == null)?.attended;
   }
@@ -290,6 +318,14 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
       const aKey = `${a.eventDate}T${a.eventTime || '00:00:00'}`;
       const bKey = `${b.eventDate}T${b.eventTime || '00:00:00'}`;
       return aKey.localeCompare(bKey);
+    });
+  }
+
+  private sortRegistrations(registrations: Registration[]): Registration[] {
+    return [...registrations].sort((a, b) => {
+      const aKey = `${a.eventDate || a.registrationDate || ''}T${a.eventTime || '00:00:00'}`;
+      const bKey = `${b.eventDate || b.registrationDate || ''}T${b.eventTime || '00:00:00'}`;
+      return bKey.localeCompare(aKey);
     });
   }
 

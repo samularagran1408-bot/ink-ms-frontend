@@ -1,11 +1,23 @@
 <app-panel-shell>
   <h1 class="page-title">Users</h1>
-  <p class="page-subtitle">Gestión de usuarios, bloqueos y eliminaciones.</p>
+  <p class="page-subtitle">Gestión de usuarios, búsqueda, bloqueos y eliminación lógica.</p>
   <p *ngIf="successMessage" class="empty-text">{{ successMessage }}</p>
   <p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
   <p *ngIf="loading" class="empty-text">Cargando usuarios...</p>
 
   <div class="toolbar" *ngIf="!loading">
+    <div class="search-group">
+      <input
+        type="search"
+        class="search-input"
+        [(ngModel)]="nameQuery"
+        placeholder="Buscar por nombre o email"
+        aria-label="Buscar usuario por nombre"
+      />
+      <select class="search-select" [(ngModel)]="disabilityQuery" aria-label="Filtrar por tipo de discapacidad">
+        <option *ngFor="let opt of disabilityOptions" [value]="opt.value">{{ opt.label }}</option>
+      </select>
+    </div>
     <div class="filter-group">
       <button type="button" class="filter-btn" [class.filter-btn--active]="filter === 'active'" (click)="setFilter('active')">
         Activos
@@ -28,7 +40,7 @@
   </div>
 
   <div class="card">
-    <table class="data-table" *ngIf="users.length">
+    <table class="data-table" *ngIf="filteredUsers.length">
       <thead>
         <tr>
           <th class="col-check">
@@ -41,13 +53,14 @@
           </th>
           <th>Nombre</th>
           <th>Email</th>
+          <th>Discapacidad</th>
           <th>Roles</th>
           <th>Estado</th>
           <th>Acciones</th>
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let user of users" [class.row-selected]="isSelected(user.email)">
+        <tr *ngFor="let user of filteredUsers" [class.row-selected]="isSelected(user.email)">
           <td class="col-check">
             <input
               type="checkbox"
@@ -58,6 +71,7 @@
           </td>
           <td>{{ user.fullName || '—' }}</td>
           <td>{{ user.email }}</td>
+          <td>{{ disabilityLabel(user) }}</td>
           <td>{{ rolesLabel(user) }}</td>
           <td>{{ isInactive(user) ? 'Inactivo/Bloqueado' : 'Activo' }}</td>
           <td class="actions">
@@ -69,5 +83,8 @@
       </tbody>
     </table>
     <p *ngIf="!loading && !users.length" class="empty-text">No hay usuarios en este filtro.</p>
+    <p *ngIf="!loading && users.length && !filteredUsers.length" class="empty-text">
+      No hay resultados para esa búsqueda.
+    </p>
   </div>
 </app-panel-shell>

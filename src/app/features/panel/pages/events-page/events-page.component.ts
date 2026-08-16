@@ -90,6 +90,9 @@ export class EventsPageComponent implements OnInit, OnDestroy {
   enrolledRows: EnrolledUserRow[] = [];
   enrolledLoading = false;
   enrolledError: string | null = null;
+  enrolledSelected = new Set<string>();
+  attendanceBusyId: string | null = null;
+  bulkAttendanceLoading = false;
 
   myAttendanceOpen = false;
   myAttendanceEvent: EventItem | null = null;
@@ -316,9 +319,12 @@ export class EventsPageComponent implements OnInit, OnDestroy {
 
       this.registeringId = event.id;
       this.sportsService.registerToEvent(userId, event.id).subscribe({
-        next: () => {
+        next: (registration) => {
           this.registeringId = null;
-          this.successMessage = `Inscripción a ${event.name} realizada.`;
+          this.successMessage = registration?.message
+            || (registration?.waitlistPosition != null
+              ? `El evento está lleno. Quedaste en lista de espera (posición ${registration.waitlistPosition}).`
+              : `Inscripción a ${event.name} realizada.`);
           this.errorMessage = null;
           this.reload();
         },
@@ -332,6 +338,40 @@ export class EventsPageComponent implements OnInit, OnDestroy {
 
   isRegistered(eventId: string): boolean {
     return this.registrations.some((reg) => reg.eventId === eventId && reg.waitlistPosition == null);
+  }
+
+  isOnWaitlist(eventId: string): boolean {
+    return this.registrations.some((reg) => reg.eventId === eventId && reg.waitlistPosition != null);
+  }
+
+  waitlistPositionFor(eventId: string): number | null {
+    return this.registrations.find((reg) => reg.eventId === eventId && reg.waitlistPosition != null)?.waitlistPosition ?? null;
+  }
+
+  canJoinEvent(eventId: string): boolean {
+    return !this.isRegistered(eventId) && !this.isOnWaitlist(eventId);
+  }
+
+  catalogJoinLabel(event: EventItem): string {
+    if (this.registeringId === event.id) {
+      return (event.availableCapacity ?? 0) <= 0 ? 'Uniendo a espera...' : 'Inscribiendo...';
+    }
+    return (event.availableCapacity ?? 0) <= 0 ? 'Unirme a lista de espera' : 'Inscribirse';
+  }
+
+  get historyRegistrations(): Registration[] {
+    return [...this.registrations].sort((a, b) => {
+      const aKey = `${a.eventDate || a.registrationDate || ''}T${a.eventTime || '00:00:00'}`;
+      const bKey = `${b.eventDate || b.registrationDate || ''}T${b.eventTime || '00:00:00'}`;
+      return bKey.localeCompare(aKey);
+    });
+  }
+
+  historyDateLabel(reg: Registration): string {
+    if (reg.eventDate) {
+      return `${reg.eventDate} ${((reg.eventTime || '').substring(0, 5))}`;
+    }
+    return reg.registrationDate || 'Sin fecha';
   }
 
   isHighlighted(eventId: string | number | undefined): boolean {
@@ -388,7 +428,7 @@ export class EventsPageComponent implements OnInit, OnDestroy {
       this.openMyAttendance(event);
       return;
     }
-    if (!this.isRegistered(event.id)) {
+    if (this.canJoinEvent(event.id)) {
       this.register(event);
     }
   }
@@ -545,6 +585,7 @@ export class EventsPageComponent implements OnInit, OnDestroy {
     this.enrolledFilter = 'all';
     this.enrolledRows = [];
     this.enrolledError = null;
+    this.enrolledSelected.clear();
     this.enrolledLoading = true;
 
     this.sportsService.getAttendanceReport(event.id).subscribe({
@@ -580,6 +621,83 @@ export class EventsPageComponent implements OnInit, OnDestroy {
     this.enrolledEvent = null;
     this.enrolledRows = [];
     this.enrolledError = null;
+    this.enrolledSelected.clear();
+  }
+
+  toggleEnrolled(registrationId: string, checked: boolean): void {
+    if (checked) {
+      this.enrolledSelected.add(registrationId);
+    } else {
+      this.enrolledSelected.delete(registrationId);
+    }
+  }
+
+  toggleAllEnrolledAbsentees(checked: boolean): void {
+    const absentees = this.enrolledRows.filter((row) => !row.attended);
+    if (checked) {
+      absentees.forEach((row) => this.enrolledSelected.add(row.registrationId));
+    } else {
+      absentees.forEach((row) => this.enrolledSelected.delete(row.registrationId));
+    }
+  }
+
+  get allAbsenteesSelected(): boolean {
+    const absentees = this.enrolledRows.filter((row) => !row.attended);
+    return absentees.length > 0 && absentees.every((row) => this.enrolledSelected.has(row.registrationId));
+  }
+
+  get selectedAbsenteeCount(): number {
+    return this.enrolledRows.filter((row) => !row.attended && this.enrolledSelected.has(row.registrationId)).length;
+  }
+
+  markManualAttendance(row: EnrolledUserRow): void {
+    if (row.attended || this.attendanceBusyId) {
+      return;
+    }
+    this.attendanceBusyId = row.registrationId;
+    this.enrolledError = null;
+    const verifiedBy = this.session.getProfile()?.id || this.session.getDisplayName();
+    this.sportsService.markAttendance(row.registrationId, 'manual', verifiedBy).subscribe({
+      next: (response) => {
+        this.attendanceBusyId = null;
+        this.successMessage = response?.message || `Asistencia de ${row.fullName || row.email || 'usuario'} registrada.`;
+        if (this.enrolledEvent) {
+          this.openEnrolledList(this.enrolledEvent);
+        }
+      },
+      error: (error) => {
+        this.attendanceBusyId = null;
+        this.enrolledError = error?.error?.message || 'No se pudo registrar la asistencia.';
+      }
+    });
+  }
+
+  markSelectedAttendance(): void {
+    const ids = this.enrolledRows
+      .filter((row) => !row.attended && this.enrolledSelected.has(row.registrationId))
+      .map((row) => row.registrationId);
+    if (!ids.length || this.bulkAttendanceLoading) {
+      return;
+    }
+    this.bulkAttendanceLoading = true;
+    this.enrolledError = null;
+    const verifiedBy = this.session.getProfile()?.id || this.session.getDisplayName();
+    this.sportsService.markBulkAttendance(ids, 'admin', verifiedBy).subscribe({
+      next: (response) => {
+        this.bulkAttendanceLoading = false;
+        this.successMessage = response?.message || `Asistencias registradas: ${response.succeeded ?? ids.length}.`;
+        if (response.errors?.length) {
+          this.enrolledError = response.errors.join(' · ');
+        }
+        if (this.enrolledEvent) {
+          this.openEnrolledList(this.enrolledEvent);
+        }
+      },
+      error: (error) => {
+        this.bulkAttendanceLoading = false;
+        this.enrolledError = error?.error?.message || 'No se pudo registrar la asistencia masiva.';
+      }
+    });
   }
 
   setEnrolledFilter(filter: AttendanceFilter): void {

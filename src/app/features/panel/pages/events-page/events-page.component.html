@@ -53,6 +53,31 @@
     </form>
   </div>
 
+  <!-- Usuario: historial de eventos inscritos -->
+  <div class="card" *ngIf="mode === 'user'" style="margin-bottom: 16px;">
+    <h3 class="section-title">Historial de eventos inscritos</h3>
+    <p class="kpi-sub" style="margin-bottom: 12px;">Ordenado por fecha del evento (más reciente primero).</p>
+    <div class="pass-row" *ngFor="let reg of historyRegistrations">
+      <div class="pass-info">
+        <strong>{{ reg.eventName || 'Evento' }}</strong>
+        <div class="kpi-sub">{{ historyDateLabel(reg) }}</div>
+      </div>
+      <span
+        class="status-pill"
+        [class.status-pill--ok]="reg.attended"
+        [class.status-pill--warn]="!reg.attended && reg.waitlistPosition == null"
+        [class.status-pill--bad]="reg.waitlistPosition != null"
+      >
+        <ng-container *ngIf="reg.waitlistPosition != null">Lista de espera · pos. {{ reg.waitlistPosition }}</ng-container>
+        <ng-container *ngIf="reg.waitlistPosition == null && reg.attended">Asistió</ng-container>
+        <ng-container *ngIf="reg.waitlistPosition == null && !reg.attended">Inscrito</ng-container>
+      </span>
+    </div>
+    <p *ngIf="!loading && !historyRegistrations.length" class="empty-text">
+      Aún no tienes historial de actividades.
+    </p>
+  </div>
+
   <!-- Usuario: pases QR (el celular abre la encuesta de asistencia) -->
   <div class="card" *ngIf="mode === 'user'" style="margin-bottom: 16px;">
     <h3 class="section-title">Mi pase de asistencia</h3>
@@ -116,13 +141,21 @@
           </div>
         </div>
         <button
-          *ngIf="!isRegistered(event.id)"
+          *ngIf="canJoinEvent(event.id)"
           class="btn-primary"
           type="button"
-          [disabled]="registeringId === event.id || (event.availableCapacity ?? 0) <= 0"
+          [disabled]="registeringId === event.id"
           (click)="register(event)"
         >
-          {{ registeringId === event.id ? 'Inscribiendo...' : 'Inscribirse' }}
+          {{ catalogJoinLabel(event) }}
+        </button>
+        <button
+          *ngIf="isOnWaitlist(event.id)"
+          class="btn-secondary"
+          type="button"
+          disabled
+        >
+          Lista de espera · pos. {{ waitlistPositionFor(event.id) }}
         </button>
         <button
           *ngIf="isRegistered(event.id) && !canFillAttendance(event) && !hasAttended(event.id)"
@@ -229,8 +262,8 @@
       <div *ngIf="row.showWaitlist" style="padding-left: 8px;">
         <div class="list-item" *ngFor="let item of row.waitlist">
           <div>
-            <strong>User {{ item.userId }}</strong>
-            <div class="kpi-sub">Posición {{ item.waitlistPosition ?? '—' }}</div>
+            <strong>{{ item.userFullName || item.userEmail || ('User ' + item.userId) }}</strong>
+            <div class="kpi-sub">Posición {{ item.waitlistPosition ?? '—' }} · {{ item.userEmail || item.userId }}</div>
           </div>
         </div>
         <p *ngIf="!row.waitlist.length" class="empty-text">Sin personas en waitlist.</p>
@@ -337,7 +370,7 @@
         <button type="button" class="btn-secondary" (click)="closeEnrolledList()">×</button>
       </div>
 
-      <p class="kpi-sub">Lista de usuarios inscritos. Filtra por estado de asistencia.</p>
+      <p class="kpi-sub">Lista de inscritos. Marca asistencia individual o masiva.</p>
       <p *ngIf="enrolledLoading" class="empty-text">Cargando inscritos...</p>
       <p *ngIf="enrolledError" class="error-text">{{ enrolledError }}</p>
 
@@ -369,18 +402,47 @@
           </button>
         </div>
 
+        <div class="checkin-actions" *ngIf="enrolledAbsentCount">
+          <button
+            class="btn-primary"
+            type="button"
+            [disabled]="!selectedAbsenteeCount || bulkAttendanceLoading"
+            (click)="markSelectedAttendance()"
+          >
+            {{ bulkAttendanceLoading ? 'Registrando...' : ('Marcar asistencia (' + selectedAbsenteeCount + ')') }}
+          </button>
+        </div>
+
         <div class="table-wrap" *ngIf="filteredEnrolledRows.length; else noEnrolled">
           <table class="data-table">
             <thead>
               <tr>
+                <th class="col-check">
+                  <input
+                    type="checkbox"
+                    [checked]="allAbsenteesSelected"
+                    (change)="toggleAllEnrolledAbsentees($any($event.target).checked)"
+                    aria-label="Seleccionar ausentes"
+                  />
+                </th>
                 <th>Nombre</th>
                 <th>Email</th>
                 <th>Estado</th>
                 <th>Check-in</th>
+                <th>Acción</th>
               </tr>
             </thead>
             <tbody>
               <tr *ngFor="let row of filteredEnrolledRows">
+                <td class="col-check">
+                  <input
+                    type="checkbox"
+                    [disabled]="row.attended"
+                    [checked]="enrolledSelected.has(row.registrationId)"
+                    (change)="toggleEnrolled(row.registrationId, $any($event.target).checked)"
+                    [attr.aria-label]="'Seleccionar ' + (row.fullName || row.email)"
+                  />
+                </td>
                 <td>{{ row.fullName || row.userId || 'Usuario' }}</td>
                 <td>{{ row.email || '—' }}</td>
                 <td>
@@ -389,6 +451,18 @@
                   </span>
                 </td>
                 <td>{{ row.checkInTime || '—' }}</td>
+                <td>
+                  <button
+                    *ngIf="!row.attended"
+                    class="btn-primary"
+                    type="button"
+                    [disabled]="attendanceBusyId === row.registrationId || bulkAttendanceLoading"
+                    (click)="markManualAttendance(row)"
+                  >
+                    {{ attendanceBusyId === row.registrationId ? '...' : 'Marcar asistencia' }}
+                  </button>
+                  <span *ngIf="row.attended" class="kpi-sub">—</span>
+                </td>
               </tr>
             </tbody>
           </table>

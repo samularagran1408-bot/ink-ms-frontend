@@ -16,6 +16,8 @@ export interface UserProfile {
   blockReason?: string;
   blockedUntil?: string;
   blockedPermanently?: boolean;
+  deleted?: boolean;
+  deletedAt?: string;
   createdAt?: string;
   updatedAt?: string;
   roles?: string[];

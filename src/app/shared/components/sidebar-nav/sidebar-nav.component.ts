@@ -193,8 +193,9 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
       default:
         this.navItems = [
           { labelKey: 'NAV.HOME', route: '/home', exact: true, icon: 'home' },
-          { labelKey: 'NAV.ASSISTANT', route: '/home/asistente', icon: 'chat-bubble-left-right' },
           { labelKey: 'NAV.EVENTS', route: '/home/events', icon: 'calendar-days' },
+          { labelKey: 'NAV.HISTORY', route: '/home/events', icon: 'clipboard-document-list' },
+          { labelKey: 'NAV.ASSISTANT', route: '/home/asistente', icon: 'chat-bubble-left-right' },
           ...this.commonAccountItems('/home')
         ];
         this.secondaryItems = [];

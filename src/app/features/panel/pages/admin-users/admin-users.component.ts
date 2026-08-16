@@ -18,6 +18,18 @@ export class AdminUsersComponent implements OnInit {
   bulkLoading = false;
   selected = new Set<string>();
   filter: 'active' | 'all' | 'inactive' = 'active';
+  nameQuery = '';
+  disabilityQuery = '';
+
+  readonly disabilityOptions = [
+    { value: '', label: 'Todas las discapacidades' },
+    { value: 'VISUAL', label: 'Visual' },
+    { value: 'MOTRIZ', label: 'Motriz' },
+    { value: 'AUDITIVA', label: 'Auditiva' },
+    { value: 'INTELECTUAL', label: 'Intelectual' },
+    { value: 'COGNITIVA', label: 'Cognitiva' },
+    { value: 'MULTIPLE', label: 'Múltiple' }
+  ];
 
   constructor(
     private usersService: UsersService,
@@ -33,7 +45,20 @@ export class AdminUsersComponent implements OnInit {
   }
 
   get allVisibleSelected(): boolean {
-    return this.users.length > 0 && this.users.every((u) => this.selected.has(u.email));
+    return this.filteredUsers.length > 0 && this.filteredUsers.every((u) => this.selected.has(u.email));
+  }
+
+  get filteredUsers(): UserProfile[] {
+    const name = this.nameQuery.trim().toLowerCase();
+    const disability = this.disabilityQuery.trim().toLowerCase();
+    return this.users.filter((user) => {
+      const matchesName = !name
+        || (user.fullName || '').toLowerCase().includes(name)
+        || (user.email || '').toLowerCase().includes(name);
+      const matchesDisability = !disability
+        || (user.disability || '').toLowerCase().includes(disability);
+      return matchesName && matchesDisability;
+    });
   }
 
   reload(): void {
@@ -77,14 +102,18 @@ export class AdminUsersComponent implements OnInit {
 
   toggleAll(checked: boolean): void {
     if (checked) {
-      this.users.forEach((u) => this.selected.add(u.email));
+      this.filteredUsers.forEach((u) => this.selected.add(u.email));
     } else {
-      this.selected.clear();
+      this.filteredUsers.forEach((u) => this.selected.delete(u.email));
     }
   }
 
   isSelected(email: string): boolean {
     return this.selected.has(email);
+  }
+
+  disabilityLabel(user: UserProfile): string {
+    return user.disability?.trim() || '—';
   }
 
   block(user: UserProfile): void {
@@ -121,19 +150,25 @@ export class AdminUsersComponent implements OnInit {
       this.errorMessage = 'No puedes eliminarte a ti mismo.';
       return;
     }
-    if (!confirm(`¿Eliminar a ${user.fullName || user.email}? Esta acción no se puede deshacer.`)) {
+    if (!confirm(
+      `¿Eliminar lógicamente a ${user.fullName || user.email}?\n\n` +
+      'Dejará de aparecer en el panel. Si tiene eventos futuros inscritos, la eliminación se bloqueará.'
+    )) {
       return;
     }
     this.actionEmail = user.email;
+    this.successMessage = null;
+    this.errorMessage = null;
     this.usersService.deleteUser(user.email).subscribe({
-      next: () => {
+      next: (result) => {
         this.actionEmail = null;
-        this.successMessage = 'Usuario eliminado.';
+        this.successMessage = result?.message || `${user.fullName || user.email} fue eliminado lógicamente.`;
         this.reload();
       },
       error: (error) => {
         this.actionEmail = null;
-        this.errorMessage = error?.error?.message || 'No se pudo eliminar.';
+        this.errorMessage = error?.error?.message
+          || 'No se pudo eliminar. Si el usuario tiene eventos futuros inscritos, cancélalos primero.';
       }
     });
   }
@@ -151,7 +186,10 @@ export class AdminUsersComponent implements OnInit {
       this.errorMessage = 'No puedes eliminarte a ti mismo.';
       return;
     }
-    if (!confirm(`¿Eliminar ${filtered.length} usuario(s) seleccionado(s)? Esta acción no se puede deshacer.`)) {
+    if (!confirm(
+      `¿Eliminar lógicamente ${filtered.length} usuario(s) seleccionado(s)?\n\n` +
+      'Quienes tengan eventos futuros inscritos no se eliminarán.'
+    )) {
       return;
     }
     this.bulkLoading = true;
@@ -160,7 +198,7 @@ export class AdminUsersComponent implements OnInit {
     this.usersService.bulkDeleteUsers(filtered).subscribe({
       next: (result) => {
         this.bulkLoading = false;
-        this.successMessage = `Eliminados: ${result.succeeded}. Fallidos: ${result.failed}.`;
+        this.successMessage = `Eliminados lógicamente: ${result.succeeded}. Bloqueados o fallidos: ${result.failed}.`;
         if (result.errors?.length) {
           this.errorMessage = result.errors.join(' · ');
         }
