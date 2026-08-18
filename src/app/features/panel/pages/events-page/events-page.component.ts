@@ -8,6 +8,7 @@ import { catchError, switchMap } from 'rxjs/operators';
 
 import {
   AttendanceReport,
+  CalendarEvent,
   EventItem,
   Registration,
   Sport
@@ -69,6 +70,14 @@ export class EventsPageComponent implements OnInit, OnDestroy {
   highlightedEventId: string | null = null;
   attendanceCheckInMethod: AttendanceCheckInMethod = 'qr';
   nowMs = Date.now();
+
+  lookupEventId = '';
+  lookupEvent: EventItem | null = null;
+  calendarFrom = '';
+  calendarTo = '';
+  calendarItems: CalendarEvent[] = [];
+  calendarLoaded = false;
+  cancellingId: string | null = null;
 
   checkInOpen = false;
   checkInEvent: EventItem | null = null;
@@ -139,6 +148,7 @@ export class EventsPageComponent implements OnInit, OnDestroy {
       }
     }, 30_000);
     this.reload();
+    this.loadCalendar();
   }
 
   ngOnDestroy(): void {
@@ -164,8 +174,11 @@ export class EventsPageComponent implements OnInit, OnDestroy {
     profile$.pipe(
       switchMap((profile) => {
         const userId = profile?.id;
+        const events$ = this.mode === 'user'
+          ? this.sportsService.getAvailableEvents().pipe(catchError(() => of([] as EventItem[])))
+          : this.sportsService.getEvents().pipe(catchError(() => of([] as EventItem[])));
         return forkJoin({
-          events: this.sportsService.getEvents().pipe(catchError(() => of([] as EventItem[]))),
+          events: events$,
           registrations: userId && this.mode === 'user'
             ? this.sportsService.getRegistrationsByUser(userId).pipe(catchError(() => of([] as Registration[])))
             : of([] as Registration[]),
@@ -262,11 +275,13 @@ export class EventsPageComponent implements OnInit, OnDestroy {
   startEdit(row: EventManageRow): void {
     row.editing = true;
     row.editForm.patchValue({
+      name: row.event.name,
       eventDate: row.event.eventDate,
       eventTime: (row.event.eventTime || '').substring(0, 5),
       location: row.event.location || '',
       latitude: row.event.latitude ?? null,
-      longitude: row.event.longitude ?? null
+      longitude: row.event.longitude ?? null,
+      maxCapacity: row.event.maxCapacity
     });
   }
 
@@ -282,11 +297,13 @@ export class EventsPageComponent implements OnInit, OnDestroy {
 
     row.saving = true;
     const payload = {
+      name: row.editForm.value.name,
       eventDate: row.editForm.value.eventDate,
       eventTime: row.editForm.value.eventTime,
       location: row.editForm.value.location,
       latitude: row.editForm.value.latitude,
-      longitude: row.editForm.value.longitude
+      longitude: row.editForm.value.longitude,
+      maxCapacity: Number(row.editForm.value.maxCapacity)
     };
 
     this.sportsService.updateEvent(row.event.id, payload).subscribe({
@@ -301,6 +318,70 @@ export class EventsPageComponent implements OnInit, OnDestroy {
         row.saving = false;
         this.successMessage = null;
         this.errorMessage = error?.error?.message || 'No se pudo actualizar el evento.';
+      }
+    });
+  }
+
+  searchEvent(): void {
+    const id = (this.lookupEventId || '').trim();
+    if (!id) {
+      this.errorMessage = 'Indica el ID del evento.';
+      this.lookupEvent = null;
+      return;
+    }
+
+    this.sportsService.getEvent(id).subscribe({
+      next: (event) => {
+        this.lookupEvent = event;
+        this.errorMessage = null;
+        this.successMessage = `Evento encontrado: ${event.name}.`;
+      },
+      error: (error) => {
+        this.lookupEvent = null;
+        this.successMessage = null;
+        this.errorMessage = error?.error?.message || `Evento no encontrado con ID: ${id}`;
+      }
+    });
+  }
+
+  loadCalendar(): void {
+    this.sportsService.getEventCalendar(this.calendarFrom || undefined, this.calendarTo || undefined).subscribe({
+      next: (items) => {
+        this.calendarItems = items;
+        this.calendarLoaded = true;
+      },
+      error: (error) => {
+        this.calendarItems = [];
+        this.calendarLoaded = true;
+        this.errorMessage = error?.error?.message || 'No se pudo cargar el calendario.';
+      }
+    });
+  }
+
+  clearCalendarFilter(): void {
+    this.calendarFrom = '';
+    this.calendarTo = '';
+    this.loadCalendar();
+  }
+
+  cancelManagedEvent(event: EventItem): void {
+    if (this.cancellingId) {
+      return;
+    }
+
+    this.cancellingId = event.id;
+    this.sportsService.cancelEvent(event.id).subscribe({
+      next: () => {
+        this.cancellingId = null;
+        this.successMessage = `Evento "${event.name}" cancelado.`;
+        this.errorMessage = null;
+        this.reload();
+        this.loadCalendar();
+      },
+      error: (error) => {
+        this.cancellingId = null;
+        this.successMessage = null;
+        this.errorMessage = error?.error?.message || 'No se pudo cancelar el evento.';
       }
     });
   }
@@ -876,11 +957,13 @@ export class EventsPageComponent implements OnInit, OnDestroy {
 
   private buildEditForm(event: EventItem): FormGroup {
     return this.fb.group({
+      name: [event.name, Validators.required],
       eventDate: [event.eventDate, Validators.required],
       eventTime: [(event.eventTime || '').substring(0, 5), Validators.required],
       location: [event.location || ''],
       latitude: [event.latitude ?? null],
-      longitude: [event.longitude ?? null]
+      longitude: [event.longitude ?? null],
+      maxCapacity: [event.maxCapacity, [Validators.required, Validators.min(1)]]
     });
   }
 

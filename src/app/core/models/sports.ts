@@ -49,6 +49,17 @@ export interface EventRequest {
   createdBy?: string;
 }
 
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  startDate: string;
+  startTime?: string;
+  location?: string;
+  sportName?: string;
+  availableCapacity?: number;
+  maxCapacity?: number;
+}
+
 export interface Disability {
   id: number;
   name: string;

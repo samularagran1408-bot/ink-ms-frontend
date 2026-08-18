@@ -6,6 +6,7 @@ import { API_BASE_URL } from '../config/api.config';
 import {
   AttendanceActionResponse,
   AttendanceReport,
+  CalendarEvent,
   Disability,
   QrAttendanceInfo,
   DisabilityRequest,
@@ -64,12 +65,35 @@ export class SportsService {
     return this.http.get<EventItem[]>(this.eventsUrl);
   }
 
+  getAvailableEvents(): Observable<EventItem[]> {
+    return this.http.get<EventItem[]>(`${this.eventsUrl}/available`);
+  }
+
+  getEvent(id: string): Observable<EventItem> {
+    return this.http.get<EventItem>(`${this.eventsUrl}/${id}`);
+  }
+
+  getEventCalendar(from?: string, to?: string): Observable<CalendarEvent[]> {
+    const params: Record<string, string> = {};
+    if (from) {
+      params['from'] = from;
+    }
+    if (to) {
+      params['to'] = to;
+    }
+    return this.http.get<CalendarEvent[]>(`${this.eventsUrl}/calendar`, { params });
+  }
+
   createEvent(payload: EventRequest): Observable<EventItem> {
     return this.http.post<EventItem>(this.eventsUrl, payload);
   }
 
   updateEvent(id: string, payload: Partial<EventRequest>): Observable<EventItem> {
     return this.http.put<EventItem>(`${this.eventsUrl}/${id}`, payload);
+  }
+
+  cancelEvent(id: string): Observable<EventItem> {
+    return this.http.post<EventItem>(`${this.eventsUrl}/${id}/cancel`, {});
   }
 
   countActiveEvents(): Observable<number> {
@@ -84,12 +108,24 @@ export class SportsService {
     return this.http.get<Disability[]>(`${this.disabilitiesUrl}/active`);
   }
 
+  getDisability(id: number): Observable<Disability> {
+    return this.http.get<Disability>(`${this.disabilitiesUrl}/${id}`);
+  }
+
   createDisability(payload: DisabilityRequest): Observable<Disability> {
     return this.http.post<Disability>(this.disabilitiesUrl, payload);
   }
 
   updateDisability(id: number, payload: DisabilityRequest): Observable<Disability> {
     return this.http.put<Disability>(`${this.disabilitiesUrl}/${id}`, payload);
+  }
+
+  deactivateDisability(id: number): Observable<Disability> {
+    return this.http.patch<Disability>(`${this.disabilitiesUrl}/${id}/deactivate`, {});
+  }
+
+  activateDisability(id: number): Observable<Disability> {
+    return this.http.patch<Disability>(`${this.disabilitiesUrl}/${id}/activate`, {});
   }
 
   deleteDisability(id: number): Observable<void> {
