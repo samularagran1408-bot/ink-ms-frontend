@@ -45,6 +45,18 @@ export class SportsService {
     return this.http.get<Sport[]>(`${this.sportsUrl}/active`);
   }
 
+  searchSports(q?: string, activeOnly = true): Observable<Sport[]> {
+    const params: Record<string, string> = { activeOnly: String(activeOnly) };
+    if (q) {
+      params['q'] = q;
+    }
+    return this.http.get<Sport[]>(`${this.sportsUrl}/search`, { params });
+  }
+
+  getSport(id: number): Observable<Sport> {
+    return this.http.get<Sport>(`${this.sportsUrl}/${id}`);
+  }
+
   countSports(): Observable<number> {
     return this.http.get<number>(`${this.sportsUrl}/count`);
   }
@@ -71,6 +83,20 @@ export class SportsService {
 
   getEvent(id: string): Observable<EventItem> {
     return this.http.get<EventItem>(`${this.eventsUrl}/${id}`);
+  }
+
+  searchEvents(q?: string, from?: string, to?: string): Observable<EventItem[]> {
+    const params: Record<string, string> = {};
+    if (q) {
+      params['q'] = q;
+    }
+    if (from) {
+      params['from'] = from;
+    }
+    if (to) {
+      params['to'] = to;
+    }
+    return this.http.get<EventItem[]>(`${this.eventsUrl}/search`, { params });
   }
 
   getEventCalendar(from?: string, to?: string): Observable<CalendarEvent[]> {
@@ -108,6 +134,14 @@ export class SportsService {
     return this.http.get<Disability[]>(`${this.disabilitiesUrl}/active`);
   }
 
+  searchDisabilities(q?: string): Observable<Disability[]> {
+    const params: Record<string, string> = {};
+    if (q) {
+      params['q'] = q;
+    }
+    return this.http.get<Disability[]>(`${this.disabilitiesUrl}/search`, { params });
+  }
+
   getDisability(id: number): Observable<Disability> {
     return this.http.get<Disability>(`${this.disabilitiesUrl}/${id}`);
   }
@@ -134,6 +168,18 @@ export class SportsService {
 
   getSportDisabilities(sportId: number): Observable<SportDisability[]> {
     return this.http.get<SportDisability[]>(`${this.sportDisabilitiesUrl}/sport/${sportId}`);
+  }
+
+  getAssociations(): Observable<SportDisability[]> {
+    return this.http.get<SportDisability[]>(this.sportDisabilitiesUrl);
+  }
+
+  searchAssociations(q?: string): Observable<SportDisability[]> {
+    const params: Record<string, string> = {};
+    if (q) {
+      params['q'] = q;
+    }
+    return this.http.get<SportDisability[]>(`${this.sportDisabilitiesUrl}/search`, { params });
   }
 
   addSportDisability(payload: SportDisabilityRequest): Observable<SportDisability> {

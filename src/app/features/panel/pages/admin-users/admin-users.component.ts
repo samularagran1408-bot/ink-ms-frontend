@@ -3,6 +3,7 @@ import { Component, OnInit } from '@angular/core';
 import { UserProfile } from '../../../../core/models/user-profile';
 import { UsersService } from '../../../../core/services/users.service';
 import { SessionService } from '../../../../core/services/session.service';
+import { ConfirmDialogService } from '../../../../core/services/confirm-dialog.service';
 
 @Component({
   selector: 'app-admin-users',
@@ -33,7 +34,8 @@ export class AdminUsersComponent implements OnInit {
 
   constructor(
     private usersService: UsersService,
-    private session: SessionService
+    private session: SessionService,
+    private confirm: ConfirmDialogService
   ) {}
 
   ngOnInit(): void {
@@ -117,6 +119,20 @@ export class AdminUsersComponent implements OnInit {
   }
 
   block(user: UserProfile): void {
+    void this.confirmBlock(user);
+  }
+
+  private async confirmBlock(user: UserProfile): Promise<void> {
+    const ok = await this.confirm.ask({
+      title: 'Bloquear usuario',
+      message: `¿Confirmas bloquear a ${user.fullName || user.email}?`,
+      confirmLabel: 'Confirmar',
+      cancelLabel: 'Cancelar',
+      tone: 'danger'
+    });
+    if (!ok) {
+      return;
+    }
     this.actionEmail = user.email;
     this.usersService.blockUser(user.email, { reason: 'Bloqueo administrativo', permanent: false }).subscribe({
       next: () => {
@@ -131,6 +147,19 @@ export class AdminUsersComponent implements OnInit {
   }
 
   activate(user: UserProfile): void {
+    void this.confirmActivate(user);
+  }
+
+  private async confirmActivate(user: UserProfile): Promise<void> {
+    const ok = await this.confirm.ask({
+      title: 'Activar usuario',
+      message: `¿Confirmas activar a ${user.fullName || user.email}?`,
+      confirmLabel: 'Confirmar',
+      cancelLabel: 'Cancelar'
+    });
+    if (!ok) {
+      return;
+    }
     this.actionEmail = user.email;
     this.usersService.activateUser(user.email).subscribe({
       next: () => {
@@ -150,10 +179,18 @@ export class AdminUsersComponent implements OnInit {
       this.errorMessage = 'No puedes eliminarte a ti mismo.';
       return;
     }
-    if (!confirm(
-      `¿Eliminar lógicamente a ${user.fullName || user.email}?\n\n` +
-      'Dejará de aparecer en el panel. Si tiene eventos futuros inscritos, la eliminación se bloqueará.'
-    )) {
+    void this.confirmDeleteOne(user);
+  }
+
+  private async confirmDeleteOne(user: UserProfile): Promise<void> {
+    const ok = await this.confirm.ask({
+      title: 'Eliminar usuario',
+      message: `¿Eliminar lógicamente a ${user.fullName || user.email}? Dejará de aparecer en el panel. Si tiene eventos futuros inscritos, la eliminación se bloqueará.`,
+      confirmLabel: 'Confirmar',
+      cancelLabel: 'Cancelar',
+      tone: 'danger'
+    });
+    if (!ok) {
       return;
     }
     this.actionEmail = user.email;
@@ -186,10 +223,18 @@ export class AdminUsersComponent implements OnInit {
       this.errorMessage = 'No puedes eliminarte a ti mismo.';
       return;
     }
-    if (!confirm(
-      `¿Eliminar lógicamente ${filtered.length} usuario(s) seleccionado(s)?\n\n` +
-      'Quienes tengan eventos futuros inscritos no se eliminarán.'
-    )) {
+    void this.confirmDeleteSelected(filtered);
+  }
+
+  private async confirmDeleteSelected(filtered: string[]): Promise<void> {
+    const ok = await this.confirm.ask({
+      title: 'Eliminar usuarios',
+      message: `¿Eliminar lógicamente ${filtered.length} usuario(s) seleccionado(s)? Quienes tengan eventos futuros inscritos no se eliminarán.`,
+      confirmLabel: 'Confirmar',
+      cancelLabel: 'Cancelar',
+      tone: 'danger'
+    });
+    if (!ok) {
       return;
     }
     this.bulkLoading = true;

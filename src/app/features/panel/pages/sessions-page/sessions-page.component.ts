@@ -5,6 +5,7 @@ import { of } from 'rxjs';
 import { Routine, Sport } from '../../../../core/models/sports';
 import { SessionService } from '../../../../core/services/session.service';
 import { SportsService } from '../../../../core/services/sports.service';
+import { ConfirmDialogService } from '../../../../core/services/confirm-dialog.service';
 
 @Component({
   selector: 'app-sessions-page',
@@ -22,7 +23,8 @@ export class SessionsPageComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private session: SessionService,
-    private sportsService: SportsService
+    private sportsService: SportsService,
+    private confirm: ConfirmDialogService
   ) {
     this.form = this.fb.group({
       name: ['', Validators.required],
@@ -60,6 +62,19 @@ export class SessionsPageComponent implements OnInit {
       this.form.markAllAsTouched();
       return;
     }
+    void this.confirmCreate();
+  }
+
+  private async confirmCreate(): Promise<void> {
+    const ok = await this.confirm.ask({
+      title: 'Crear sesión',
+      message: `¿Confirmas crear la rutina "${this.form.value.name}"?`,
+      confirmLabel: 'Confirmar',
+      cancelLabel: 'Cancelar'
+    });
+    if (!ok) {
+      return;
+    }
 
     this.withTrainerId((trainerId) => {
       const exercisesRaw = String(this.form.value.exercisesJson || '').trim();
@@ -88,6 +103,19 @@ export class SessionsPageComponent implements OnInit {
   }
 
   publish(routine: Routine): void {
+    void this.confirmPublish(routine);
+  }
+
+  private async confirmPublish(routine: Routine): Promise<void> {
+    const ok = await this.confirm.ask({
+      title: 'Publicar sesión',
+      message: `¿Confirmas publicar "${routine.name}"?`,
+      confirmLabel: 'Confirmar',
+      cancelLabel: 'Cancelar'
+    });
+    if (!ok) {
+      return;
+    }
     this.sportsService.publishRoutine(routine.id).subscribe({
       next: () => {
         this.successMessage = 'Sesión publicada.';

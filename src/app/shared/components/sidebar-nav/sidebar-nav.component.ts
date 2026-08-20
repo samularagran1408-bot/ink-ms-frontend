@@ -7,6 +7,7 @@ import { filter } from 'rxjs/operators';
 import { AppRole } from '../../../core/models/app-role';
 import { SessionService } from '../../../core/services/session.service';
 import { UnreadNotificationsService } from '../../../core/services/unread-notifications.service';
+import { ConfirmDialogService } from '../../../core/services/confirm-dialog.service';
 import { HeroIconName } from '../../icons/heroicons-outline';
 
 export interface SidebarNavItem {
@@ -44,7 +45,8 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
     private router: Router,
     private session: SessionService,
     private translate: TranslateService,
-    private unreadNotifications: UnreadNotificationsService
+    private unreadNotifications: UnreadNotificationsService,
+    private confirm: ConfirmDialogService
   ) {}
 
   /** En móvil el staff también usa drawer + hamburguesa. */
@@ -99,7 +101,20 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
   }
 
   handleLogout(): void {
-    this.session.logout();
+    void this.confirmLogout();
+  }
+
+  private async confirmLogout(): Promise<void> {
+    const ok = await this.confirm.ask({
+      title: this.translate.instant('COMMON.LOGOUT'),
+      message: this.translate.instant('COMMON.LOGOUT_CONFIRM'),
+      confirmLabel: this.translate.instant('COMMON.CONFIRM'),
+      cancelLabel: this.translate.instant('COMMON.CANCEL'),
+      tone: 'danger'
+    });
+    if (ok) {
+      this.session.logout();
+    }
   }
 
   get initials(): string {
@@ -156,7 +171,6 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
       case 'ADMIN':
         this.navItems = [
           { labelKey: 'NAV.DASHBOARD', route: '/admin', exact: true, icon: 'squares-2x2' },
-          { labelKey: 'NAV.ASSISTANT', route: '/admin/asistente', icon: 'chat-bubble-left-right' },
           { labelKey: 'NAV.USERS', route: '/admin/users', icon: 'users' },
           { labelKey: 'NAV.EVENTS', route: '/admin/events', icon: 'calendar-days' },
           { labelKey: 'NAV.ATHLETES_WAITLIST', route: '/admin/athletes', icon: 'user-group' },
@@ -171,7 +185,6 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
       case 'ENTRENADOR':
         this.navItems = [
           { labelKey: 'NAV.DASHBOARD', route: '/trainer', exact: true, icon: 'squares-2x2' },
-          { labelKey: 'NAV.ASSISTANT', route: '/trainer/asistente', icon: 'chat-bubble-left-right' },
           { labelKey: 'NAV.QUIZ', route: '/trainer/quiz', icon: 'academic-cap' },
           { labelKey: 'NAV.SESSIONS', route: '/trainer/sessions', icon: 'academic-cap' },
           { labelKey: 'NAV.SPORTS', route: '/trainer/sports', icon: 'trophy' },
@@ -183,7 +196,6 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
       case 'ORGANIZADOR':
         this.navItems = [
           { labelKey: 'NAV.EVENTS', route: '/organizer', exact: true, icon: 'calendar-days' },
-          { labelKey: 'NAV.ASSISTANT', route: '/organizer/asistente', icon: 'chat-bubble-left-right' },
           { labelKey: 'NAV.QUIZ', route: '/organizer/quiz', icon: 'academic-cap' },
           { labelKey: 'NAV.MANAGE_EVENTS', route: '/organizer/events', icon: 'cog-6-tooth' },
           { labelKey: 'NAV.ATHLETES_WAITLIST', route: '/organizer/athletes', icon: 'user-group' }
@@ -195,7 +207,6 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
           { labelKey: 'NAV.HOME', route: '/home', exact: true, icon: 'home' },
           { labelKey: 'NAV.EVENTS', route: '/home/events', icon: 'calendar-days' },
           { labelKey: 'NAV.HISTORY', route: '/home/events', icon: 'clipboard-document-list' },
-          { labelKey: 'NAV.ASSISTANT', route: '/home/asistente', icon: 'chat-bubble-left-right' },
           ...this.commonAccountItems('/home')
         ];
         this.secondaryItems = [];

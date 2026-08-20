@@ -98,6 +98,100 @@
       </div>
     </div>
 
+    <section class="catalog-panel" [attr.aria-label]="'HOME.CATALOG_TITLE' | translate">
+      <div class="activity-header">
+        <h2 class="activity-title">{{ 'HOME.CATALOG_TITLE' | translate }}</h2>
+        <p class="activity-subtitle">{{ 'HOME.CATALOG_SUBTITLE' | translate }}</p>
+      </div>
+
+      <div class="catalog-search">
+        <input
+          type="search"
+          name="catalogQuery"
+          [(ngModel)]="catalogQuery"
+          [placeholder]="'HOME.CATALOG_PLACEHOLDER' | translate"
+          [attr.aria-label]="'HOME.CATALOG_PLACEHOLDER' | translate"
+        />
+      </div>
+
+      <div class="filter-chips">
+        <button type="button" class="filter-chip" [class.filter-chip--active]="catalogFilter === 'all'" (click)="setCatalogFilter('all')">
+          {{ 'HOME.FILTER_ALL' | translate }}
+        </button>
+        <button type="button" class="filter-chip" [class.filter-chip--active]="catalogFilter === 'sports'" (click)="setCatalogFilter('sports')">
+          {{ 'HOME.FILTER_SPORTS' | translate }}
+        </button>
+        <button type="button" class="filter-chip" [class.filter-chip--active]="catalogFilter === 'disabilities'" (click)="setCatalogFilter('disabilities')">
+          {{ 'HOME.FILTER_DISABILITIES' | translate }}
+        </button>
+        <button type="button" class="filter-chip" [class.filter-chip--active]="catalogFilter === 'associations'" (click)="setCatalogFilter('associations')">
+          {{ 'HOME.FILTER_ASSOCIATIONS' | translate }}
+        </button>
+        <button type="button" class="filter-chip" [class.filter-chip--active]="catalogFilter === 'routines'" (click)="setCatalogFilter('routines')">
+          {{ 'HOME.FILTER_ROUTINES' | translate }}
+        </button>
+      </div>
+
+      <div class="catalog-results">
+        <article class="catalog-group" *ngIf="showSports">
+          <h3>{{ 'HOME.FILTER_SPORTS' | translate }}</h3>
+          <div class="activity-row" *ngFor="let sport of filteredSports">
+            <div>
+              <strong>{{ sport.name }}</strong>
+              <div class="kpi-sub">{{ sport.description || sport.difficulty || ('COMMON.SPORT' | translate) }}</div>
+            </div>
+          </div>
+          <p *ngIf="!filteredSports.length" class="empty-text">{{ 'HOME.NO_SPORTS_MATCH' | translate }}</p>
+        </article>
+
+        <article class="catalog-group" *ngIf="showDisabilities">
+          <h3>{{ 'HOME.FILTER_DISABILITIES' | translate }}</h3>
+          <div class="activity-row" *ngFor="let item of filteredDisabilities">
+            <div>
+              <strong>{{ item.name }}</strong>
+              <div class="kpi-sub">{{ item.category || item.description || '—' }}</div>
+            </div>
+          </div>
+          <p *ngIf="!filteredDisabilities.length" class="empty-text">{{ 'HOME.NO_DISABILITIES_MATCH' | translate }}</p>
+        </article>
+
+        <article class="catalog-group" *ngIf="showAssociations">
+          <h3>{{ 'HOME.FILTER_ASSOCIATIONS' | translate }}</h3>
+          <div class="activity-row" *ngFor="let item of filteredAssociations">
+            <div>
+              <strong>{{ item.sportName }} · {{ item.disabilityName }}</strong>
+              <div class="kpi-sub">{{ item.adaptations || ('HOME.NO_ADAPTATIONS' | translate) }}</div>
+            </div>
+          </div>
+          <p *ngIf="!filteredAssociations.length" class="empty-text">{{ 'HOME.NO_ASSOCIATIONS_MATCH' | translate }}</p>
+        </article>
+
+        <article class="catalog-group" *ngIf="showRoutinesCatalog">
+          <h3>{{ 'HOME.FILTER_ROUTINES' | translate }}</h3>
+          <div class="activity-row" *ngFor="let routine of filteredRoutines">
+            <div>
+              <strong>{{ routine.name }}</strong>
+              <div class="kpi-sub">
+                {{ routine.sportName || routine.level || ('COMMON.SPORT' | translate) }}
+                <span *ngIf="routine.durationMinutes"> · {{ routine.durationMinutes }} min</span>
+              </div>
+            </div>
+            <button
+              *ngIf="!isRoutineJoined(routine.id)"
+              class="register-event-btn"
+              type="button"
+              [disabled]="registeringRoutineId === routine.id || (routine.availableCapacity ?? 1) <= 0"
+              (click)="onRegisterRoutine(routine)"
+            >
+              {{ registeringRoutineId === routine.id ? '...' : ('HOME.JOIN_ROUTINE' | translate) }}
+            </button>
+            <span *ngIf="isRoutineJoined(routine.id)" class="status-pill status-pill--ok">{{ 'HOME.JOINED' | translate }}</span>
+          </div>
+          <p *ngIf="!filteredRoutines.length" class="empty-text">{{ 'HOME.NO_ROUTINES_MATCH' | translate }}</p>
+        </article>
+      </div>
+    </section>
+
     <section class="activity-panel" [attr.aria-label]="'HOME.ACTIVITY_TITLE' | translate">
       <div class="activity-header">
         <h2 class="activity-title">{{ 'HOME.ACTIVITY_TITLE' | translate }}</h2>
@@ -285,6 +379,20 @@
           <div class="calendar-header-row">
             <span class="calendar-title">{{ 'HOME.MY_CALENDAR' | translate }}</span>
           </div>
+          <form class="calendar-filters" (ngSubmit)="applyCalendarFilter()">
+            <label>
+              {{ 'HOME.CALENDAR_FROM' | translate }}
+              <input type="date" name="calendarFrom" [(ngModel)]="calendarFrom" />
+            </label>
+            <label>
+              {{ 'HOME.CALENDAR_TO' | translate }}
+              <input type="date" name="calendarTo" [(ngModel)]="calendarTo" />
+            </label>
+            <div class="calendar-filter-actions">
+              <button class="register-event-btn" type="submit">{{ 'HOME.CALENDAR_FILTER' | translate }}</button>
+              <button class="talk-ai-btn" type="button" (click)="clearCalendarFilter()">{{ 'HOME.CALENDAR_CLEAR' | translate }}</button>
+            </div>
+          </form>
           <div class="calendar-month-label">{{ calendarMonthLabel }}</div>
           <div class="calendar-grid">
             <div class="cal-day-header">{{ 'HOME.DAY_SUN' | translate }}</div>
@@ -301,9 +409,21 @@
               [class.cal-cell--muted]="cell.muted || !cell.day"
               [class.cal-cell--selected]="cell.selected"
               [class.cal-cell--event]="cell.hasEvent"
+              (click)="onCalendarDayClick(cell)"
             >
               {{ cell.day || '' }}
             </div>
+          </div>
+          <div class="calendar-events">
+            <div class="activity-row" *ngFor="let item of calendarItems.slice(0, 5)">
+              <div>
+                <strong>{{ item.title }}</strong>
+                <div class="kpi-sub">{{ item.sportName || ('COMMON.SPORT' | translate) }} · {{ formatDate(item.startDate) }} {{ formatTime(item.startTime) }}</div>
+              </div>
+            </div>
+            <p *ngIf="calendarLoaded && !calendarItems.length" class="empty-text">
+              {{ 'HOME.CALENDAR_EMPTY' | translate }}
+            </p>
           </div>
         </div>
 

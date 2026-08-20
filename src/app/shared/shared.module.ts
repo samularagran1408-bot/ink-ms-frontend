@@ -1,5 +1,6 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 
@@ -9,6 +10,8 @@ import { SidebarNavComponent } from './components/sidebar-nav/sidebar-nav.compon
 import { IconComponent } from './components/icon/icon.component';
 import { PlaceLocationPickerComponent } from './components/place-location-picker/place-location-picker.component';
 import { EventLocationMapComponent } from './components/event-location-map/event-location-map.component';
+import { ConfirmDialogComponent } from './components/confirm-dialog/confirm-dialog.component';
+import { AiAssistantWidgetComponent } from './components/ai-assistant-widget/ai-assistant-widget.component';
 
 @NgModule({
   declarations: [
@@ -17,10 +20,13 @@ import { EventLocationMapComponent } from './components/event-location-map/event
     SidebarNavComponent,
     IconComponent,
     PlaceLocationPickerComponent,
-    EventLocationMapComponent
+    EventLocationMapComponent,
+    ConfirmDialogComponent,
+    AiAssistantWidgetComponent
   ],
   imports: [
     CommonModule,
+    FormsModule,
     RouterModule,
     TranslateModule
   ],
@@ -31,6 +37,8 @@ import { EventLocationMapComponent } from './components/event-location-map/event
     IconComponent,
     PlaceLocationPickerComponent,
     EventLocationMapComponent,
+    ConfirmDialogComponent,
+    AiAssistantWidgetComponent,
     TranslateModule
   ]
 })

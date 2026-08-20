@@ -5,6 +5,7 @@ import { catchError } from 'rxjs/operators';
 
 import { Disability, Sport, SportDisability } from '../../../../core/models/sports';
 import { SportsService } from '../../../../core/services/sports.service';
+import { ConfirmDialogService } from '../../../../core/services/confirm-dialog.service';
 
 @Component({
   selector: 'app-associations-page',
@@ -17,13 +18,15 @@ export class AssociationsPageComponent implements OnInit {
   associations: SportDisability[] = [];
   form: FormGroup;
   selectedSportId: number | null = null;
+  searchQuery = '';
   loading = true;
   errorMessage: string | null = null;
   successMessage: string | null = null;
 
   constructor(
     private sportsService: SportsService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private confirm: ConfirmDialogService
   ) {
     this.form = this.fb.group({
       sportId: [null, Validators.required],
@@ -35,7 +38,7 @@ export class AssociationsPageComponent implements OnInit {
   ngOnInit(): void {
     forkJoin({
       sports: this.sportsService.getSports().pipe(catchError(() => of([] as Sport[]))),
-      disabilities: this.sportsService.getDisabilities().pipe(catchError(() => of([] as Disability[])))
+      disabilities: this.sportsService.getActiveDisabilities().pipe(catchError(() => of([] as Disability[])))
     }).subscribe({
       next: ({ sports, disabilities }) => {
         this.sports = sports;
@@ -61,9 +64,35 @@ export class AssociationsPageComponent implements OnInit {
     });
   }
 
+  get filteredAssociations(): SportDisability[] {
+    const q = this.searchQuery.trim().toLowerCase();
+    if (!q) {
+      return this.associations;
+    }
+    return this.associations.filter((item) =>
+      (item.disabilityName || '').toLowerCase().includes(q)
+      || (item.sportName || '').toLowerCase().includes(q)
+      || (item.adaptations || '').toLowerCase().includes(q)
+      || String(item.disabilityId).includes(q)
+    );
+  }
+
   create(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
+      return;
+    }
+    void this.confirmCreate();
+  }
+
+  private async confirmCreate(): Promise<void> {
+    const ok = await this.confirm.ask({
+      title: 'Crear asociación',
+      message: '¿Confirmas vincular este deporte con la discapacidad y sus adaptaciones?',
+      confirmLabel: 'Confirmar',
+      cancelLabel: 'Cancelar'
+    });
+    if (!ok) {
       return;
     }
 
@@ -88,6 +117,20 @@ export class AssociationsPageComponent implements OnInit {
   }
 
   remove(item: SportDisability): void {
+    void this.confirmRemove(item);
+  }
+
+  private async confirmRemove(item: SportDisability): Promise<void> {
+    const ok = await this.confirm.ask({
+      title: 'Eliminar asociación',
+      message: `¿Confirmas eliminar la asociación de "${item.disabilityName || ('#' + item.disabilityId)}"?`,
+      confirmLabel: 'Confirmar',
+      cancelLabel: 'Cancelar',
+      tone: 'danger'
+    });
+    if (!ok) {
+      return;
+    }
     this.sportsService.removeSportDisability(item.sportId, item.disabilityId).subscribe({
       next: () => {
         this.successMessage = 'Asociación eliminada.';

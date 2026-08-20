@@ -4,7 +4,7 @@ import { Subscription, forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { TranslateService } from '@ngx-translate/core';
 
-import { EventItem, Registration, Routine, RoutineRegistration } from '../../../../core/models/sports';
+import { EventItem, Registration, Routine, RoutineRegistration, Sport, Disability, SportDisability, CalendarEvent } from '../../../../core/models/sports';
 import { AppNotification } from '../../../../core/models/accessibility-api';
 import { SessionService } from '../../../../core/services/session.service';
 import { SportsService } from '../../../../core/services/sports.service';
@@ -13,7 +13,10 @@ import { NotificationAnnounceService } from '../../../../core/services/notificat
 import { TtsService } from '../../../../core/services/tts.service';
 import { LanguageService } from '../../../../core/services/language.service';
 import { UnreadNotificationsService } from '../../../../core/services/unread-notifications.service';
+import { ConfirmDialogService } from '../../../../core/services/confirm-dialog.service';
 import { resolveEventImage } from '../../../../core/utils/event-image.util';
+
+type CatalogFilter = 'all' | 'sports' | 'disabilities' | 'associations' | 'routines';
 
 @Component({
   selector: 'app-user-interface',
@@ -24,6 +27,7 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
   loading = true;
   errorMessage: string | null = null;
   events: EventItem[] = [];
+  allEvents: EventItem[] = [];
   registrations: Registration[] = [];
   routines: Routine[] = [];
   routineRegistrations: RoutineRegistration[] = [];
@@ -36,6 +40,19 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
   calendarMonthLabel = '';
   calendarCells: { day: number | null; muted: boolean; selected: boolean; hasEvent: boolean }[] = [];
   audioMode = false;
+
+  catalogQuery = '';
+  catalogFilter: CatalogFilter = 'all';
+  sports: Sport[] = [];
+  disabilities: Disability[] = [];
+  associations: SportDisability[] = [];
+  calendarFrom = '';
+  calendarTo = '';
+  calendarItems: CalendarEvent[] = [];
+  calendarLoaded = false;
+  selectedCalendarDate: string | null = null;
+  private calendarYear = 0;
+  private calendarMonth = 0;
 
   private prefsSub: Subscription | null = null;
   private playingSub: Subscription | null = null;
@@ -51,7 +68,8 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
     private tts: TtsService,
     private translate: TranslateService,
     private languageService: LanguageService,
-    private unreadNotifications: UnreadNotificationsService
+    private unreadNotifications: UnreadNotificationsService,
+    private confirm: ConfirmDialogService
   ) {}
 
   ngOnInit(): void {
@@ -86,10 +104,15 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
           : of([] as RoutineRegistration[]),
         unread: this.preferencesApi.getUnreadCount().pipe(catchError(() => of(0))),
         notifications: this.preferencesApi.getNotifications().pipe(catchError(() => of([] as AppNotification[]))),
-        prefs: this.notificationAnnounce.refreshPreferences()
+        prefs: this.notificationAnnounce.refreshPreferences(),
+        sports: this.sportsService.getActiveSports().pipe(catchError(() => of([] as Sport[]))),
+        disabilities: this.sportsService.getActiveDisabilities().pipe(catchError(() => of([] as Disability[]))),
+        associations: this.sportsService.getAssociations().pipe(catchError(() => of([] as SportDisability[]))),
+        calendar: this.sportsService.getEventCalendar().pipe(catchError(() => of([] as CalendarEvent[])))
       }).subscribe({
-        next: ({ events, registrations, routines, routineRegistrations, unread, notifications }) => {
-          this.events = this.sortEvents(events).slice(0, 6);
+        next: ({ events, registrations, routines, routineRegistrations, unread, notifications, sports, disabilities, associations, calendar }) => {
+          this.allEvents = this.sortEvents(events);
+          this.events = this.allEvents.slice(0, 6);
           this.registrations = this.sortRegistrations(registrations);
           this.routines = routines;
           this.routineRegistrations = routineRegistrations;
@@ -98,7 +121,12 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
           this.unreadNotifications.setCount(this.unreadCount);
           this.notifications = notifications.slice(0, 5);
           this.audioMode = this.tts.isAudioNotificationsActive;
-          this.markEventDays(events);
+          this.sports = sports;
+          this.disabilities = disabilities;
+          this.associations = associations;
+          this.calendarItems = calendar;
+          this.calendarLoaded = true;
+          this.markEventDays(this.allEvents);
           this.loading = false;
         },
         error: () => {
@@ -165,6 +193,20 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
   }
 
   onRegisterRoutine(routine: Routine): void {
+    void this.confirmJoinRoutine(routine);
+  }
+
+  private async confirmJoinRoutine(routine: Routine): Promise<void> {
+    const ok = await this.confirm.ask({
+      title: this.translate.instant('HOME.JOIN_ROUTINE'),
+      message: this.translate.instant('HOME.CONFIRM_JOIN_ROUTINE', { name: routine.name }),
+      confirmLabel: this.translate.instant('COMMON.CONFIRM'),
+      cancelLabel: this.translate.instant('COMMON.CANCEL')
+    });
+    if (!ok) {
+      return;
+    }
+
     const ensureProfile$ = this.session.getProfile()
       ? of(this.session.getProfile())
       : this.session.loadProfile();
@@ -224,6 +266,26 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
   }
 
   onRegisterEvent(event: EventItem): void {
+    void this.confirmRegisterEvent(event);
+  }
+
+  private async confirmRegisterEvent(event: EventItem): Promise<void> {
+    const waitlist = (event.availableCapacity ?? 0) <= 0;
+    const ok = await this.confirm.ask({
+      title: waitlist
+        ? this.translate.instant('HOME.JOIN_WAITLIST')
+        : this.translate.instant('HOME.REGISTER'),
+      message: this.translate.instant(
+        waitlist ? 'HOME.CONFIRM_JOIN_WAITLIST' : 'HOME.CONFIRM_REGISTER_EVENT',
+        { name: event.name }
+      ),
+      confirmLabel: this.translate.instant('COMMON.CONFIRM'),
+      cancelLabel: this.translate.instant('COMMON.CANCEL')
+    });
+    if (!ok) {
+      return;
+    }
+
     const ensureProfile$ = this.session.getProfile()
       ? of(this.session.getProfile())
       : this.session.loadProfile();
@@ -300,6 +362,86 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
     return resolveEventImage(event);
   }
 
+  setCatalogFilter(filter: CatalogFilter): void {
+    this.catalogFilter = filter;
+  }
+
+  get showSports(): boolean {
+    return this.catalogFilter === 'all' || this.catalogFilter === 'sports';
+  }
+
+  get showDisabilities(): boolean {
+    return this.catalogFilter === 'all' || this.catalogFilter === 'disabilities';
+  }
+
+  get showAssociations(): boolean {
+    return this.catalogFilter === 'all' || this.catalogFilter === 'associations';
+  }
+
+  get showRoutinesCatalog(): boolean {
+    return this.catalogFilter === 'all' || this.catalogFilter === 'routines';
+  }
+
+  get filteredSports(): Sport[] {
+    return this.sports.filter((sport) => this.matchesQuery(sport.name, sport.description, sport.difficulty, String(sport.id)));
+  }
+
+  get filteredDisabilities(): Disability[] {
+    return this.disabilities.filter((item) =>
+      item.isActive !== false
+      && this.matchesQuery(item.name, item.category, item.description, String(item.id))
+    );
+  }
+
+  get filteredAssociations(): SportDisability[] {
+    return this.associations.filter((item) =>
+      this.matchesQuery(item.sportName, item.disabilityName, item.adaptations)
+    );
+  }
+
+  get filteredRoutines(): Routine[] {
+    return this.routines.filter((routine) =>
+      this.matchesQuery(routine.name, routine.sportName, routine.level, routine.description, routine.disabilityFocus)
+    );
+  }
+
+  isRoutineJoined(routineId: string): boolean {
+    return this.routineRegistrations.some((reg) => reg.routineId === routineId);
+  }
+
+  applyCalendarFilter(): void {
+    this.sportsService.getEventCalendar(this.calendarFrom || undefined, this.calendarTo || undefined).subscribe({
+      next: (items) => {
+        this.calendarItems = items;
+        this.calendarLoaded = true;
+        this.markEventDays(this.allEvents);
+      },
+      error: (error) => {
+        this.calendarItems = [];
+        this.calendarLoaded = true;
+        this.errorMessage = error?.error?.message || this.translate.instant('HOME.CALENDAR_ERROR');
+      }
+    });
+  }
+
+  clearCalendarFilter(): void {
+    this.calendarFrom = '';
+    this.calendarTo = '';
+    this.selectedCalendarDate = null;
+    this.applyCalendarFilter();
+  }
+
+  onCalendarDayClick(cell: { day: number | null; muted: boolean }): void {
+    if (!cell.day || cell.muted) {
+      return;
+    }
+    const date = this.dateForCell(cell.day);
+    this.selectedCalendarDate = date;
+    this.calendarFrom = date;
+    this.calendarTo = date;
+    this.applyCalendarFilter();
+  }
+
   formatDate(value?: string): string {
     if (!value) return this.translate.instant('HOME.NO_DATE');
     const date = new Date(value);
@@ -343,6 +485,8 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
   private buildCalendar(base: Date): void {
     const year = base.getFullYear();
     const month = base.getMonth();
+    this.calendarYear = year;
+    this.calendarMonth = month;
     const locale = this.languageService.currentLang === 'en' ? 'en-US' : 'es-MX';
     this.calendarMonthLabel = base.toLocaleDateString(locale, { month: 'long', year: 'numeric' });
     const firstDay = new Date(year, month, 1).getDay();
@@ -359,22 +503,58 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
     this.calendarCells = cells;
   }
 
+  private dateForCell(day: number): string {
+    const month = String(this.calendarMonth + 1).padStart(2, '0');
+    const date = String(day).padStart(2, '0');
+    return `${this.calendarYear}-${month}-${date}`;
+  }
+
+  private matchesQuery(...values: Array<string | undefined>): boolean {
+    const q = this.catalogQuery.trim().toLowerCase();
+    if (!q) {
+      return true;
+    }
+    return values.some((value) => (value || '').toLowerCase().includes(q));
+  }
+
+  private eventInCalendarRange(eventDate?: string): boolean {
+    if (!eventDate) {
+      return false;
+    }
+    const date = eventDate.substring(0, 10);
+    if (this.calendarFrom && date < this.calendarFrom) {
+      return false;
+    }
+    if (this.calendarTo && date > this.calendarTo) {
+      return false;
+    }
+    return true;
+  }
+
   private markEventDays(events: EventItem[]): void {
-    const now = new Date();
-    const month = now.getMonth();
-    const year = now.getFullYear();
+    const source = this.calendarFrom || this.calendarTo
+      ? events.filter((event) => this.eventInCalendarRange(event.eventDate))
+      : events;
     const days = new Set(
-      events
+      source
         .filter((event) => {
           const date = new Date(event.eventDate);
-          return date.getMonth() === month && date.getFullYear() === year;
+          return date.getMonth() === this.calendarMonth && date.getFullYear() === this.calendarYear;
         })
         .map((event) => new Date(event.eventDate).getDate())
     );
 
-    this.calendarCells = this.calendarCells.map((cell) => ({
-      ...cell,
-      hasEvent: !!cell.day && days.has(cell.day)
-    }));
+    this.calendarCells = this.calendarCells.map((cell) => {
+      const cellDate = cell.day ? this.dateForCell(cell.day) : null;
+      const today = this.dateForCell(new Date().getDate());
+      const isCurrentMonth = new Date().getMonth() === this.calendarMonth && new Date().getFullYear() === this.calendarYear;
+      return {
+        ...cell,
+        selected: !!cellDate && (this.selectedCalendarDate
+          ? cellDate === this.selectedCalendarDate
+          : isCurrentMonth && cellDate === today),
+        hasEvent: !!cell.day && days.has(cell.day)
+      };
+    });
   }
 }

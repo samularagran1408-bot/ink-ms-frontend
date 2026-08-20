@@ -4,14 +4,21 @@ export type ChatCardTipo =
   | 'rutina'
   | 'ejercicio'
   | 'adaptacion'
-  | 'quiz';
+  | 'quiz'
+  | 'confirmacion'
+  | 'usuario'
+  | 'kpi'
+  | 'alerta';
 
 export type ChatCtaAccion =
   | 'ver_eventos'
   | 'ver_deportes'
   | 'ver_sesiones'
   | 'ver_discapacidades'
-  | 'ver_quiz';
+  | 'ver_quiz'
+  | 'confirmar_write'
+  | 'ver_perfil'
+  | 'ver_estadisticas';
 
 export interface ChatCardCta {
   accion: ChatCtaAccion;

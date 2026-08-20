@@ -604,6 +604,109 @@ a.register-event-btn:hover {
   box-shadow: inset 0 -3px 0 #E11D48;
 }
 
+.catalog-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 16px;
+  padding: 22px;
+}
+
+.catalog-search input {
+  width: 100%;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.filter-chip {
+  border: 1px solid #E2E8F0;
+  background: #fff;
+  color: #475569;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.filter-chip--active {
+  background: #A30D11;
+  color: #fff;
+  border-color: #A30D11;
+}
+
+.catalog-results {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.catalog-group {
+  border: 1px solid #F1F5F9;
+  border-radius: 12px;
+  padding: 14px;
+  min-height: 120px;
+  max-height: 320px;
+  overflow: auto;
+}
+
+.catalog-group h3 {
+  margin: 0 0 10px;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #64748B;
+}
+
+.calendar-filters {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.calendar-filters label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748B;
+}
+
+.calendar-filters input {
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-family: inherit;
+}
+
+.calendar-filter-actions {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.calendar-events {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .activity-panel {
   display: flex;
   flex-direction: column;
@@ -758,7 +861,8 @@ a.register-event-btn:hover {
 }
 
 @media (max-width: 1100px) {
-  .activity-grid {
+  .activity-grid,
+  .catalog-results {
     grid-template-columns: 1fr;
   }
 }

@@ -17,6 +17,7 @@ import { SessionService } from '../../../../core/services/session.service';
 import { SportsService } from '../../../../core/services/sports.service';
 import { ReportsService } from '../../../../core/services/reports.service';
 import { PreferencesApiService } from '../../../../core/services/preferences-api.service';
+import { ConfirmDialogService } from '../../../../core/services/confirm-dialog.service';
 import { AttendanceCheckInMethod, normalizeAttendanceCheckInMethod } from '../../../../core/models/accessibility-api';
 import { resolveEventImage } from '../../../../core/utils/event-image.util';
 import { EventPlaceLocation } from '../../../../core/utils/maps.util';
@@ -73,6 +74,7 @@ export class EventsPageComponent implements OnInit, OnDestroy {
 
   lookupEventId = '';
   lookupEvent: EventItem | null = null;
+  catalogQuery = '';
   calendarFrom = '';
   calendarTo = '';
   calendarItems: CalendarEvent[] = [];
@@ -123,7 +125,8 @@ export class EventsPageComponent implements OnInit, OnDestroy {
     private session: SessionService,
     private reportsService: ReportsService,
     private preferencesApi: PreferencesApiService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private confirm: ConfirmDialogService
   ) {
     this.form = this.fb.group({
       sportId: [null, Validators.required],
@@ -161,6 +164,34 @@ export class EventsPageComponent implements OnInit, OnDestroy {
   get canManage(): boolean {
     return this.mode === 'manage'
       || this.session.hasRole('ADMIN', 'ORGANIZADOR', 'ENTRENADOR');
+  }
+
+  get filteredEvents(): EventItem[] {
+    return this.filterEventList(this.events);
+  }
+
+  get filteredManageRows(): EventManageRow[] {
+    const q = this.catalogQuery.trim().toLowerCase();
+    if (!q) {
+      return this.manageRows;
+    }
+    return this.manageRows.filter((row) => this.eventMatchesQuery(row.event, q));
+  }
+
+  private filterEventList(events: EventItem[]): EventItem[] {
+    const q = this.catalogQuery.trim().toLowerCase();
+    if (!q) {
+      return events;
+    }
+    return events.filter((event) => this.eventMatchesQuery(event, q));
+  }
+
+  private eventMatchesQuery(event: EventItem, q: string): boolean {
+    return event.name.toLowerCase().includes(q)
+      || (event.sportName || '').toLowerCase().includes(q)
+      || (event.location || '').toLowerCase().includes(q)
+      || (event.description || '').toLowerCase().includes(q)
+      || event.id.toLowerCase().includes(q);
   }
 
   reload(): void {
@@ -220,6 +251,19 @@ export class EventsPageComponent implements OnInit, OnDestroy {
   createEvent(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
+      return;
+    }
+    void this.confirmCreateEvent();
+  }
+
+  private async confirmCreateEvent(): Promise<void> {
+    const ok = await this.confirm.ask({
+      title: 'Crear evento',
+      message: `¿Confirmas la creación de "${this.form.value.name}"?`,
+      confirmLabel: 'Confirmar',
+      cancelLabel: 'Cancelar'
+    });
+    if (!ok) {
       return;
     }
 
@@ -294,6 +338,19 @@ export class EventsPageComponent implements OnInit, OnDestroy {
       row.editForm.markAllAsTouched();
       return;
     }
+    void this.confirmSaveEvent(row);
+  }
+
+  private async confirmSaveEvent(row: EventManageRow): Promise<void> {
+    const ok = await this.confirm.ask({
+      title: 'Guardar cambios',
+      message: `¿Confirmas actualizar "${row.event.name}"? Se notificará a los inscritos si cambia fecha o lugar.`,
+      confirmLabel: 'Confirmar',
+      cancelLabel: 'Cancelar'
+    });
+    if (!ok) {
+      return;
+    }
 
     row.saving = true;
     const payload = {
@@ -325,8 +382,32 @@ export class EventsPageComponent implements OnInit, OnDestroy {
   searchEvent(): void {
     const id = (this.lookupEventId || '').trim();
     if (!id) {
-      this.errorMessage = 'Indica el ID del evento.';
+      this.errorMessage = 'Indica el ID o el nombre del evento.';
       this.lookupEvent = null;
+      return;
+    }
+
+    const looksLikeUuid = /^[0-9a-f]{8}-[0-9a-f-]{4,}$/i.test(id);
+    if (!looksLikeUuid) {
+      this.sportsService.searchEvents(id).subscribe({
+        next: (events) => {
+          if (!events.length) {
+            this.lookupEvent = null;
+            this.successMessage = null;
+            this.errorMessage = `Evento no encontrado: ${id}`;
+            return;
+          }
+          this.lookupEvent = events[0];
+          this.catalogQuery = id;
+          this.errorMessage = null;
+          this.successMessage = `Evento encontrado: ${events[0].name}.`;
+        },
+        error: (error) => {
+          this.lookupEvent = null;
+          this.successMessage = null;
+          this.errorMessage = error?.error?.message || `Evento no encontrado: ${id}`;
+        }
+      });
       return;
     }
 
@@ -368,6 +449,20 @@ export class EventsPageComponent implements OnInit, OnDestroy {
     if (this.cancellingId) {
       return;
     }
+    void this.confirmCancelEvent(event);
+  }
+
+  private async confirmCancelEvent(event: EventItem): Promise<void> {
+    const ok = await this.confirm.ask({
+      title: 'Cancelar evento',
+      message: `¿Confirmas cancelar "${event.name}"? Esta acción no se puede deshacer.`,
+      confirmLabel: 'Confirmar',
+      cancelLabel: 'Cancelar',
+      tone: 'danger'
+    });
+    if (!ok) {
+      return;
+    }
 
     this.cancellingId = event.id;
     this.sportsService.cancelEvent(event.id).subscribe({
@@ -387,6 +482,23 @@ export class EventsPageComponent implements OnInit, OnDestroy {
   }
 
   register(event: EventItem): void {
+    void this.confirmRegister(event);
+  }
+
+  private async confirmRegister(event: EventItem): Promise<void> {
+    const waitlist = (event.availableCapacity ?? 0) <= 0;
+    const ok = await this.confirm.ask({
+      title: waitlist ? 'Lista de espera' : 'Inscribirse',
+      message: waitlist
+        ? `El evento "${event.name}" está lleno. ¿Quieres unirte a la lista de espera?`
+        : `¿Confirmas tu inscripción a "${event.name}"?`,
+      confirmLabel: 'Confirmar',
+      cancelLabel: 'Cancelar'
+    });
+    if (!ok) {
+      return;
+    }
+
     const ensureProfile$ = this.session.getProfile()
       ? of(this.session.getProfile())
       : this.session.loadProfile();
@@ -735,6 +847,19 @@ export class EventsPageComponent implements OnInit, OnDestroy {
     if (row.attended || this.attendanceBusyId) {
       return;
     }
+    void this.confirmMarkManual(row);
+  }
+
+  private async confirmMarkManual(row: EnrolledUserRow): Promise<void> {
+    const ok = await this.confirm.ask({
+      title: 'Registrar asistencia',
+      message: `¿Confirmas la asistencia de ${row.fullName || row.email || 'este usuario'}?`,
+      confirmLabel: 'Confirmar',
+      cancelLabel: 'Cancelar'
+    });
+    if (!ok) {
+      return;
+    }
     this.attendanceBusyId = row.registrationId;
     this.enrolledError = null;
     const verifiedBy = this.session.getProfile()?.id || this.session.getDisplayName();
@@ -758,6 +883,19 @@ export class EventsPageComponent implements OnInit, OnDestroy {
       .filter((row) => !row.attended && this.enrolledSelected.has(row.registrationId))
       .map((row) => row.registrationId);
     if (!ids.length || this.bulkAttendanceLoading) {
+      return;
+    }
+    void this.confirmMarkSelected(ids);
+  }
+
+  private async confirmMarkSelected(ids: string[]): Promise<void> {
+    const ok = await this.confirm.ask({
+      title: 'Registrar asistencia',
+      message: `¿Confirmas marcar asistencia de ${ids.length} persona(s)?`,
+      confirmLabel: 'Confirmar',
+      cancelLabel: 'Cancelar'
+    });
+    if (!ok) {
       return;
     }
     this.bulkAttendanceLoading = true;

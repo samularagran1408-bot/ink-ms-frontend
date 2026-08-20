@@ -7,6 +7,7 @@ import { catchError } from 'rxjs/operators';
 import { EventItem, Sport } from '../../../../core/models/sports';
 import { SessionService } from '../../../../core/services/session.service';
 import { SportsService } from '../../../../core/services/sports.service';
+import { ConfirmDialogService } from '../../../../core/services/confirm-dialog.service';
 import { resolveEventImage } from '../../../../core/utils/event-image.util';
 import { EventPlaceLocation } from '../../../../core/utils/maps.util';
 
@@ -32,7 +33,8 @@ export class OrganizerDashboardComponent implements OnInit {
     private session: SessionService,
     private sportsService: SportsService,
     private fb: FormBuilder,
-    private router: Router
+    private router: Router,
+    private confirm: ConfirmDialogService
   ) {
     this.form = this.fb.group({
       sportId: [null, Validators.required],
@@ -109,6 +111,19 @@ export class OrganizerDashboardComponent implements OnInit {
     }
     if (this.form.invalid) {
       this.form.markAllAsTouched();
+      return;
+    }
+    void this.confirmCreateEvent();
+  }
+
+  private async confirmCreateEvent(): Promise<void> {
+    const ok = await this.confirm.ask({
+      title: 'Crear evento',
+      message: `¿Confirmas la creación de "${this.form.value.name}"?`,
+      confirmLabel: 'Confirmar',
+      cancelLabel: 'Cancelar'
+    });
+    if (!ok) {
       return;
     }
 

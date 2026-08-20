@@ -21,12 +21,42 @@
   </div>
 
   <div class="card">
-    <div class="list-item" *ngFor="let sport of sports">
-      <div>
-        <strong>{{ sport.name }}</strong>
-        <div class="kpi-sub">{{ sport.description || 'Sin descripción' }} · {{ sport.difficulty || '—' }}</div>
-      </div>
-      <button class="btn-danger" type="button" (click)="remove(sport)">Eliminar</button>
+    <h3 class="section-title">Catálogo de deportes</h3>
+    <div class="search-bar">
+      <input
+        type="search"
+        name="sportQuery"
+        [(ngModel)]="searchQuery"
+        placeholder="Buscar deporte por nombre, dificultad o descripción"
+      />
     </div>
+    <div *ngFor="let sport of filteredSports">
+      <div class="list-item">
+        <div>
+          <strong>{{ sport.name }}</strong>
+          <div class="kpi-sub">{{ sport.description || 'Sin descripción' }} · {{ sport.difficulty || '—' }}</div>
+        </div>
+        <div class="item-actions">
+          <button class="btn-secondary" type="button" (click)="toggleAdaptations(sport)">
+            {{ expandedSportId === sport.id ? 'Ocultar adaptaciones' : 'Ver adaptaciones' }}
+          </button>
+          <button class="btn-danger" type="button" (click)="remove(sport)">Eliminar</button>
+        </div>
+      </div>
+      <div *ngIf="expandedSportId === sport.id" style="padding: 0 8px 12px;">
+        <div class="list-item" *ngFor="let item of adaptationsOf(sport)">
+          <div>
+            <strong>{{ item.name }}</strong>
+            <div class="kpi-sub">{{ item.category || 'Discapacidad asociada' }}</div>
+          </div>
+        </div>
+        <p *ngIf="!adaptationsOf(sport).length" class="empty-text">
+          Este deporte no tiene adaptaciones registradas.
+        </p>
+      </div>
+    </div>
+    <p *ngIf="!filteredSports.length" class="empty-text">
+      {{ searchQuery.trim() ? 'No hay deportes que coincidan con la búsqueda.' : 'No hay deportes registrados.' }}
+    </p>
   </div>
 </app-panel-shell>

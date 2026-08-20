@@ -83,6 +83,13 @@ export class AssistantPageComponent implements OnInit {
 
   irACard(card: ChatCard): void {
     const accion = card.cta?.accion;
+    if (accion === 'confirmar_write') {
+      this.usarSugerencia('Confirmo');
+      return;
+    }
+    if (accion === 'ver_estadisticas') {
+      return;
+    }
     if (!accion) {
       return;
     }
@@ -169,6 +176,8 @@ export class AssistantPageComponent implements OnInit {
           return { path: ['/organizer/quiz'] };
         }
         return { path: ['/trainer/quiz'] };
+      case 'ver_perfil':
+        return { path: [`${base}/profile`] };
       default:
         return { path: [base] };
     }

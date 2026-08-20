@@ -1,0 +1,83 @@
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.48);
+  backdrop-filter: blur(4px);
+}
+
+.confirm-card {
+  width: min(420px, 100%);
+  background: #fff;
+  border-radius: 18px;
+  padding: 28px 24px 22px;
+  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.22);
+  text-align: center;
+}
+
+.confirm-icon {
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #FEE2E2;
+  color: #A30D11;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.confirm-icon--danger {
+  background: #FEE2E2;
+  color: #991B1B;
+}
+
+.confirm-title {
+  margin: 0 0 8px;
+  font-family: 'Oswald', sans-serif;
+  font-size: 22px;
+  font-weight: 600;
+  color: #0F172A;
+}
+
+.confirm-message {
+  margin: 0 0 22px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #64748B;
+}
+
+.confirm-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.confirm-btn {
+  border: none;
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.confirm-btn--ghost {
+  background: #fff;
+  color: #475569;
+  border: 1px solid #E2E8F0;
+}
+
+.confirm-btn--primary {
+  background: #A30D11;
+  color: #fff;
+}
+
+.confirm-btn--danger {
+  background: #B91C1C;
+  color: #fff;
+}

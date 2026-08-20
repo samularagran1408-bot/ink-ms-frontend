@@ -11,16 +11,24 @@
   <p *ngIf="loading" class="empty-text">Cargando eventos...</p>
 
   <div class="card" style="margin-bottom: 16px;">
-    <h3 class="section-title">Buscar evento por ID</h3>
+    <h3 class="section-title">Buscar evento</h3>
     <form class="form-grid" (ngSubmit)="searchEvent()">
       <label>
-        ID del evento
-        <input name="lookupEventId" [(ngModel)]="lookupEventId" placeholder="UUID del evento" />
+        ID o nombre del evento
+        <input name="lookupEventId" [(ngModel)]="lookupEventId" placeholder="UUID o nombre del evento" />
       </label>
       <div style="display: flex; align-items: end;">
-        <button class="btn-secondary" type="submit">Buscar</button>
+        <button class="btn-secondary" type="submit">Buscar por ID</button>
       </div>
     </form>
+    <div class="search-bar">
+      <input
+        type="search"
+        name="catalogQuery"
+        [(ngModel)]="catalogQuery"
+        placeholder="Filtrar catálogo por nombre, deporte o ubicación"
+      />
+    </div>
     <div class="list-item" *ngIf="lookupEvent">
       <div>
         <strong>{{ lookupEvent.name }}</strong>
@@ -182,7 +190,7 @@
     <h3 class="section-title">Catálogo de eventos disponibles</h3>
     <div
       class="event-user-row"
-      *ngFor="let event of events"
+      *ngFor="let event of filteredEvents"
       [class.event-user-row--highlight]="isHighlighted(event.id)"
       [attr.id]="'evento-' + event.id"
     >
@@ -245,12 +253,14 @@
         [compact]="true"
       ></app-event-location-map>
     </div>
-    <p *ngIf="!loading && !events.length" class="empty-text">No hay eventos disponibles.</p>
+    <p *ngIf="!loading && !filteredEvents.length" class="empty-text">
+      {{ catalogQuery.trim() ? 'No hay eventos que coincidan con la búsqueda.' : 'No hay eventos disponibles.' }}
+    </p>
   </div>
 
   <!-- Vista gestión: ocupación + waitlist + asistencia -->
   <div class="card" *ngIf="mode === 'manage'">
-    <div *ngFor="let row of manageRows" style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #F1F5F9;">
+    <div *ngFor="let row of filteredManageRows" style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #F1F5F9;">
       <div class="list-item event-list-item" style="border-bottom: none;">
         <div class="event-thumb" [style.background-image]="'url(' + eventImage(row.event) + ')'"></div>
         <div class="event-list-body">
@@ -345,7 +355,9 @@
         <p *ngIf="!row.waitlist.length" class="empty-text">Sin personas en waitlist.</p>
       </div>
     </div>
-    <p *ngIf="!loading && !manageRows.length" class="empty-text">No hay eventos.</p>
+    <p *ngIf="!loading && !filteredManageRows.length" class="empty-text">
+      {{ catalogQuery.trim() ? 'No hay eventos que coincidan con la búsqueda.' : 'No hay eventos.' }}
+    </p>
   </div>
 
   <!-- Modal usuario: encuesta + QR de asistencia -->

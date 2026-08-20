@@ -13,7 +13,7 @@
           <option *ngFor="let sport of sports" [ngValue]="sport.id">{{ sport.name }}</option>
         </select>
       </label>
-      <label>Discapacidad
+      <label>Discapacidad (solo activas)
         <select formControlName="disabilityId">
           <option *ngFor="let item of disabilities" [ngValue]="item.id">{{ item.name }}</option>
         </select>
@@ -33,15 +33,25 @@
       Asociaciones del deporte
       <span *ngIf="selectedSportId">seleccionado</span>
     </h3>
-    <div class="list-item" *ngFor="let item of associations">
+    <div class="search-bar">
+      <input
+        type="search"
+        name="associationQuery"
+        [(ngModel)]="searchQuery"
+        placeholder="Buscar por discapacidad o adaptaciones"
+      />
+    </div>
+    <div class="list-item" *ngFor="let item of filteredAssociations">
       <div>
         <strong>{{ item.disabilityName || ('Discapacidad #' + item.disabilityId) }}</strong>
         <div class="kpi-sub">{{ item.adaptations || 'Sin adaptaciones' }}</div>
       </div>
       <button class="btn-danger" type="button" (click)="remove(item)">Eliminar</button>
     </div>
-    <p *ngIf="!loading && !associations.length" class="empty-text">
-      Este deporte aún no tiene discapacidades asociadas.
+    <p *ngIf="!loading && !filteredAssociations.length" class="empty-text">
+      {{ searchQuery.trim()
+        ? 'No hay asociaciones que coincidan con la búsqueda.'
+        : 'Este deporte aún no tiene discapacidades asociadas.' }}
     </p>
   </div>
 </app-panel-shell>
