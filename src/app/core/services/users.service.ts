@@ -41,6 +41,14 @@ export class UsersService {
     return this.http.get<UserProfile[]>(this.adminUrl);
   }
 
+  getUserByEmail(email: string): Observable<UserProfile> {
+    return this.http.get<UserProfile>(`${this.adminUrl}/by-email`, { params: { email } });
+  }
+
+  adminUpdateProfile(email: string, payload: UpdateProfileRequest): Observable<UserProfile> {
+    return this.http.put<UserProfile>(`${this.adminUrl}/${encodeURIComponent(email)}`, payload);
+  }
+
   getActiveUsers(): Observable<UserProfile[]> {
     return this.http.get<UserProfile[]>(`${this.adminUrl}/active`);
   }

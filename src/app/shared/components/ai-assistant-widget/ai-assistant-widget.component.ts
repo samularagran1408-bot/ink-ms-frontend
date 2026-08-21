@@ -3,11 +3,15 @@ import { NavigationEnd, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
 
+import { TranslateService } from '@ngx-translate/core';
+
 import { AppRole } from '../../../core/models/app-role';
-import { ChatCard, ChatCtaAccion, ChatMensajeUi, ChatResponse } from '../../../core/models/chat';
+import { ChatCard, ChatCtaAccion, ChatHilo, ChatMensajeUi, ChatPasoActividad, ChatResponse, ChatStreamEvent } from '../../../core/models/chat';
 import { UserProfile } from '../../../core/models/user-profile';
 import { AiAssistantService } from '../../../core/services/ai-assistant.service';
 import { ChatService } from '../../../core/services/chat.service';
+import { ConfirmDialogService } from '../../../core/services/confirm-dialog.service';
+import { ReportsService } from '../../../core/services/reports.service';
 import { SessionService } from '../../../core/services/session.service';
 import { UsersService } from '../../../core/services/users.service';
 import { HeroIconName } from '../../icons/heroicons-outline';
@@ -42,8 +46,17 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
   mensajes: ChatMensajeUi[] = [];
   borrador = '';
   enviando = false;
+  pasosAgente: ChatPasoActividad[] = [];
   errorChat: string | null = null;
   conversacionId: string | null = null;
+  hilos: ChatHilo[] = [];
+  historialAbierto = false;
+  cargandoHilos = false;
+  cargandoHilo = false;
+  errorHistorial: string | null = null;
+  private chatSub?: Subscription;
+  private cicloLocal?: ReturnType<typeof setInterval>;
+  private actividadReal = false;
 
   rutinaObjetivo = 'fuerza';
   rutinaTipo = 'general';
@@ -81,7 +94,10 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     private router: Router,
     private chat: ChatService,
     private ai: AiAssistantService,
-    private users: UsersService
+    private users: UsersService,
+    private reports: ReportsService,
+    private confirm: ConfirmDialogService,
+    private translate: TranslateService
   ) {}
 
   ngOnInit(): void {
@@ -98,6 +114,8 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.subs.unsubscribe();
+    this.chatSub?.unsubscribe();
+    this.detenerCicloLocal();
     if (this.closeTimeout) {
       clearTimeout(this.closeTimeout);
     }
@@ -127,19 +145,23 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
 
   enviarChat(): void {
     const texto = this.borrador.trim();
-    if (!texto || this.enviando) {
+    if (!texto || this.enviando || this.cargandoHilo) {
       return;
     }
     this.errorChat = null;
     this.enviando = true;
     this.mensajes.push({ remitente: 'usuario', texto, cards: [], sugerencias: [] });
     this.borrador = '';
+    this.iniciarAnimacionEspera();
     this.scrollChat();
-    this.chat.enviar(texto, this.conversacionId).subscribe({
+    this.chatSub?.unsubscribe();
+    this.chatSub = this.chat.enviarConProgreso(texto, this.conversacionId, (ev) => this.onChatEvento(ev)).subscribe({
       next: (res) => this.aplicarChat(res),
       error: (err) => {
         this.enviando = false;
-        this.errorChat = err?.error?.detail || 'No se pudo contactar al asistente.';
+        this.detenerCicloLocal();
+        this.pasosAgente = [];
+        this.errorChat = err?.error?.detail || err?.message || 'No se pudo contactar al asistente.';
       }
     });
   }
@@ -154,12 +176,87 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     sessionStorage.removeItem(STORAGE_KEY);
     this.mensajes = [];
     this.errorChat = null;
+    this.chatSub?.unsubscribe();
+    this.enviando = false;
+    this.detenerCicloLocal();
+    this.pasosAgente = [];
     this.chat.nueva().subscribe({
       next: (res) => {
         this.conversacionId = res.conversacion_id;
         sessionStorage.setItem(STORAGE_KEY, res.conversacion_id);
+        this.cargarHilos();
       }
     });
+  }
+
+  toggleHistorial(): void {
+    this.historialAbierto = !this.historialAbierto;
+    if (this.historialAbierto) {
+      this.cargarHilos();
+    }
+  }
+
+  abrirHilo(hilo: ChatHilo): void {
+    if (!hilo?.conversacion_id) {
+      return;
+    }
+    this.chatSub?.unsubscribe();
+    this.enviando = false;
+    this.detenerCicloLocal();
+    this.pasosAgente = [];
+    this.cargarHilo(hilo.conversacion_id);
+  }
+
+  async borrarHilo(event: Event, hilo: ChatHilo): Promise<void> {
+    event.stopPropagation();
+    if (!hilo?.conversacion_id) {
+      return;
+    }
+    const ok = await this.confirm.ask({
+      title: this.translate.instant('CHAT.DELETE_TITLE'),
+      message: this.translate.instant('CHAT.DELETE_CONFIRM'),
+      confirmLabel: this.translate.instant('CHAT.DELETE'),
+      cancelLabel: this.translate.instant('COMMON.CANCEL') || 'Cancelar',
+      tone: 'danger'
+    });
+    if (!ok) {
+      return;
+    }
+    this.chat.borrarHilo(hilo.conversacion_id).subscribe({
+      next: () => {
+        if (this.conversacionId === hilo.conversacion_id) {
+          this.mensajes = [];
+          this.conversacionId = null;
+          sessionStorage.removeItem(STORAGE_KEY);
+        }
+        this.cargarHilos();
+      },
+      error: () => {
+        this.errorHistorial = this.translate.instant('CHAT.LOAD_ERROR');
+      }
+    });
+  }
+
+  fechaHilo(hilo: ChatHilo): string {
+    const raw = hilo.ultima_interaccion || hilo.creada_en;
+    if (!raw) {
+      return '';
+    }
+    const fecha = new Date(raw);
+    if (Number.isNaN(fecha.getTime())) {
+      return '';
+    }
+    return fecha.toLocaleString(this.translate.currentLang || 'es', {
+      day: '2-digit',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  tituloHiloActual(): string {
+    const actual = this.hilos.find((h) => h.conversacion_id === this.conversacionId);
+    return actual?.titulo || this.translate.instant('CHAT.NEW');
   }
 
   onChatKey(event: KeyboardEvent): void {
@@ -175,10 +272,21 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
       this.usarSugerencia('Confirmo');
       return;
     }
+    if (accion === 'descargar_pdf') {
+      this.descargarPdf(card);
+      return;
+    }
     if (accion === 'ver_estadisticas') {
       this.section = 'estadisticas';
       if (!this.stats && !this.cargandoStats) {
         this.cargarEstadisticas();
+      }
+      return;
+    }
+    if (accion === 'ver_competencia') {
+      this.section = 'competencia';
+      if (!this.competencia && !this.cargandoCompetencia) {
+        this.analizarCompetencia();
       }
       return;
     }
@@ -188,6 +296,16 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     const commands = this.rutaPara(accion, card.cta?.id);
     this.closePanel();
     void this.router.navigate(commands.path, { queryParams: commands.query });
+  }
+
+  private descargarPdf(card: ChatCard): void {
+    const filename = card.cta?.filename || `inklusport-dashboard-${new Date().toISOString().slice(0, 10)}.pdf`;
+    this.reports.exportDashboardPdf().subscribe({
+      next: (blob) => this.reports.downloadBlob(blob, filename),
+      error: () => {
+        this.errorChat = 'No se pudo descargar el PDF.';
+      }
+    });
   }
 
   generarRutina(): void {
@@ -391,7 +509,8 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     const name = String(valor || 'chart-bar');
     const allowed: HeroIconName[] = [
       'calendar-days', 'heart', 'bolt', 'shield-check', 'chart-bar',
-      'trophy', 'users', 'user', 'exclamation-triangle', 'sparkles'
+      'trophy', 'users', 'user', 'exclamation-triangle', 'sparkles',
+      'clipboard-document-list'
     ];
     return allowed.includes(name as HeroIconName) ? name as HeroIconName : 'chart-bar';
   }
@@ -404,6 +523,7 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     if (tipo === 'kpi') return 'chart-bar';
     if (tipo === 'quiz') return 'academic-cap';
     if (tipo === 'confirmacion') return 'plus';
+    if (tipo === 'reporte') return 'clipboard-document-list';
     return 'sparkles';
   }
 
@@ -417,7 +537,11 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
 
   sugerenciasRol(): string[] {
     if (this.esAdmin()) {
-      return ['¿Cómo va el equipo este mes?', 'Busca un atleta por nombre', 'Estadísticas de la plataforma'];
+      return [
+        'Bloquea a un usuario por nombre',
+        'Exporta el dashboard a PDF',
+        'Lista los usuarios inactivos'
+      ];
     }
     if (this.esOrganizador()) {
       return ['Propón un evento para publicar', '¿Qué eventos hay?', 'Crea un evento de natación'];
@@ -475,7 +599,111 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
       return String(value);
     }
-    return JSON.stringify(value);
+    return '';
+  }
+
+  vistaCompetencia(): Record<string, unknown> {
+    const raw = this.competencia?.['vista'];
+    return raw && typeof raw === 'object' ? raw as Record<string, unknown> : {};
+  }
+
+  kpisCompetencia(): Array<{ clave: string; icono: HeroIconName; valor: string; label: string }> {
+    const lista = this.vistaCompetencia()['kpis'];
+    if (!Array.isArray(lista)) {
+      return [];
+    }
+    return lista.map((item) => {
+      const row = item as Record<string, unknown>;
+      return {
+        clave: String(row['clave'] || ''),
+        icono: this.iconoSeguro(row['icono']),
+        valor: String(row['valor'] ?? '—'),
+        label: String(row['label'] || row['clave'] || '')
+      };
+    });
+  }
+
+  fasesCompetencia(): Array<{ semana: string; foco: string; intensidad: string; sesiones: string; nota: string }> {
+    const lista = this.vistaCompetencia()['fases'];
+    if (!Array.isArray(lista)) {
+      return [];
+    }
+    return lista.map((item) => {
+      const row = item as Record<string, unknown>;
+      return {
+        semana: String(row['semana'] ?? ''),
+        foco: String(row['foco'] || ''),
+        intensidad: String(row['intensidad'] || ''),
+        sesiones: String(row['sesiones'] ?? ''),
+        nota: String(row['nota'] || '')
+      };
+    });
+  }
+
+  textosVista(clave: 'ventajas' | 'desventajas' | 'recomendaciones' | 'checklist' | 'riesgos'): string[] {
+    const lista = this.vistaCompetencia()[clave];
+    if (Array.isArray(lista) && lista.length) {
+      return lista.map(String);
+    }
+    if (clave === 'ventajas' || clave === 'desventajas' || clave === 'recomendaciones') {
+      return this.listaCompetencia(clave);
+    }
+    if (clave === 'checklist') {
+      const directo = this.competencia?.['checklist'];
+      return Array.isArray(directo) ? directo.map(String) : [];
+    }
+    if (clave === 'riesgos') {
+      const directo = this.competencia?.['riesgos'];
+      return Array.isArray(directo) ? directo.map(String) : [];
+    }
+    return [];
+  }
+
+  eventoObjetivoVista(): { titulo: string; subtitulo: string; meta: string[] } | null {
+    const raw = this.vistaCompetencia()['evento_objetivo'];
+    if (!raw || typeof raw !== 'object') {
+      return null;
+    }
+    const row = raw as Record<string, unknown>;
+    const meta = Array.isArray(row['meta']) ? row['meta'].map(String) : [];
+    return {
+      titulo: String(row['titulo'] || ''),
+      subtitulo: String(row['subtitulo'] || ''),
+      meta
+    };
+  }
+
+  notaCompetencia(): string {
+    const vista = this.vistaCompetencia();
+    const nota = vista['nota'] || this.competencia?.['nota'] || this.competencia?.['mensaje'];
+    return typeof nota === 'string' && nota.trim() ? nota : '';
+  }
+
+  objetivoVista(): string {
+    const valor = this.vistaCompetencia()['objetivo'] || this.competencia?.['objetivo'];
+    return typeof valor === 'string' && valor.trim() ? valor : '';
+  }
+
+  competenciaModoActivo(): boolean {
+    return !!this.vistaCompetencia()['activo'] || this.competencia?.['activo'] === true;
+  }
+
+  labelPaso(paso: ChatPasoActividad): string {
+    return paso.mensaje || paso.code.replace(/_/g, ' ');
+  }
+
+  labelTool(nombre: string): string {
+    return (nombre || '').replace(/_/g, ' ');
+  }
+
+  iconoPaso(paso: ChatPasoActividad): HeroIconName {
+    if (paso.estado === 'listo') {
+      return 'shield-check';
+    }
+    if (paso.tipo === 'herramienta') {
+      return 'bolt';
+    }
+    return 'sparkles';
   }
 
   inscripciones(): { eventos: number; rutinas: number } {
@@ -488,15 +716,63 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
 
   listaCompetencia(clave: string): string[] {
     const fuente = this.competencia?.['analisis'] as Record<string, unknown> | undefined;
+    const base = this.competencia?.['analisis_base'] as Record<string, unknown> | undefined;
     const directo = this.competencia?.[clave];
-    const lista = Array.isArray(directo) ? directo : fuente?.[clave];
+    const lista = Array.isArray(directo) ? directo : fuente?.[clave] || base?.[clave];
     return Array.isArray(lista) ? lista.map(String) : [];
   }
 
   private openPanel(): void {
     this.open = true;
     this.closing = false;
+    this.cargarHilos();
+    if (this.conversacionId && !this.mensajes.length) {
+      this.cargarHilo(this.conversacionId);
+    }
     setTimeout(() => this.inputEl?.nativeElement.focus(), 280);
+  }
+
+  private cargarHilos(): void {
+    this.cargandoHilos = true;
+    this.errorHistorial = null;
+    this.chat.listarHilos().subscribe({
+      next: (res) => {
+        this.cargandoHilos = false;
+        this.hilos = res.conversaciones || [];
+      },
+      error: () => {
+        this.cargandoHilos = false;
+        this.errorHistorial = this.translate.instant('CHAT.LOAD_ERROR');
+      }
+    });
+  }
+
+  private cargarHilo(conversacionId: string): void {
+    this.cargandoHilo = true;
+    this.errorChat = null;
+    this.chat.obtenerHilo(conversacionId).subscribe({
+      next: (detalle) => {
+        this.cargandoHilo = false;
+        this.conversacionId = detalle.conversacion_id;
+        sessionStorage.setItem(STORAGE_KEY, detalle.conversacion_id);
+        this.mensajes = (detalle.mensajes || []).map((m) => ({
+          remitente: m.remitente === 'usuario' ? 'usuario' : 'asistente',
+          texto: m.mensaje || '',
+          cards: Array.isArray(m.cards) ? m.cards : [],
+          sugerencias: Array.isArray(m.sugerencias) ? m.sugerencias : [],
+          fuente: m.fuente
+        }));
+        this.historialAbierto = false;
+        this.scrollChat();
+      },
+      error: () => {
+        this.cargandoHilo = false;
+        this.conversacionId = null;
+        sessionStorage.removeItem(STORAGE_KEY);
+        this.mensajes = [];
+        this.errorChat = this.translate.instant('CHAT.LOAD_ERROR');
+      }
+    });
   }
 
   private closePanel(): void {
@@ -517,8 +793,76 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     this.visible = !PUBLIC_PATHS.has(path);
   }
 
+  private onChatEvento(ev: ChatStreamEvent): void {
+    if (ev.evento === 'respuesta' || ev.evento === 'fin') {
+      return;
+    }
+    if (ev.evento === 'herramienta' || (ev.evento === 'estado' && ev.detalle !== 'analizando_intencion')) {
+      this.actividadReal = true;
+      this.detenerCicloLocal();
+    }
+    const code = ev.detalle || ev.evento;
+    const estado = (ev.estado === 'listo' ? 'listo' : 'ejecutando') as ChatPasoActividad['estado'];
+    const existente = this.pasosAgente.find((p) => p.code === code && p.tipo === (ev.evento === 'herramienta' ? 'herramienta' : 'estado'));
+    if (existente) {
+      existente.estado = estado;
+      existente.mensaje = ev.mensaje || existente.mensaje;
+      this.pasosAgente = [...this.pasosAgente];
+    } else {
+      this.completarPasoActual();
+      this.pasosAgente = [
+        ...this.pasosAgente,
+        {
+          tipo: ev.evento === 'herramienta' ? 'herramienta' : 'estado',
+          code,
+          estado,
+          mensaje: ev.mensaje
+        }
+      ];
+    }
+    this.scrollChat();
+  }
+
+  private iniciarAnimacionEspera(): void {
+    this.actividadReal = false;
+    this.detenerCicloLocal();
+    this.pasosAgente = [
+      { tipo: 'estado', code: 'analizando_intencion', estado: 'ejecutando', mensaje: 'Entendiendo tu mensaje…' }
+    ];
+    const extras: ChatPasoActividad[] = [
+      { tipo: 'estado', code: 'agente_con_tools', estado: 'ejecutando', mensaje: 'Decidiendo qué consultar…' },
+      { tipo: 'estado', code: 'redactando_respuesta', estado: 'ejecutando', mensaje: 'Redactando la respuesta…' }
+    ];
+    let i = 0;
+    this.cicloLocal = setInterval(() => {
+      if (this.actividadReal || !this.enviando || i >= extras.length) {
+        this.detenerCicloLocal();
+        return;
+      }
+      this.completarPasoActual();
+      this.pasosAgente = [...this.pasosAgente, extras[i]];
+      i += 1;
+      this.scrollChat();
+    }, 1600);
+  }
+
+  private completarPasoActual(): void {
+    this.pasosAgente = this.pasosAgente.map((paso) =>
+      paso.estado === 'ejecutando' ? { ...paso, estado: 'listo' } : paso
+    );
+  }
+
+  private detenerCicloLocal(): void {
+    if (this.cicloLocal) {
+      clearInterval(this.cicloLocal);
+      this.cicloLocal = undefined;
+    }
+  }
+
   private aplicarChat(res: ChatResponse): void {
     this.enviando = false;
+    this.detenerCicloLocal();
+    this.pasosAgente = [];
     this.conversacionId = res.conversacion_id;
     sessionStorage.setItem(STORAGE_KEY, res.conversacion_id);
     this.mensajes.push({
@@ -530,6 +874,7 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
       mcp: res.mcp,
       herramientas: res.mcp?.tools_usadas?.length ? res.mcp.tools_usadas : res.herramientas_usadas
     });
+    this.cargarHilos();
     this.scrollChat();
   }
 
@@ -576,6 +921,10 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
         return { path: [role === 'ORGANIZADOR' ? '/organizer/quiz' : '/trainer/quiz'] };
       case 'ver_perfil':
         return { path: [`${base}/profile`] };
+      case 'ver_usuarios':
+        return id
+          ? { path: ['/admin/users', id] }
+          : { path: ['/admin/users'] };
       default:
         return { path: [base] };
     }

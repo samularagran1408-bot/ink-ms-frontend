@@ -1,0 +1,200 @@
+<app-panel-shell>
+  <div class="detail-header">
+    <div>
+      <h1 class="page-title">{{ 'ADMIN_USERS.DETAIL_TITLE' | translate }}</h1>
+      <p class="page-subtitle">{{ 'ADMIN_USERS.DETAIL_SUBTITLE' | translate }}</p>
+    </div>
+    <button class="btn-secondary" type="button" (click)="back()">{{ 'ADMIN_USERS.BACK' | translate }}</button>
+  </div>
+
+  <p *ngIf="message" class="empty-text success-text">{{ message }}</p>
+  <p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
+  <p *ngIf="loading" class="empty-text">{{ 'COMMON.LOADING' | translate }}</p>
+
+  <ng-container *ngIf="!loading && user">
+    <div class="card identity-card">
+      <div class="identity">
+        <div class="photo-preview" [class.photo-preview--empty]="!profilePicturePreview">
+          <img *ngIf="profilePicturePreview" [src]="profilePicturePreview" [alt]="'PROFILE.PHOTO_ALT' | translate" />
+          <span *ngIf="!profilePicturePreview" class="photo-initials">{{ initials }}</span>
+        </div>
+        <div class="identity-meta">
+          <h2>{{ user.fullName || ('COMMON.NONE' | translate) }}</h2>
+          <p class="email">{{ user.email }}</p>
+          <div class="pills">
+            <span class="status-pill" [ngClass]="statusClass">{{ statusKey | translate }}</span>
+            <span class="status-pill status-pill--ok" *ngFor="let role of user.roles">{{ role }}</span>
+          </div>
+          <p class="kpi-sub" *ngIf="user.blockReason">{{ 'ADMIN_USERS.BLOCK_REASON' | translate }}: {{ user.blockReason }}</p>
+        </div>
+      </div>
+      <div class="actions-row identity-actions">
+        <button class="btn-danger" type="button" [disabled]="actionBusy" (click)="block()">{{ 'ADMIN_USERS.BLOCK' | translate }}</button>
+        <button class="btn-secondary" type="button" [disabled]="actionBusy" (click)="activate()">{{ 'ADMIN_USERS.ACTIVATE' | translate }}</button>
+        <button class="btn-danger" type="button" [disabled]="actionBusy || isSelf" (click)="deleteUser()">{{ 'ADMIN_USERS.DELETE' | translate }}</button>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h3 class="section-title">{{ 'ADMIN_USERS.EDIT_PROFILE' | translate }}</h3>
+        <form class="form-grid" [formGroup]="form" (ngSubmit)="save()">
+          <div class="photo-section" style="grid-column: 1 / -1;">
+            <div class="photo-actions">
+              <label class="btn-secondary photo-upload-btn">
+                {{ (isProcessingPhoto ? 'PROFILE.PROCESSING' : (profilePicturePreview ? 'PROFILE.CHANGE_PHOTO' : 'PROFILE.UPLOAD_PHOTO')) | translate }}
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  (change)="onPhotoSelected($event)"
+                  [disabled]="isProcessingPhoto || isSaving"
+                  hidden
+                />
+              </label>
+              <button
+                *ngIf="profilePicturePreview"
+                class="btn-danger"
+                type="button"
+                (click)="removePhoto()"
+                [disabled]="isSaving"
+              >
+                {{ 'PROFILE.REMOVE_PHOTO' | translate }}
+              </button>
+              <p class="photo-hint">{{ 'PROFILE.PHOTO_HINT' | translate }}</p>
+            </div>
+          </div>
+
+          <label>{{ 'PROFILE.FULL_NAME' | translate }} <input formControlName="fullName" /></label>
+          <label>{{ 'PROFILE.PHONE' | translate }} <input formControlName="phone" /></label>
+          <label>
+            {{ 'PROFILE.DISABILITY' | translate }}
+            <select formControlName="disability">
+              <option *ngFor="let opt of disabilityOptions" [value]="opt.value">{{ opt.labelKey | translate }}</option>
+            </select>
+          </label>
+          <label>{{ 'PROFILE.SUPPORT_PREFERENCE' | translate }} <input formControlName="supportPreference" /></label>
+
+          <ng-container *ngIf="showCompanionFields">
+            <label style="grid-column: 1 / -1;" class="section-label">{{ 'PROFILE.COMPANION_SECTION' | translate }}</label>
+            <label>{{ 'PROFILE.COMPANION_NAME' | translate }} <input formControlName="companionFullName" /></label>
+            <label>{{ 'PROFILE.COMPANION_PHONE' | translate }} <input formControlName="companionPhone" /></label>
+            <label>
+              {{ 'PROFILE.COMPANION_RELATIONSHIP' | translate }}
+              <input formControlName="companionRelationship" [placeholder]="'PROFILE.COMPANION_RELATIONSHIP_PH' | translate" />
+            </label>
+            <label>{{ 'PROFILE.COMPANION_EMAIL' | translate }} <input formControlName="companionEmail" type="email" /></label>
+          </ng-container>
+
+          <label style="grid-column: 1 / -1;">{{ 'PROFILE.BIO' | translate }} <textarea rows="3" formControlName="bio"></textarea></label>
+          <label style="grid-column: 1 / -1;">{{ 'PROFILE.SUPPORT_NOTES' | translate }} <textarea rows="2" formControlName="supportPreferenceNotes"></textarea></label>
+          <div>
+            <button class="btn-primary" type="submit" [disabled]="isSaving || isProcessingPhoto">
+              {{ (isSaving ? 'COMMON.SAVING' : 'COMMON.SAVE') | translate }}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div>
+        <div class="card" style="margin-bottom: 16px;">
+          <h3 class="section-title">{{ 'ADMIN_USERS.ACCOUNT' | translate }}</h3>
+          <dl class="meta-list">
+            <div><dt>{{ 'ADMIN_USERS.USER_ID' | translate }}</dt><dd>{{ displayValue(user.id) }}</dd></div>
+            <div><dt>{{ 'ADMIN_USERS.EMAIL' | translate }}</dt><dd>{{ displayValue(user.email) }}</dd></div>
+            <div><dt>{{ 'ADMIN_USERS.EMAIL_VERIFIED' | translate }}</dt><dd>{{ yesNo(user.emailVerified) }}</dd></div>
+            <div><dt>{{ 'ADMIN_USERS.PHONE_VERIFIED' | translate }}</dt><dd>{{ yesNo(user.phoneVerified) }}</dd></div>
+            <div><dt>{{ 'ADMIN_USERS.CREATED' | translate }}</dt><dd>{{ formatDate(user.createdAt) }}</dd></div>
+            <div><dt>{{ 'ADMIN_USERS.UPDATED' | translate }}</dt><dd>{{ formatDate(user.updatedAt) }}</dd></div>
+            <div><dt>{{ 'ADMIN_USERS.PLATFORM_DAYS' | translate }}</dt><dd>{{ displayValue(user.platformDays) }}</dd></div>
+            <div><dt>{{ 'ADMIN_USERS.BLOCKED_UNTIL' | translate }}</dt><dd>{{ formatDate(user.blockedUntil) }}</dd></div>
+            <div><dt>{{ 'ADMIN_USERS.BLOCKED_PERMANENT' | translate }}</dt><dd>{{ yesNo(user.blockedPermanently) }}</dd></div>
+          </dl>
+        </div>
+
+        <div class="card" style="margin-bottom: 16px;">
+          <h3 class="section-title">{{ 'ADMIN_USERS.ROLES_TITLE' | translate }}</h3>
+          <p class="kpi-sub">{{ 'ADMIN_USERS.ROLES_HINT' | translate }}</p>
+          <label class="role-check" *ngFor="let role of catalogRoles">
+            <input
+              type="checkbox"
+              [checked]="isRoleSelected(role.name)"
+              (change)="toggleRole(role.name, $any($event.target).checked)"
+            />
+            <span>{{ role.name }}</span>
+            <small *ngIf="role.description">{{ role.description }}</small>
+          </label>
+          <button class="btn-primary" type="button" [disabled]="isSavingRoles" (click)="saveRoles()">
+            {{ isSavingRoles ? ('COMMON.SAVING' | translate) : ('ADMIN_USERS.SAVE_ROLES' | translate) }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h3 class="section-title">{{ 'ADMIN_USERS.TRAINER_ORG' | translate }}</h3>
+        <dl class="meta-list">
+          <div><dt>{{ 'ADMIN_USERS.EVENTS_ATTENDED' | translate }}</dt><dd>{{ displayValue(user.eventsAttended) }}</dd></div>
+          <div><dt>{{ 'ADMIN_USERS.EVENTS_CREATED' | translate }}</dt><dd>{{ displayValue(user.eventsCreated) }}</dd></div>
+          <div><dt>{{ 'ADMIN_USERS.EVENTS_AS_TRAINER' | translate }}</dt><dd>{{ displayValue(user.eventsAsTrainer) }}</dd></div>
+          <div><dt>{{ 'ADMIN_USERS.EXPERIENCE' | translate }}</dt><dd>{{ displayValue(user.experienceYears ?? user.experienceMonths) }}</dd></div>
+          <div><dt>{{ 'ADMIN_USERS.TRAINER_STATUS' | translate }}</dt><dd>{{ displayValue(user.trainerVerificationStatus) }}</dd></div>
+          <div><dt>{{ 'ADMIN_USERS.ORGANIZER_STATUS' | translate }}</dt><dd>{{ displayValue(user.organizerVerificationStatus) }}</dd></div>
+          <div><dt>{{ 'ADMIN_USERS.TRAINER_QUIZ' | translate }}</dt><dd>{{ yesNo(user.trainerQuizPassed) }} · {{ displayValue(user.trainerQuizScore) }}</dd></div>
+          <div><dt>{{ 'ADMIN_USERS.ORGANIZER_QUIZ' | translate }}</dt><dd>{{ yesNo(user.organizerQuizPassed) }} · {{ displayValue(user.organizerQuizScore) }}</dd></div>
+          <div><dt>{{ 'ADMIN_USERS.VERIFIED_ROLES' | translate }}</dt><dd>{{ displayValue(user.verifiedRoles) }}</dd></div>
+          <div><dt>{{ 'ADMIN_USERS.DISCIPLINES' | translate }}</dt><dd>{{ displayValue(user.quizDisciplines) }}</dd></div>
+        </dl>
+      </div>
+
+      <div class="card">
+        <h3 class="section-title">{{ 'ADMIN_USERS.DOCUMENTS' | translate }}</h3>
+        <div class="doc-block">
+          <strong>{{ 'ADMIN_USERS.IDENTITY_DOC' | translate }}</strong>
+          <ng-container *ngIf="user.identityDocument; else noIdentity">
+            <img *ngIf="isImageSrc(user.identityDocument)" class="doc-preview" [src]="user.identityDocument" [alt]="'ADMIN_USERS.IDENTITY_DOC' | translate" />
+            <a *ngIf="isOpenableSrc(user.identityDocument) && !isImageSrc(user.identityDocument)" [href]="user.identityDocument" target="_blank" rel="noopener">
+              {{ 'ADMIN_USERS.OPEN_FILE' | translate }}
+            </a>
+            <p *ngIf="!isOpenableSrc(user.identityDocument)" class="kpi-sub">{{ user.identityDocument }}</p>
+          </ng-container>
+          <ng-template #noIdentity><p class="kpi-sub">{{ 'ADMIN_USERS.NO_DOCUMENT' | translate }}</p></ng-template>
+        </div>
+        <div class="doc-block">
+          <strong>{{ 'ADMIN_USERS.CERTIFICATION' | translate }}</strong>
+          <ng-container *ngIf="user.certificationFile; else noCert">
+            <img *ngIf="isImageSrc(user.certificationFile)" class="doc-preview" [src]="user.certificationFile" [alt]="'ADMIN_USERS.CERTIFICATION' | translate" />
+            <a *ngIf="isOpenableSrc(user.certificationFile) && !isImageSrc(user.certificationFile)" [href]="user.certificationFile" target="_blank" rel="noopener">
+              {{ 'ADMIN_USERS.OPEN_FILE' | translate }}
+            </a>
+            <p *ngIf="!isOpenableSrc(user.certificationFile)" class="kpi-sub">{{ user.certificationFile }}</p>
+          </ng-container>
+          <ng-template #noCert><p class="kpi-sub">{{ 'ADMIN_USERS.NO_DOCUMENT' | translate }}</p></ng-template>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 class="section-title">{{ 'ADMIN_USERS.AUDIT' | translate }}</h3>
+      <table class="data-table" *ngIf="auditLogs.length; else noAudit">
+        <thead>
+          <tr>
+            <th>{{ 'ADMIN_AUDIT.DATE' | translate }}</th>
+            <th>{{ 'ADMIN_AUDIT.ACTION' | translate }}</th>
+            <th>{{ 'ADMIN_AUDIT.ADMIN' | translate }}</th>
+            <th>{{ 'ADMIN_AUDIT.DETAIL' | translate }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let log of auditLogs">
+            <td>{{ formatDate(log.createdAt) }}</td>
+            <td>{{ log.action || '—' }}</td>
+            <td>{{ log.adminEmail || '—' }}</td>
+            <td>{{ log.details || '—' }}</td>
+          </tr>
+        </tbody>
+      </table>
+      <ng-template #noAudit><p class="empty-text">{{ 'ADMIN_USERS.NO_AUDIT' | translate }}</p></ng-template>
+    </div>
+  </ng-container>
+</app-panel-shell>

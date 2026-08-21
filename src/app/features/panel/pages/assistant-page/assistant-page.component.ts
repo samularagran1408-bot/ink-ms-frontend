@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { AppRole } from '../../../../core/models/app-role';
 import { ChatCard, ChatCtaAccion, ChatMensajeUi, ChatResponse } from '../../../../core/models/chat';
 import { ChatService } from '../../../../core/services/chat.service';
+import { ReportsService } from '../../../../core/services/reports.service';
 import { SessionService } from '../../../../core/services/session.service';
 
 const STORAGE_KEY = 'inklusport.chat.conversacion_id';
@@ -28,6 +29,7 @@ export class AssistantPageComponent implements OnInit {
   constructor(
     private chat: ChatService,
     private session: SessionService,
+    private reports: ReportsService,
     private router: Router
   ) {}
 
@@ -85,6 +87,16 @@ export class AssistantPageComponent implements OnInit {
     const accion = card.cta?.accion;
     if (accion === 'confirmar_write') {
       this.usarSugerencia('Confirmo');
+      return;
+    }
+    if (accion === 'descargar_pdf') {
+      const filename = card.cta?.filename || `inklusport-dashboard-${new Date().toISOString().slice(0, 10)}.pdf`;
+      this.reports.exportDashboardPdf().subscribe({
+        next: (blob) => this.reports.downloadBlob(blob, filename),
+        error: () => {
+          this.error = 'No se pudo descargar el PDF.';
+        }
+      });
       return;
     }
     if (accion === 'ver_estadisticas') {
@@ -178,6 +190,10 @@ export class AssistantPageComponent implements OnInit {
         return { path: ['/trainer/quiz'] };
       case 'ver_perfil':
         return { path: [`${base}/profile`] };
+      case 'ver_usuarios':
+        return id
+          ? { path: ['/admin/users', id] }
+          : { path: ['/admin/users'] };
       default:
         return { path: [base] };
     }

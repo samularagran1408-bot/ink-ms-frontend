@@ -1,1 +1,24 @@
 @import '../../styles/panel-common.scss';
+
+.clickable-row {
+  cursor: pointer;
+}
+
+.clickable-row:hover {
+  background: #FFF7ED;
+}
+
+.user-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.table-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1px solid #E2E8F0;
+  vertical-align: middle;
+}

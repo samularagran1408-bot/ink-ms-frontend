@@ -8,7 +8,8 @@ export type ChatCardTipo =
   | 'confirmacion'
   | 'usuario'
   | 'kpi'
-  | 'alerta';
+  | 'alerta'
+  | 'reporte';
 
 export type ChatCtaAccion =
   | 'ver_eventos'
@@ -18,12 +19,17 @@ export type ChatCtaAccion =
   | 'ver_quiz'
   | 'confirmar_write'
   | 'ver_perfil'
-  | 'ver_estadisticas';
+  | 'ver_estadisticas'
+  | 'ver_competencia'
+  | 'ver_usuarios'
+  | 'descargar_pdf';
 
 export interface ChatCardCta {
   accion: ChatCtaAccion;
   label: string;
   id?: string;
+  url?: string;
+  filename?: string;
 }
 
 export interface ChatCard {
@@ -66,8 +72,25 @@ export interface ChatHilo {
   conversacion_id: string;
   titulo: string;
   estado: string;
+  creada_en?: string;
   ultima_interaccion?: string;
   total_mensajes?: number;
+  tiene_resumen?: boolean;
+}
+
+export interface ChatMensajeGuardado {
+  mensaje: string;
+  remitente: 'usuario' | 'asistente' | string;
+  intencion?: string;
+  fuente?: string;
+  fecha?: string;
+  cards?: ChatCard[];
+  sugerencias?: string[];
+}
+
+export interface ChatHiloDetalle extends ChatHilo {
+  resumen?: string | null;
+  mensajes: ChatMensajeGuardado[];
 }
 
 export interface ChatMensajeUi {
@@ -78,4 +101,21 @@ export interface ChatMensajeUi {
   fuente?: string;
   mcp?: ChatMcp | null;
   herramientas?: string[];
+  pasos?: ChatPasoActividad[];
+}
+
+export interface ChatPasoActividad {
+  tipo: 'estado' | 'herramienta';
+  code: string;
+  estado?: 'ejecutando' | 'listo';
+  mensaje?: string;
+}
+
+export interface ChatStreamEvent {
+  evento: string;
+  detalle?: string;
+  estado?: string;
+  mensaje?: string;
+  datos?: ChatResponse;
+  conversacion_id?: string;
 }

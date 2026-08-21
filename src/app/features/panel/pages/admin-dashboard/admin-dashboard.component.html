@@ -87,8 +87,13 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let user of recentUsers">
-            <td>{{ user.fullName || ('COMMON.NONE' | translate) }}</td>
+          <tr *ngFor="let user of recentUsers" class="clickable-row" (click)="goUser(user)">
+            <td>
+              <span class="user-cell">
+                <img *ngIf="user.profilePicture" class="table-avatar" [src]="user.profilePicture" alt="" />
+                {{ user.fullName || ('COMMON.NONE' | translate) }}
+              </span>
+            </td>
             <td>{{ user.email }}</td>
             <td><span class="status-pill" [ngClass]="statusClass(user)">{{ statusLabel(user) | translate }}</span></td>
           </tr>

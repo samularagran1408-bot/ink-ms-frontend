@@ -7,6 +7,7 @@ import { QuizCompletedGuard } from '../../core/guards/quiz-completed.guard';
 import { UserInterfaceComponent } from '../auth/pages/user-interface/user-interface.component';
 import { AdminDashboardComponent } from './pages/admin-dashboard/admin-dashboard.component';
 import { AdminUsersComponent } from './pages/admin-users/admin-users.component';
+import { AdminUserDetailComponent } from './pages/admin-user-detail/admin-user-detail.component';
 import { AdminRolesComponent } from './pages/admin-roles/admin-roles.component';
 import { AdminAuditComponent } from './pages/admin-audit/admin-audit.component';
 import { EventsPageComponent } from './pages/events-page/events-page.component';
@@ -55,6 +56,7 @@ const routes: Routes = [
       { path: '', component: AdminDashboardComponent },
       { path: 'asistente', component: AssistantPageComponent },
       { path: 'users', component: AdminUsersComponent },
+      { path: 'users/:email', component: AdminUserDetailComponent },
       { path: 'events', component: EventsPageComponent, data: { mode: 'manage' } },
       { path: 'athletes', component: AthletesPageComponent },
       { path: 'sports', component: SportsPageComponent },

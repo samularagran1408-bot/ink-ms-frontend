@@ -69,6 +69,10 @@ export class AdminDashboardComponent implements OnInit {
     });
   }
 
+  goUser(user: UserProfile): void {
+    void this.router.navigate(['/admin/users', user.email]);
+  }
+
   go(path: string): void {
     this.router.navigate([path]);
   }

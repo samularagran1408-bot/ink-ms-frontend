@@ -6,6 +6,7 @@ import { SharedModule } from '../../shared/shared.module';
 import { PanelRoutingModule } from './panel-routing.module';
 import { AdminDashboardComponent } from './pages/admin-dashboard/admin-dashboard.component';
 import { AdminUsersComponent } from './pages/admin-users/admin-users.component';
+import { AdminUserDetailComponent } from './pages/admin-user-detail/admin-user-detail.component';
 import { AdminRolesComponent } from './pages/admin-roles/admin-roles.component';
 import { AdminAuditComponent } from './pages/admin-audit/admin-audit.component';
 import { EventsPageComponent } from './pages/events-page/events-page.component';
@@ -31,6 +32,7 @@ import { AssistantPageComponent } from './pages/assistant-page/assistant-page.co
     UserInterfaceComponent,
     AdminDashboardComponent,
     AdminUsersComponent,
+    AdminUserDetailComponent,
     AdminRolesComponent,
     AdminAuditComponent,
     EventsPageComponent,

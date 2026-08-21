@@ -1,6 +1,6 @@
 <app-panel-shell>
   <h1 class="page-title">Users</h1>
-  <p class="page-subtitle">Gestión de usuarios, búsqueda, bloqueos y eliminación lógica.</p>
+  <p class="page-subtitle">Consulta y gestiona el perfil completo de cada usuario, incluida la foto.</p>
   <p *ngIf="successMessage" class="empty-text">{{ successMessage }}</p>
   <p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
   <p *ngIf="loading" class="empty-text">Cargando usuarios...</p>
@@ -69,12 +69,21 @@
               [attr.aria-label]="'Seleccionar ' + user.email"
             />
           </td>
-          <td>{{ user.fullName || '—' }}</td>
+          <td class="user-cell">
+            <span class="table-avatar" [class.table-avatar--empty]="!user.profilePicture">
+              <img *ngIf="user.profilePicture" [src]="user.profilePicture" alt="" />
+              <span *ngIf="!user.profilePicture">{{ initials(user) }}</span>
+            </span>
+            <button class="user-link" type="button" (click)="openProfile(user)">
+              {{ user.fullName || '—' }}
+            </button>
+          </td>
           <td>{{ user.email }}</td>
           <td>{{ disabilityLabel(user) }}</td>
           <td>{{ rolesLabel(user) }}</td>
           <td>{{ isInactive(user) ? 'Inactivo/Bloqueado' : 'Activo' }}</td>
           <td class="actions">
+            <button class="btn-secondary" type="button" [disabled]="actionEmail === user.email || bulkLoading" (click)="openProfile(user)">Ver perfil</button>
             <button class="btn-danger" type="button" [disabled]="actionEmail === user.email || bulkLoading" (click)="block(user)">Bloquear</button>
             <button class="btn-secondary" type="button" [disabled]="actionEmail === user.email || bulkLoading" (click)="activate(user)">Activar</button>
             <button class="btn-danger" type="button" [disabled]="actionEmail === user.email || bulkLoading" (click)="deleteOne(user)">Eliminar</button>

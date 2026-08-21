@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
 
 import { UserProfile } from '../../../../core/models/user-profile';
 import { UsersService } from '../../../../core/services/users.service';
@@ -35,7 +36,8 @@ export class AdminUsersComponent implements OnInit {
   constructor(
     private usersService: UsersService,
     private session: SessionService,
-    private confirm: ConfirmDialogService
+    private confirm: ConfirmDialogService,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -116,6 +118,19 @@ export class AdminUsersComponent implements OnInit {
 
   disabilityLabel(user: UserProfile): string {
     return user.disability?.trim() || '—';
+  }
+
+  initials(user: UserProfile): string {
+    const name = (user.fullName || user.email || 'U').trim();
+    return name
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((part) => part.charAt(0).toUpperCase())
+      .join('') || 'U';
+  }
+
+  openProfile(user: UserProfile): void {
+    void this.router.navigate(['/admin/users', user.email]);
   }
 
   block(user: UserProfile): void {

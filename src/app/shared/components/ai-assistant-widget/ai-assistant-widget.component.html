@@ -47,19 +47,52 @@
       <!-- Chat / agente -->
       <section *ngIf="section === 'chat'" class="ai-section">
         <div class="ai-toolbar">
-          <p>{{ 'AI_WIDGET.CHAT_HINT' | translate }}</p>
+          <button type="button" class="ai-link" (click)="toggleHistorial()" [attr.aria-expanded]="historialAbierto">
+            <app-icon name="clock" [size]="14"></app-icon>
+            {{ 'CHAT.HISTORY' | translate }}
+            <span *ngIf="hilos.length">({{ hilos.length }})</span>
+          </button>
           <button type="button" class="ai-link" (click)="nuevaConversacion()">{{ 'CHAT.NEW' | translate }}</button>
         </div>
+        <p class="ai-hilo-actual" *ngIf="conversacionId && !historialAbierto">{{ tituloHiloActual() }}</p>
+        <div class="ai-hilos" *ngIf="historialAbierto">
+          <p class="ai-hilos-hint">{{ 'CHAT.HISTORY_HINT' | translate }}</p>
+          <p *ngIf="cargandoHilos">{{ 'COMMON.LOADING' | translate }}</p>
+          <p *ngIf="errorHistorial" class="ai-error">{{ errorHistorial }}</p>
+          <p *ngIf="!cargandoHilos && !hilos.length" class="ai-empty">{{ 'CHAT.HISTORY_EMPTY' | translate }}</p>
+          <div
+            *ngFor="let hilo of hilos"
+            class="ai-hilo"
+            [class.ai-hilo--active]="hilo.conversacion_id === conversacionId"
+          >
+            <button type="button" class="ai-hilo-open" (click)="abrirHilo(hilo)">
+              <strong>{{ hilo.titulo }}</strong>
+              <small>
+                {{ fechaHilo(hilo) }}
+                <ng-container *ngIf="hilo.total_mensajes"> · {{ hilo.total_mensajes }} {{ 'CHAT.MESSAGES' | translate }}</ng-container>
+              </small>
+            </button>
+            <button
+              type="button"
+              class="ai-hilo-del"
+              (click)="borrarHilo($event, hilo)"
+              [attr.aria-label]="'CHAT.DELETE' | translate"
+            >
+              <app-icon name="trash" [size]="14"></app-icon>
+            </button>
+          </div>
+        </div>
         <div #timeline class="ai-timeline" role="log" aria-live="polite">
-          <p *ngIf="!mensajes.length" class="ai-empty">{{ 'CHAT.EMPTY' | translate }}</p>
-          <div class="ai-chips" *ngIf="!mensajes.length">
+          <p *ngIf="cargandoHilo" class="ai-empty">{{ 'COMMON.LOADING' | translate }}</p>
+          <p *ngIf="!mensajes.length && !cargandoHilo" class="ai-empty">{{ 'CHAT.EMPTY' | translate }}</p>
+          <div class="ai-chips" *ngIf="!mensajes.length && !cargandoHilo">
             <button *ngFor="let s of sugerenciasRol()" type="button" class="ai-chip" (click)="usarSugerencia(s)">
               {{ s }}
             </button>
           </div>
           <article
             *ngFor="let msg of mensajes"
-            class="ai-bubble"
+            class="ai-bubble ai-bubble--in"
             [class.ai-bubble--user]="msg.remitente === 'usuario'"
             [class.ai-bubble--bot]="msg.remitente === 'asistente'"
           >
@@ -85,6 +118,23 @@
                 {{ s }}
               </button>
             </div>
+            <div class="ai-tools-used" *ngIf="msg.herramientas?.length">
+              <span *ngFor="let t of msg.herramientas">{{ labelTool(t) }}</span>
+            </div>
+          </article>
+          <article class="ai-bubble ai-bubble--bot ai-bubble--thinking" *ngIf="enviando">
+            <div class="ai-thinking-dots" aria-hidden="true"><i></i><i></i><i></i></div>
+            <p>{{ 'AI_WIDGET.WORKING' | translate }}</p>
+            <ul class="ai-activity" *ngIf="pasosAgente.length">
+              <li
+                *ngFor="let paso of pasosAgente"
+                [class.ai-activity--run]="paso.estado === 'ejecutando'"
+                [class.ai-activity--done]="paso.estado === 'listo'"
+              >
+                <app-icon [name]="iconoPaso(paso)" [size]="14"></app-icon>
+                <span>{{ labelPaso(paso) }}</span>
+              </li>
+            </ul>
           </article>
         </div>
         <p *ngIf="errorChat" class="ai-error" role="alert">{{ errorChat }}</p>
@@ -94,10 +144,10 @@
             rows="2"
             [(ngModel)]="borrador"
             (keydown)="onChatKey($event)"
-            [disabled]="enviando"
+            [disabled]="enviando || cargandoHilo"
             [placeholder]="'CHAT.PLACEHOLDER' | translate"
           ></textarea>
-          <button type="button" class="ai-send" (click)="enviarChat()" [disabled]="enviando || !borrador.trim()">
+          <button type="button" class="ai-send" (click)="enviarChat()" [disabled]="enviando || cargandoHilo || !borrador.trim()">
             {{ 'CHAT.SEND' | translate }}
           </button>
         </div>
@@ -121,6 +171,10 @@
         <button type="button" class="ai-primary" (click)="generarRutina()" [disabled]="cargandoRutina">
           {{ cargandoRutina ? ('COMMON.LOADING' | translate) : ('AI_WIDGET.GENERATE' | translate) }}
         </button>
+        <div class="ai-thinking" *ngIf="cargandoRutina">
+          <div class="ai-thinking-dots" aria-hidden="true"><i></i><i></i><i></i></div>
+          <p>{{ 'AI_WIDGET.WORKING' | translate }}</p>
+        </div>
         <p *ngIf="errorRutina" class="ai-error">{{ errorRutina }}</p>
         <article *ngIf="rutina" class="ai-result">
           <h3>{{ asText(rutina['nombre']) }}</h3>
@@ -154,6 +208,10 @@
         <button type="button" class="ai-primary" (click)="evaluarRiesgo()" [disabled]="cargandoRiesgo">
           {{ cargandoRiesgo ? ('COMMON.LOADING' | translate) : ('AI_WIDGET.EVALUATE' | translate) }}
         </button>
+        <div class="ai-thinking" *ngIf="cargandoRiesgo">
+          <div class="ai-thinking-dots" aria-hidden="true"><i></i><i></i><i></i></div>
+          <p>{{ 'AI_WIDGET.WORKING' | translate }}</p>
+        </div>
         <p *ngIf="errorRiesgo" class="ai-error">{{ errorRiesgo }}</p>
         <article *ngIf="riesgo" class="ai-result">
           <span class="ai-badge" [ngClass]="nivelRiesgoClass()">{{ asText(riesgo['nivel']) }} · {{ asText(riesgo['score_riesgo']) }}</span>
@@ -188,27 +246,74 @@
           </button>
         </div>
         <p *ngIf="errorCompetencia" class="ai-error">{{ errorCompetencia }}</p>
-        <article *ngIf="competencia" class="ai-result">
-          <ng-container *ngIf="listaCompetencia('ventajas').length">
+        <div class="ai-thinking" *ngIf="cargandoCompetencia">
+          <div class="ai-thinking-dots" aria-hidden="true"><i></i><i></i><i></i></div>
+          <p>{{ 'AI_WIDGET.WORKING' | translate }}</p>
+        </div>
+        <article *ngIf="competencia && !cargandoCompetencia" class="ai-result ai-result--in">
+          <span class="ai-badge" [class.ai-badge--alto]="competenciaModoActivo()" [class.ai-badge--bajo]="!competenciaModoActivo()">
+            {{ competenciaModoActivo() ? ('AI_WIDGET.COMPETE_ON' | translate) : ('AI_WIDGET.ANALYZE' | translate) }}
+          </span>
+          <h3 *ngIf="vistaCompetencia()['titulo']">{{ asText(vistaCompetencia()['titulo']) }}</h3>
+          <p *ngIf="objetivoVista()">
+            <app-icon name="trophy" [size]="14"></app-icon>
+            {{ objetivoVista() }}
+          </p>
+          <p *ngIf="notaCompetencia()">{{ notaCompetencia() }}</p>
+          <div class="ai-kpis" *ngIf="kpisCompetencia().length">
+            <div *ngFor="let kpi of kpisCompetencia()">
+              <app-icon [name]="kpi.icono" [size]="18"></app-icon>
+              <strong>{{ kpi.valor }}</strong>
+              <span>{{ kpi.label }}</span>
+            </div>
+          </div>
+          <article class="ai-evento-objetivo" *ngIf="eventoObjetivoVista() as ev">
+            <app-icon name="calendar-days" [size]="16"></app-icon>
+            <div>
+              <strong>{{ ev.titulo }}</strong>
+              <small>{{ ev.subtitulo }} <ng-container *ngIf="ev.meta.length">· {{ ev.meta.join(' · ') }}</ng-container></small>
+            </div>
+          </article>
+          <h4 *ngIf="fasesCompetencia().length">{{ 'AI_WIDGET.PHASES' | translate }}</h4>
+          <div class="ai-fases" *ngIf="fasesCompetencia().length">
+            <article *ngFor="let fase of fasesCompetencia()">
+              <span>{{ 'AI_WIDGET.WEEK' | translate }} {{ fase.semana }}</span>
+              <strong>{{ fase.foco }}</strong>
+              <small>{{ fase.intensidad }}<ng-container *ngIf="fase.sesiones"> · {{ fase.sesiones }} {{ 'AI_WIDGET.SESSIONS' | translate }}</ng-container></small>
+            </article>
+          </div>
+          <h4 *ngIf="textosVista('checklist').length">{{ 'AI_WIDGET.CHECKLIST' | translate }}</h4>
+          <ul class="ai-list" *ngIf="textosVista('checklist').length">
+            <li *ngFor="let item of textosVista('checklist')">
+              <app-icon name="clipboard-document-list" [size]="14"></app-icon>
+              <div>{{ item }}</div>
+            </li>
+          </ul>
+          <h4 *ngIf="textosVista('riesgos').length">{{ 'AI_WIDGET.RISKS' | translate }}</h4>
+          <ul class="ai-alerts" *ngIf="textosVista('riesgos').length">
+            <li *ngFor="let item of textosVista('riesgos')">
+              <app-icon name="exclamation-triangle" [size]="14"></app-icon>
+              {{ item }}
+            </li>
+          </ul>
+          <ng-container *ngIf="textosVista('ventajas').length">
             <h4>{{ 'AI_WIDGET.PROS' | translate }}</h4>
             <ul>
-              <li *ngFor="let item of listaCompetencia('ventajas')">{{ item }}</li>
+              <li *ngFor="let item of textosVista('ventajas')">{{ item }}</li>
             </ul>
           </ng-container>
-          <ng-container *ngIf="listaCompetencia('desventajas').length">
+          <ng-container *ngIf="textosVista('desventajas').length">
             <h4>{{ 'AI_WIDGET.CONS' | translate }}</h4>
             <ul>
-              <li *ngFor="let item of listaCompetencia('desventajas')">{{ item }}</li>
+              <li *ngFor="let item of textosVista('desventajas')">{{ item }}</li>
             </ul>
           </ng-container>
-          <ng-container *ngIf="listaCompetencia('recomendaciones').length">
+          <ng-container *ngIf="textosVista('recomendaciones').length">
             <h4>{{ 'AI_WIDGET.TIPS' | translate }}</h4>
             <ul>
-              <li *ngFor="let item of listaCompetencia('recomendaciones')">{{ item }}</li>
+              <li *ngFor="let item of textosVista('recomendaciones')">{{ item }}</li>
             </ul>
           </ng-container>
-          <p *ngIf="competencia['resumen']">{{ asText(competencia['resumen']) }}</p>
-          <p *ngIf="competencia['plan']">{{ asText(competencia['plan']) }}</p>
         </article>
       </section>
 
@@ -237,7 +342,10 @@
             </button>
           </div>
         </div>
-        <p *ngIf="cargandoStats">{{ 'COMMON.LOADING' | translate }}</p>
+        <div class="ai-thinking" *ngIf="cargandoStats">
+          <div class="ai-thinking-dots" aria-hidden="true"><i></i><i></i><i></i></div>
+          <p>{{ 'AI_WIDGET.WORKING' | translate }}</p>
+        </div>
         <p *ngIf="errorStats" class="ai-error">{{ errorStats }}</p>
         <ng-container *ngIf="stats && !cargandoStats">
           <article class="ai-profile-chip">
