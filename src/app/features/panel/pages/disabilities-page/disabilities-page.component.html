@@ -1,24 +1,24 @@
 <app-panel-shell>
-  <h1 class="page-title">Discapacidades</h1>
-  <p class="page-subtitle">Catálogo de tipos de discapacidad: registrar, consultar, editar, desactivar y reactivar.</p>
+  <h1 class="page-title">{{ 'DISABILITIES_PAGE.TITLE' | translate }}</h1>
+  <p class="page-subtitle">{{ 'DISABILITIES_PAGE.SUBTITLE' | translate }}</p>
   <p *ngIf="successMessage" class="empty-text">{{ successMessage }}</p>
   <p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
 
   <div class="card" style="margin-bottom: 16px;">
-    <h3 class="section-title">Registrar discapacidad</h3>
+    <h3 class="section-title">{{ 'DISABILITIES_PAGE.REGISTER' | translate }}</h3>
     <form class="form-grid" [formGroup]="form" (ngSubmit)="create()">
-      <label>Nombre <input formControlName="name" placeholder="Ej. Discapacidad visual" /></label>
-      <label>Categoría
+      <label>{{ 'CATALOG.NAME' | translate }} <input formControlName="name" [placeholder]="'DISABILITIES_PAGE.NAME_PH' | translate" /></label>
+      <label>{{ 'DISABILITIES_PAGE.CATEGORY' | translate }}
         <select formControlName="category">
-          <option value="fisica">Física</option>
-          <option value="visual">Visual</option>
-          <option value="auditiva">Auditiva</option>
-          <option value="intelectual">Intelectual</option>
-          <option value="multiple">Múltiple</option>
+          <option value="fisica">{{ 'DISABILITIES_PAGE.PHYSICAL' | translate }}</option>
+          <option value="visual">{{ 'DISABILITIES_PAGE.VISUAL' | translate }}</option>
+          <option value="auditiva">{{ 'DISABILITIES_PAGE.HEARING' | translate }}</option>
+          <option value="intelectual">{{ 'DISABILITIES_PAGE.INTELLECTUAL' | translate }}</option>
+          <option value="multiple">{{ 'DISABILITIES_PAGE.MULTIPLE' | translate }}</option>
         </select>
       </label>
-      <label style="grid-column: 1 / -1;">Descripción <input formControlName="description" /></label>
-      <div><button class="btn-primary" type="submit">Crear</button></div>
+      <label style="grid-column: 1 / -1;">{{ 'COMMON.DESCRIPTION' | translate }} <input formControlName="description" /></label>
+      <div><button class="btn-primary" type="submit">{{ 'CATALOG.CREATE' | translate }}</button></div>
     </form>
   </div>
 

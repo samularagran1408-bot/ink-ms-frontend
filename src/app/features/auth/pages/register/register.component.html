@@ -128,18 +128,26 @@
           </div>
         </div>
 
-        <!-- Acompañante (obligatorio para discapacidad motriz o auditiva) -->
-        <div class="companion-section" *ngIf="showCompanionFields" formGroupName="companion">
+        <!-- Acompañante: obligatorio, opcional o oculto según discapacidad -->
+        <div
+          class="companion-section"
+          [class.companion-section--optional]="!companionRequired"
+          *ngIf="showCompanionFields"
+          formGroupName="companion"
+        >
           <div class="companion-header">
             <h3 class="companion-title">Datos del acompañante</h3>
-            <p class="companion-hint">
-              Para discapacidad motriz o auditiva necesitamos un contacto de apoyo.
+            <p class="companion-hint" *ngIf="companionRequired">
+              Para esta discapacidad el acompañante es obligatorio. Indica nombre y teléfono de contacto.
+            </p>
+            <p class="companion-hint" *ngIf="!companionRequired">
+              El acompañante es opcional y depende del grado de afectación. Si lo registras, indica nombre y teléfono.
             </p>
           </div>
 
           <div class="form-row">
             <div class="input-group">
-              <label class="input-label">NOMBRE DEL ACOMPAÑANTE</label>
+              <label class="input-label">{{ companionRequired ? 'NOMBRE DEL ACOMPAÑANTE' : 'NOMBRE DEL ACOMPAÑANTE (OPCIONAL)' }}</label>
               <div class="input-box" [class.input-box--invalid]="companionFieldInvalid('fullName')">
                 <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -161,7 +169,7 @@
             </div>
 
             <div class="input-group">
-              <label class="input-label">TELÉFONO DEL ACOMPAÑANTE</label>
+              <label class="input-label">{{ companionRequired ? 'TELÉFONO DEL ACOMPAÑANTE' : 'TELÉFONO DEL ACOMPAÑANTE (OPCIONAL)' }}</label>
               <div class="input-box" [class.input-box--invalid]="companionFieldInvalid('phone')">
                 <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />

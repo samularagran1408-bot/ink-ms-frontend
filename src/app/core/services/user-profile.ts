@@ -20,6 +20,7 @@ export interface UserProfile {
   deletedAt?: string;
   createdAt?: string;
   updatedAt?: string;
+  lastLoginAt?: string;
   roles?: string[];
   emailVerified?: boolean;
   phoneVerified?: boolean;
@@ -74,6 +75,19 @@ export interface AdminAuditLog {
   details?: string;
   ipAddress?: string;
   createdAt?: string;
+}
+
+export interface AdminUserActivityItem {
+  action?: string;
+  details?: string;
+  ipAddress?: string;
+  createdAt?: string;
+  source?: string;
+}
+
+export interface AdminUserActivityResponse {
+  lastLoginAt?: string;
+  items?: AdminUserActivityItem[];
 }
 
 export interface BlockUserRequest {

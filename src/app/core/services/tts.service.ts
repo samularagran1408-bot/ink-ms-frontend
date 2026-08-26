@@ -48,9 +48,14 @@ export class TtsService {
     });
   }
 
-  /** Audio de notificaciones activo: comandos de voz + notificaciones habilitadas. */
+  /** Audio de notificaciones activo: TTS + notificaciones habilitadas. */
   get isAudioNotificationsActive(): boolean {
-    return this.voiceCommandsEnabled && this.notificationsEnabled && this.isSupported;
+    return this.ttsEnabled && this.notificationsEnabled && this.isSupported;
+  }
+
+  /** Canal visual (lista, badge y toast) cuando las notificaciones están activas. */
+  get isVisualNotificationsActive(): boolean {
+    return this.notificationsEnabled;
   }
 
   get isVoiceCommandsEnabled(): boolean {

@@ -158,6 +158,10 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
     return this.session.homeForCurrentUser();
   }
 
+  get notificationsRoute(): string {
+    return `${this.sessionHome}/notifications`;
+  }
+
   private commonAccountItems(base: string): SidebarNavItem[] {
     return [
       { labelKey: 'NAV.PROFILE', route: `${base}/profile`, icon: 'user-circle' },

@@ -3,6 +3,7 @@ export type AttendanceCheckInMethod = 'form' | 'qr';
 export interface Preference {
   disabilityType?: string;
   language?: string;
+  followSystemLanguage?: boolean;
   highContrast?: boolean;
   fontSize?: string;
   screenReader?: boolean;
@@ -21,6 +22,7 @@ export interface Preference {
 export interface PreferenceRequest {
   disabilityType?: string;
   language?: string;
+  followSystemLanguage?: boolean;
   highContrast?: boolean;
   fontSize?: string;
   screenReader?: boolean;
@@ -52,4 +54,6 @@ export interface AppNotification {
   readAt?: string;
   createdAt?: string;
   scheduledFor?: string;
+  deliveryMethods?: string[];
+  adaptations?: Record<string, unknown>;
 }

@@ -1,10 +1,6 @@
 import { Injectable } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
 import { Observable, of } from 'rxjs';
-import { catchError, map, tap } from 'rxjs/operators';
-
-import { PreferencesApiService } from './preferences-api.service';
-import { SessionService } from './session.service';
 
 export type AppLanguage = 'es' | 'en';
 
@@ -14,11 +10,7 @@ const LANG_STORAGE_KEY = 'inklusport_lang';
   providedIn: 'root'
 })
 export class LanguageService {
-  constructor(
-    private translate: TranslateService,
-    private preferencesApi: PreferencesApiService,
-    private session: SessionService
-  ) {
+  constructor(private translate: TranslateService) {
     this.translate.addLangs(['es', 'en']);
     this.translate.setDefaultLang('es');
   }
@@ -28,27 +20,27 @@ export class LanguageService {
   }
 
   /**
-   * Arranca el idioma: preferencia del usuario si hay sesión, si no localStorage / español.
+   * Idioma local (storage / sistema) hasta que accesibilidad hidrate la preferencia del usuario.
    */
   init(): Observable<AppLanguage> {
-    const fallback = this.normalize(localStorage.getItem(LANG_STORAGE_KEY) || 'es');
-    this.apply(fallback);
-
-    if (!this.session.isAuthenticated()) {
-      return of(fallback);
-    }
-
-    return this.preferencesApi.getPreferences().pipe(
-      map((prefs) => this.normalize(prefs.language || fallback)),
-      tap((lang) => this.apply(lang)),
-      catchError(() => of(fallback))
-    );
+    const stored = this.normalize(localStorage.getItem(LANG_STORAGE_KEY));
+    const system = this.detectSystemLanguage();
+    const lang = localStorage.getItem(LANG_STORAGE_KEY) ? stored : system;
+    this.apply(lang);
+    return of(lang);
   }
 
   setLanguage(language: string | null | undefined): AppLanguage {
     const lang = this.normalize(language);
     this.apply(lang);
     return lang;
+  }
+
+  detectSystemLanguage(): AppLanguage {
+    if (typeof navigator === 'undefined') {
+      return 'es';
+    }
+    return this.normalize(navigator.language || navigator.languages?.[0]);
   }
 
   voiceLanguageFor(language: string | null | undefined): string {

@@ -12,6 +12,15 @@
         <span class="user-role-label">{{ roleKey | translate | uppercase }}</span>
         <div class="user-name-text">{{ displayName }}</div>
       </div>
+      <a
+        class="nav-bell-btn"
+        [routerLink]="notificationsRoute"
+        [attr.title]="'NAV.NOTIFICATIONS' | translate"
+        [attr.aria-label]="'NAV.NOTIFICATIONS' | translate"
+      >
+        <app-icon name="bell" [size]="18"></app-icon>
+        <span *ngIf="unreadCount > 0" class="nav-bell-badge">{{ unreadCount }}</span>
+      </a>
       <button
         class="user-avatar-btn"
         type="button"

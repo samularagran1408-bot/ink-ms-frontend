@@ -23,14 +23,14 @@
           <p class="email">{{ user.email }}</p>
           <div class="pills">
             <span class="status-pill" [ngClass]="statusClass">{{ statusKey | translate }}</span>
-            <span class="status-pill status-pill--ok" *ngFor="let role of user.roles">{{ role }}</span>
+            <span class="status-pill status-pill--ok" *ngFor="let role of user.roles">{{ [role] | rolesLabel }}</span>
           </div>
           <p class="kpi-sub" *ngIf="user.blockReason">{{ 'ADMIN_USERS.BLOCK_REASON' | translate }}: {{ user.blockReason }}</p>
         </div>
       </div>
       <div class="actions-row identity-actions">
-        <button class="btn-danger" type="button" [disabled]="actionBusy" (click)="block()">{{ 'ADMIN_USERS.BLOCK' | translate }}</button>
-        <button class="btn-secondary" type="button" [disabled]="actionBusy" (click)="activate()">{{ 'ADMIN_USERS.ACTIVATE' | translate }}</button>
+        <button *ngIf="!isBlocked" class="btn-danger" type="button" [disabled]="actionBusy" (click)="block()">{{ 'ADMIN_USERS.BLOCK' | translate }}</button>
+        <button *ngIf="isBlocked" class="btn-secondary" type="button" [disabled]="actionBusy" (click)="activate()">{{ 'ADMIN_USERS.ACTIVATE' | translate }}</button>
         <button class="btn-danger" type="button" [disabled]="actionBusy || isSelf" (click)="deleteUser()">{{ 'ADMIN_USERS.DELETE' | translate }}</button>
       </div>
     </div>
@@ -75,7 +75,9 @@
           <label>{{ 'PROFILE.SUPPORT_PREFERENCE' | translate }} <input formControlName="supportPreference" /></label>
 
           <ng-container *ngIf="showCompanionFields">
-            <label style="grid-column: 1 / -1;" class="section-label">{{ 'PROFILE.COMPANION_SECTION' | translate }}</label>
+            <label style="grid-column: 1 / -1;" class="section-label">
+              {{ (companionRequired ? 'PROFILE.COMPANION_SECTION_REQUIRED' : 'PROFILE.COMPANION_SECTION_OPTIONAL') | translate }}
+            </label>
             <label>{{ 'PROFILE.COMPANION_NAME' | translate }} <input formControlName="companionFullName" /></label>
             <label>{{ 'PROFILE.COMPANION_PHONE' | translate }} <input formControlName="companionPhone" /></label>
             <label>
@@ -105,6 +107,7 @@
             <div><dt>{{ 'ADMIN_USERS.PHONE_VERIFIED' | translate }}</dt><dd>{{ yesNo(user.phoneVerified) }}</dd></div>
             <div><dt>{{ 'ADMIN_USERS.CREATED' | translate }}</dt><dd>{{ formatDate(user.createdAt) }}</dd></div>
             <div><dt>{{ 'ADMIN_USERS.UPDATED' | translate }}</dt><dd>{{ formatDate(user.updatedAt) }}</dd></div>
+            <div><dt>{{ 'ADMIN_USERS.LAST_LOGIN' | translate }}</dt><dd>{{ user.lastLoginAt ? formatDate(user.lastLoginAt) : ('ADMIN_USERS.NEVER_LOGIN' | translate) }}</dd></div>
             <div><dt>{{ 'ADMIN_USERS.PLATFORM_DAYS' | translate }}</dt><dd>{{ displayValue(user.platformDays) }}</dd></div>
             <div><dt>{{ 'ADMIN_USERS.BLOCKED_UNTIL' | translate }}</dt><dd>{{ formatDate(user.blockedUntil) }}</dd></div>
             <div><dt>{{ 'ADMIN_USERS.BLOCKED_PERMANENT' | translate }}</dt><dd>{{ yesNo(user.blockedPermanently) }}</dd></div>
@@ -172,6 +175,22 @@
           <ng-template #noCert><p class="kpi-sub">{{ 'ADMIN_USERS.NO_DOCUMENT' | translate }}</p></ng-template>
         </div>
       </div>
+    </div>
+
+    <div class="card">
+      <h3 class="section-title">{{ 'ADMIN_USERS.USER_ACTIVITY' | translate }}</h3>
+      <p class="kpi-sub">{{ 'ADMIN_USERS.LAST_LOGIN' | translate }}: {{ (userActivityLastLogin || user.lastLoginAt) ? formatDate(userActivityLastLogin || user.lastLoginAt) : ('ADMIN_USERS.NEVER_LOGIN' | translate) }}</p>
+      <ul class="activity-feed" *ngIf="userActivities.length; else noUserActivity">
+        <li *ngFor="let item of userActivities">
+          <div class="activity-feed-top">
+            <strong>{{ formatActivityAction(item.action) }}</strong>
+            <span>{{ formatDate(item.createdAt) }}</span>
+          </div>
+          <p *ngIf="formatActivityDetails(item.details) as detail">{{ detail }}</p>
+          <p *ngIf="item.ipAddress" class="kpi-sub">{{ 'ADMIN_USERS.IP' | translate }}: {{ item.ipAddress }}</p>
+        </li>
+      </ul>
+      <ng-template #noUserActivity><p class="empty-text">{{ 'ADMIN_USERS.ACTIVITY_EMPTY' | translate }}</p></ng-template>
     </div>
 
     <div class="card">

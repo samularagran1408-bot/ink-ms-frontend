@@ -12,6 +12,7 @@ import { PlaceLocationPickerComponent } from './components/place-location-picker
 import { EventLocationMapComponent } from './components/event-location-map/event-location-map.component';
 import { ConfirmDialogComponent } from './components/confirm-dialog/confirm-dialog.component';
 import { AiAssistantWidgetComponent } from './components/ai-assistant-widget/ai-assistant-widget.component';
+import { DisabilityLabelPipe, RolesLabelPipe } from './pipes/catalog-label.pipe';
 
 @NgModule({
   declarations: [
@@ -22,7 +23,9 @@ import { AiAssistantWidgetComponent } from './components/ai-assistant-widget/ai-
     PlaceLocationPickerComponent,
     EventLocationMapComponent,
     ConfirmDialogComponent,
-    AiAssistantWidgetComponent
+    AiAssistantWidgetComponent,
+    DisabilityLabelPipe,
+    RolesLabelPipe
   ],
   imports: [
     CommonModule,
@@ -39,7 +42,9 @@ import { AiAssistantWidgetComponent } from './components/ai-assistant-widget/ai-
     EventLocationMapComponent,
     ConfirmDialogComponent,
     AiAssistantWidgetComponent,
-    TranslateModule
+    TranslateModule,
+    DisabilityLabelPipe,
+    RolesLabelPipe
   ]
 })
 export class SharedModule { }

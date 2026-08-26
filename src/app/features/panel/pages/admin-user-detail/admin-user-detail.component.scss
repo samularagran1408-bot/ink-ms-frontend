@@ -160,6 +160,30 @@
   object-fit: cover;
 }
 
+.activity-feed {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.activity-feed li {
+  padding: 12px 0;
+  border-bottom: 1px solid #F1F5F9;
+}
+
+.activity-feed-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: baseline;
+}
+
+.activity-feed-top span {
+  color: #94A3B8;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
 @media (max-width: 640px) {
   .identity,
   .photo-section,

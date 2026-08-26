@@ -1,1 +1,8 @@
-export type DisabilityType = 'visual' | 'motriz' | 'auditiva' | 'intelectual' | 'otra';
+export type DisabilityType =
+  | 'visual'
+  | 'motriz'
+  | 'auditiva'
+  | 'intelectual'
+  | 'cognitiva'
+  | 'multiple'
+  | 'otra';

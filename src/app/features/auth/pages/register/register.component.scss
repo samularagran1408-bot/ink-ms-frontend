@@ -240,6 +240,31 @@
   background: #FFF7F7;
 }
 
+.companion-section--optional {
+  border-color: #FCD34D;
+  background: #FFFBEB;
+}
+
+.companion-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.companion-title {
+  margin: 0;
+  font-family: 'Oswald', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: #A30D11;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.companion-section--optional .companion-title {
+  color: #B45309;
+}
+
 .companion-header {
   display: flex;
   flex-direction: column;

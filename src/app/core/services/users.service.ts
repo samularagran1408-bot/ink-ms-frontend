@@ -5,6 +5,7 @@ import { Observable } from 'rxjs';
 import { API_BASE_URL } from '../config/api.config';
 import {
   AdminAuditLog,
+  AdminUserActivityResponse,
   AssignRoleRequest,
   BlockUserRequest,
   RoleInfo,
@@ -130,5 +131,9 @@ export class UsersService {
 
   getAuditLogs(params?: { targetEmail?: string; adminEmail?: string }): Observable<AdminAuditLog[]> {
     return this.http.get<AdminAuditLog[]>(`${this.adminUrl}/audit`, { params: params as Record<string, string> });
+  }
+
+  getUserActivities(email: string): Observable<AdminUserActivityResponse> {
+    return this.http.get<AdminUserActivityResponse>(`${this.adminUrl}/${encodeURIComponent(email)}/activities`);
   }
 }

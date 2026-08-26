@@ -1,54 +1,55 @@
 <app-panel-shell>
-  <h1 class="page-title">Panel Entrenador</h1>
-  <p class="page-subtitle">Sesiones, atletas inscritos y enfoque por discapacidad.</p>
-  <p *ngIf="loading" class="empty-text">Cargando...</p>
+  <h1 class="page-title">{{ 'TRAINER.TITLE' | translate }}</h1>
+  <p class="page-subtitle">{{ 'TRAINER.SUBTITLE' | translate }}</p>
+  <p *ngIf="loading" class="empty-text">{{ 'COMMON.LOADING' | translate }}</p>
   <p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
   <p *ngIf="!loading && !quizPassed" class="error-text">
-    Completa el quiz de aptitud para gestionar sesiones, deportes y asociaciones.
-    <button class="btn-primary" type="button" (click)="goQuiz()" style="margin-left: 8px;">Ir al quiz</button>
+    {{ 'TRAINER.QUIZ_BLOCK' | translate }}
+    <button class="btn-primary" type="button" (click)="goQuiz()" style="margin-left: 8px;">{{ 'TRAINER.GO_QUIZ' | translate }}</button>
   </p>
 
   <div class="kpi-grid">
     <div class="kpi-card">
-      <div class="kpi-label">Sesiones</div>
+      <div class="kpi-label">{{ 'TRAINER.SESSIONS' | translate }}</div>
       <div class="kpi-value">{{ routines.length }}</div>
-      <div class="kpi-sub">Rutinas del entrenador</div>
+      <div class="kpi-sub">{{ 'TRAINER.ROUTINES' | translate }}</div>
     </div>
     <div class="kpi-card">
-      <div class="kpi-label">Publicadas</div>
+      <div class="kpi-label">{{ 'TRAINER.PUBLISHED' | translate }}</div>
       <div class="kpi-value">{{ publishedCount }}</div>
-      <div class="kpi-sub">Listas para atletas</div>
+      <div class="kpi-sub">{{ 'TRAINER.READY' | translate }}</div>
     </div>
     <div class="kpi-card">
-      <div class="kpi-label">Atletas</div>
+      <div class="kpi-label">{{ 'TRAINER.ATHLETES' | translate }}</div>
       <div class="kpi-value">{{ athleteIds.size }}</div>
-      <div class="kpi-sub">Inscritos en tus rutinas</div>
+      <div class="kpi-sub">{{ 'TRAINER.ENROLLED' | translate }}</div>
     </div>
     <div class="kpi-card">
-      <div class="kpi-label">Discapacidades</div>
+      <div class="kpi-label">{{ 'TRAINER.DISABILITIES' | translate }}</div>
       <div class="kpi-value">{{ disabilities.length }}</div>
-      <div class="kpi-sub">Catálogo activo</div>
+      <div class="kpi-sub">{{ 'TRAINER.CATALOG_ACTIVE' | translate }}</div>
     </div>
   </div>
 
   <div class="actions-row">
-    <button class="btn-primary" type="button" (click)="goQuiz()" *ngIf="!quizPassed">Hacer quiz de aptitud</button>
-    <button class="btn-primary" type="button" (click)="goSessions()" [disabled]="!quizPassed">Gestionar sesiones</button>
-    <button class="btn-secondary" type="button" (click)="goSports()" [disabled]="!quizPassed">Deportes</button>
-    <button class="btn-secondary" type="button" (click)="goDisabilities()" [disabled]="!quizPassed">Discapacidades</button>
-    <button class="btn-secondary" type="button" (click)="goAssociations()" [disabled]="!quizPassed">Asociaciones</button>
+    <button class="btn-primary" type="button" (click)="goQuiz()" *ngIf="!quizPassed">{{ 'TRAINER.DO_QUIZ' | translate }}</button>
+    <button class="btn-primary" type="button" (click)="goSessions()" [disabled]="!quizPassed">{{ 'TRAINER.MANAGE_SESSIONS' | translate }}</button>
+    <button class="btn-secondary" type="button" (click)="goSports()" [disabled]="!quizPassed">{{ 'TRAINER.SPORTS' | translate }}</button>
+    <button class="btn-secondary" type="button" (click)="goDisabilities()" [disabled]="!quizPassed">{{ 'TRAINER.DISABILITIES' | translate }}</button>
+    <button class="btn-secondary" type="button" (click)="goAssociations()" [disabled]="!quizPassed">{{ 'TRAINER.ASSOCIATIONS' | translate }}</button>
   </div>
 
   <div class="grid-2">
     <div class="card">
       <h3 class="section-title">Gestión de actividades</h3>
-      <table class="data-table" *ngIf="routines.length; else emptyRoutines">
+      <div class="table-wrap" *ngIf="routines.length; else emptyRoutines">
+      <table class="data-table">
         <thead>
           <tr>
-            <th>Actividad</th>
-            <th>Enfoque</th>
-            <th>Estado</th>
-            <th>Duración</th>
+            <th>{{ 'TRAINER.SESSIONS' | translate }}</th>
+            <th>{{ 'SESSIONS_PAGE.FOCUS' | translate }}</th>
+            <th>{{ 'CATALOG.STATUS' | translate }}</th>
+            <th>{{ 'SESSIONS_PAGE.DURATION' | translate }}</th>
           </tr>
         </thead>
         <tbody>
@@ -64,6 +65,7 @@
           </tr>
         </tbody>
       </table>
+      </div>
       <ng-template #emptyRoutines><p class="empty-text">Aún no tienes rutinas. Crea una en Sesiones.</p></ng-template>
     </div>
 

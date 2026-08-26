@@ -46,6 +46,10 @@ export class AiAssistantService {
     });
   }
 
+  obtenerModo(): Observable<Record<string, unknown>> {
+    return this.http.get<Record<string, unknown>>(`${this.base}/competencia/modo`);
+  }
+
   dashboard(usuarioId?: string): Observable<Record<string, unknown>> {
     const path = usuarioId
       ? `${this.base}/dashboard/${encodeURIComponent(usuarioId)}`

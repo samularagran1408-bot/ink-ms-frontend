@@ -7,7 +7,7 @@ import { AppRole, ROLE_HOME, ROLE_LABELS, normalizeRoles, resolvePrimaryRole } f
 import { UserProfile } from '../models/user-profile';
 import { decodeJwtPayload, isTokenExpired } from '../utils/jwt.util';
 import { UsersService } from './users.service';
-import { LanguageService } from './language.service';
+import { AccessibilityService } from './accessibility.service';
 
 const TOKEN_KEY = 'auth_token';
 
@@ -138,9 +138,9 @@ export class SessionService {
 
   bootstrapAfterLogin(token: string): Observable<string> {
     this.setSession(token);
-    const languageService = this.injector.get(LanguageService);
+    const accessibility = this.injector.get(AccessibilityService);
     return this.loadProfile().pipe(
-      switchMap(() => languageService.init()),
+      switchMap(() => accessibility.syncFromServer()),
       map(() => this.homeForCurrentUser())
     );
   }

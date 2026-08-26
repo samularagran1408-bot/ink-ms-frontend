@@ -46,7 +46,9 @@
       <label>{{ 'PROFILE.SUPPORT_PREFERENCE' | translate }} <input formControlName="supportPreference" /></label>
 
       <ng-container *ngIf="showCompanionFields">
-        <label style="grid-column: 1 / -1;" class="section-label">{{ 'PROFILE.COMPANION_SECTION' | translate }}</label>
+        <label style="grid-column: 1 / -1;" class="section-label">
+          {{ (companionRequired ? 'PROFILE.COMPANION_SECTION_REQUIRED' : 'PROFILE.COMPANION_SECTION_OPTIONAL') | translate }}
+        </label>
         <label>
           {{ 'PROFILE.COMPANION_NAME' | translate }}
           <input formControlName="companionFullName" />

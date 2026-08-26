@@ -69,6 +69,44 @@
   color: #0F172A;
 }
 
+.nav-bell-btn {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background-color: #FEF2F2;
+  border: 1px solid #FCA5A5;
+  color: #A30D11;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.nav-bell-btn:hover {
+  background-color: #FEE2E2;
+  color: #A30D11;
+}
+
+.nav-bell-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #A30D11;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+  line-height: 1;
+  box-shadow: 0 0 0 2px #fff;
+}
+
 .user-avatar-btn {
   width: 38px;
   height: 38px;

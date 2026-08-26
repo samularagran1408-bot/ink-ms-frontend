@@ -10,14 +10,16 @@
 }
 
 .panel-main {
-  padding: 32px 40px;
+  padding: 32px 72px 112px 40px;
   max-width: 1280px;
+  min-width: 0;
+  overflow-x: auto;
 }
 
 @media (max-width: 900px) {
   .panel-shell--fixed .panel-main {
     margin-left: 220px;
-    padding: 24px 20px;
+    padding: 24px 72px 112px 20px;
   }
 }
 
@@ -25,6 +27,6 @@
   /* En móvil el staff pasa a drawer (sin sidebar fija): sin margen lateral. */
   .panel-shell--fixed .panel-main {
     margin-left: 0;
-    padding: 16px 16px 24px;
+    padding: 16px 16px 112px;
   }
 }

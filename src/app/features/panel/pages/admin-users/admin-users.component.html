@@ -1,9 +1,9 @@
 <app-panel-shell>
-  <h1 class="page-title">Users</h1>
-  <p class="page-subtitle">Consulta y gestiona el perfil completo de cada usuario, incluida la foto.</p>
+  <h1 class="page-title">{{ 'ADMIN_USERS.TITLE' | translate }}</h1>
+  <p class="page-subtitle">{{ 'ADMIN_USERS.LIST_SUBTITLE' | translate }}</p>
   <p *ngIf="successMessage" class="empty-text">{{ successMessage }}</p>
   <p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
-  <p *ngIf="loading" class="empty-text">Cargando usuarios...</p>
+  <p *ngIf="loading" class="empty-text">{{ 'ADMIN_USERS.LOADING' | translate }}</p>
 
   <div class="toolbar" *ngIf="!loading">
     <div class="search-group">
@@ -11,22 +11,22 @@
         type="search"
         class="search-input"
         [(ngModel)]="nameQuery"
-        placeholder="Buscar por nombre o email"
-        aria-label="Buscar usuario por nombre"
+        [placeholder]="'ADMIN_USERS.SEARCH_PH' | translate"
+        [attr.aria-label]="'ADMIN_USERS.SEARCH_ARIA' | translate"
       />
-      <select class="search-select" [(ngModel)]="disabilityQuery" aria-label="Filtrar por tipo de discapacidad">
-        <option *ngFor="let opt of disabilityOptions" [value]="opt.value">{{ opt.label }}</option>
+      <select class="search-select" [(ngModel)]="disabilityQuery" [attr.aria-label]="'ADMIN_USERS.FILTER_DISABILITY' | translate">
+        <option *ngFor="let opt of disabilityOptions" [value]="opt.value">{{ opt.labelKey | translate }}</option>
       </select>
     </div>
     <div class="filter-group">
       <button type="button" class="filter-btn" [class.filter-btn--active]="filter === 'active'" (click)="setFilter('active')">
-        Activos
+        {{ 'ADMIN_USERS.FILTER_ACTIVE' | translate }}
       </button>
       <button type="button" class="filter-btn" [class.filter-btn--active]="filter === 'inactive'" (click)="setFilter('inactive')">
-        Inactivos
+        {{ 'ADMIN_USERS.FILTER_INACTIVE' | translate }}
       </button>
       <button type="button" class="filter-btn" [class.filter-btn--active]="filter === 'all'" (click)="setFilter('all')">
-        Todos
+        {{ 'ADMIN_USERS.FILTER_ALL' | translate }}
       </button>
     </div>
     <button
@@ -35,65 +35,210 @@
       [disabled]="!selectedCount || bulkLoading"
       (click)="deleteSelected()"
     >
-      {{ bulkLoading ? 'Eliminando...' : ('Eliminar seleccionados (' + selectedCount + ')') }}
+      {{ bulkLoading
+        ? ('ADMIN_USERS.DELETING' | translate)
+        : ('ADMIN_USERS.DELETE_SELECTED' | translate:{ count: selectedCount }) }}
     </button>
   </div>
 
   <div class="card">
-    <table class="data-table" *ngIf="filteredUsers.length">
-      <thead>
-        <tr>
-          <th class="col-check">
-            <input
-              type="checkbox"
-              [checked]="allVisibleSelected"
-              (change)="toggleAll($any($event.target).checked)"
-              aria-label="Seleccionar todos"
-            />
-          </th>
-          <th>Nombre</th>
-          <th>Email</th>
-          <th>Discapacidad</th>
-          <th>Roles</th>
-          <th>Estado</th>
-          <th>Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let user of filteredUsers" [class.row-selected]="isSelected(user.email)">
-          <td class="col-check">
+    <div class="table-wrap desktop-table" *ngIf="filteredUsers.length">
+      <table class="data-table users-table">
+        <thead>
+          <tr>
+            <th class="col-check">
+              <input
+                type="checkbox"
+                [checked]="allVisibleSelected"
+                (change)="toggleAll($any($event.target).checked)"
+                [attr.aria-label]="'ADMIN_USERS.SELECT_ALL' | translate"
+              />
+            </th>
+            <th>{{ 'ADMIN_USERS.COL_NAME' | translate }}</th>
+            <th>{{ 'ADMIN_USERS.COL_EMAIL' | translate }}</th>
+            <th>{{ 'ADMIN_USERS.COL_DISABILITY' | translate }}</th>
+            <th>{{ 'ADMIN_USERS.COL_ROLES' | translate }}</th>
+            <th>{{ 'ADMIN_USERS.COL_STATUS' | translate }}</th>
+            <th>{{ 'ADMIN_USERS.COL_LAST_LOGIN' | translate }}</th>
+            <th>{{ 'ADMIN_USERS.COL_ACTIONS' | translate }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let user of filteredUsers" [class.row-selected]="isSelected(user.email)">
+            <td class="col-check">
+              <input
+                type="checkbox"
+                [checked]="isSelected(user.email)"
+                (change)="toggleOne(user.email, $any($event.target).checked)"
+                [attr.aria-label]="'ADMIN_USERS.SELECT_ONE' | translate:{ email: user.email }"
+              />
+            </td>
+            <td class="user-cell">
+              <span class="table-avatar" [class.table-avatar--empty]="!user.profilePicture">
+                <img *ngIf="user.profilePicture" [src]="user.profilePicture" alt="" />
+                <span *ngIf="!user.profilePicture">{{ initials(user) }}</span>
+              </span>
+              <button class="user-link" type="button" (click)="openProfile(user)">
+                {{ user.fullName || ('COMMON.NONE' | translate) }}
+              </button>
+            </td>
+            <td class="email-cell">{{ user.email }}</td>
+            <td>{{ user.disability | disabilityLabel }}</td>
+            <td>{{ user.roles | rolesLabel }}</td>
+            <td>
+              <span class="status-pill" [ngClass]="statusClass(user)">
+                {{ (isInactive(user) ? 'ADMIN_USERS.STATUS_INACTIVE' : 'ADMIN_USERS.STATUS_ACTIVE') | translate }}
+              </span>
+            </td>
+            <td class="last-login-cell">
+              <button class="last-login-btn" type="button" (click)="openActivity(user)">
+                {{ formatDate(user.lastLoginAt) }}
+                <span>{{ 'ADMIN_USERS.VIEW_ACTIVITY' | translate }}</span>
+              </button>
+            </td>
+            <td class="actions">
+              <button class="btn-secondary btn-compact" type="button" [disabled]="actionEmail === user.email || bulkLoading" (click)="openProfile(user)">
+                {{ 'ADMIN_USERS.VIEW_PROFILE' | translate }}
+              </button>
+              <button
+                *ngIf="!isInactive(user)"
+                class="btn-danger btn-compact"
+                type="button"
+                [disabled]="actionEmail === user.email || bulkLoading"
+                (click)="block(user)"
+              >
+                {{ 'ADMIN_USERS.BLOCK' | translate }}
+              </button>
+              <button
+                *ngIf="isInactive(user)"
+                class="btn-secondary btn-compact"
+                type="button"
+                [disabled]="actionEmail === user.email || bulkLoading"
+                (click)="activate(user)"
+              >
+                {{ 'ADMIN_USERS.ACTIVATE' | translate }}
+              </button>
+              <button class="btn-danger btn-compact" type="button" [disabled]="actionEmail === user.email || bulkLoading" (click)="deleteOne(user)">
+                {{ 'ADMIN_USERS.DELETE' | translate }}
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="user-cards" *ngIf="filteredUsers.length">
+      <article class="user-card" *ngFor="let user of filteredUsers" [class.user-card--selected]="isSelected(user.email)">
+        <header class="user-card-head">
+          <label class="user-card-check">
             <input
               type="checkbox"
               [checked]="isSelected(user.email)"
               (change)="toggleOne(user.email, $any($event.target).checked)"
-              [attr.aria-label]="'Seleccionar ' + user.email"
+              [attr.aria-label]="'ADMIN_USERS.SELECT_ONE' | translate:{ email: user.email }"
             />
-          </td>
-          <td class="user-cell">
-            <span class="table-avatar" [class.table-avatar--empty]="!user.profilePicture">
-              <img *ngIf="user.profilePicture" [src]="user.profilePicture" alt="" />
-              <span *ngIf="!user.profilePicture">{{ initials(user) }}</span>
-            </span>
+          </label>
+          <span class="table-avatar" [class.table-avatar--empty]="!user.profilePicture">
+            <img *ngIf="user.profilePicture" [src]="user.profilePicture" alt="" />
+            <span *ngIf="!user.profilePicture">{{ initials(user) }}</span>
+          </span>
+          <div class="user-card-identity">
             <button class="user-link" type="button" (click)="openProfile(user)">
-              {{ user.fullName || '—' }}
+              {{ user.fullName || ('COMMON.NONE' | translate) }}
             </button>
-          </td>
-          <td>{{ user.email }}</td>
-          <td>{{ disabilityLabel(user) }}</td>
-          <td>{{ rolesLabel(user) }}</td>
-          <td>{{ isInactive(user) ? 'Inactivo/Bloqueado' : 'Activo' }}</td>
-          <td class="actions">
-            <button class="btn-secondary" type="button" [disabled]="actionEmail === user.email || bulkLoading" (click)="openProfile(user)">Ver perfil</button>
-            <button class="btn-danger" type="button" [disabled]="actionEmail === user.email || bulkLoading" (click)="block(user)">Bloquear</button>
-            <button class="btn-secondary" type="button" [disabled]="actionEmail === user.email || bulkLoading" (click)="activate(user)">Activar</button>
-            <button class="btn-danger" type="button" [disabled]="actionEmail === user.email || bulkLoading" (click)="deleteOne(user)">Eliminar</button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-    <p *ngIf="!loading && !users.length" class="empty-text">No hay usuarios en este filtro.</p>
+            <p>{{ user.email }}</p>
+          </div>
+        </header>
+        <dl class="user-card-meta">
+          <div>
+            <dt>{{ 'ADMIN_USERS.COL_DISABILITY' | translate }}</dt>
+            <dd>{{ user.disability | disabilityLabel }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'ADMIN_USERS.COL_ROLES' | translate }}</dt>
+            <dd>{{ user.roles | rolesLabel }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'ADMIN_USERS.COL_STATUS' | translate }}</dt>
+            <dd>
+              <span class="status-pill" [ngClass]="statusClass(user)">
+                {{ (isInactive(user) ? 'ADMIN_USERS.STATUS_INACTIVE' : 'ADMIN_USERS.STATUS_ACTIVE') | translate }}
+              </span>
+            </dd>
+          </div>
+          <div>
+            <dt>{{ 'ADMIN_USERS.COL_LAST_LOGIN' | translate }}</dt>
+            <dd>
+              <button class="last-login-btn" type="button" (click)="openActivity(user)">
+                {{ formatDate(user.lastLoginAt) }}
+                <span>{{ 'ADMIN_USERS.VIEW_ACTIVITY' | translate }}</span>
+              </button>
+            </dd>
+          </div>
+        </dl>
+        <div class="actions user-card-actions">
+          <button class="btn-secondary btn-compact" type="button" [disabled]="actionEmail === user.email || bulkLoading" (click)="openProfile(user)">
+            {{ 'ADMIN_USERS.VIEW_PROFILE' | translate }}
+          </button>
+          <button
+            *ngIf="!isInactive(user)"
+            class="btn-danger btn-compact"
+            type="button"
+            [disabled]="actionEmail === user.email || bulkLoading"
+            (click)="block(user)"
+          >
+            {{ 'ADMIN_USERS.BLOCK' | translate }}
+          </button>
+          <button
+            *ngIf="isInactive(user)"
+            class="btn-secondary btn-compact"
+            type="button"
+            [disabled]="actionEmail === user.email || bulkLoading"
+            (click)="activate(user)"
+          >
+            {{ 'ADMIN_USERS.ACTIVATE' | translate }}
+          </button>
+          <button class="btn-danger btn-compact" type="button" [disabled]="actionEmail === user.email || bulkLoading" (click)="deleteOne(user)">
+            {{ 'ADMIN_USERS.DELETE' | translate }}
+          </button>
+        </div>
+      </article>
+    </div>
+
+    <p *ngIf="!loading && !users.length" class="empty-text">{{ 'ADMIN_USERS.EMPTY_FILTER' | translate }}</p>
     <p *ngIf="!loading && users.length && !filteredUsers.length" class="empty-text">
-      No hay resultados para esa búsqueda.
+      {{ 'ADMIN_USERS.EMPTY_SEARCH' | translate }}
     </p>
   </div>
 </app-panel-shell>
+
+<div class="activity-overlay" *ngIf="activityUser" (click)="closeActivity()" role="presentation">
+  <div class="activity-card" role="dialog" aria-modal="true" [attr.aria-labelledby]="'activity-title'" (click)="$event.stopPropagation()">
+    <div class="activity-header">
+      <div>
+        <p class="activity-kicker">{{ 'ADMIN_USERS.USER_ACTIVITY' | translate }}</p>
+        <h2 id="activity-title">{{ activityUser.fullName || activityUser.email }}</h2>
+        <p>{{ activityUser.email }}</p>
+        <p class="activity-last">
+          {{ 'ADMIN_USERS.LAST_LOGIN' | translate }}: {{ formatDate(activityLastLogin || activityUser.lastLoginAt) }}
+        </p>
+      </div>
+      <button class="btn-secondary btn-compact" type="button" (click)="closeActivity()">
+        {{ 'ADMIN_USERS.CLOSE' | translate }}
+      </button>
+    </div>
+    <p *ngIf="activityLoading" class="empty-text">{{ 'ADMIN_USERS.ACTIVITY_LOADING' | translate }}</p>
+    <ul class="activity-list" *ngIf="!activityLoading && activityItems.length">
+      <li *ngFor="let item of activityItems">
+        <div class="activity-item-top">
+          <strong>{{ formatActivityAction(item.action) }}</strong>
+          <span class="activity-source">{{ formatActivitySource(item.source) }}</span>
+        </div>
+        <p>{{ formatDate(item.createdAt) }}</p>
+        <p *ngIf="formatActivityDetails(item.details) as detail">{{ detail }}</p>
+        <p *ngIf="item.ipAddress" class="activity-ip">{{ 'ADMIN_USERS.IP' | translate }}: {{ item.ipAddress }}</p>
+      </li>
+    </ul>
+    <p *ngIf="!activityLoading && !activityItems.length" class="empty-text">{{ 'ADMIN_USERS.ACTIVITY_EMPTY' | translate }}</p>
+  </div>
+</div>

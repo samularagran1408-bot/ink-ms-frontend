@@ -1,5 +1,6 @@
 import { Component, OnDestroy } from '@angular/core';
 import { AccessibilityService } from '../../../core/services/accessibility.service';
+import { LanguageService } from '../../../core/services/language.service';
 
 @Component({
   selector: 'app-accessibility-widget',
@@ -13,7 +14,10 @@ export class AccessibilityWidgetComponent implements OnDestroy {
   private closeTimeoutId: ReturnType<typeof setTimeout> | undefined;
   private readonly closeAnimationMs = 200;
 
-  constructor(public accessibilityService: AccessibilityService) {}
+  constructor(
+    public accessibilityService: AccessibilityService,
+    private languageService: LanguageService
+  ) {}
 
   ngOnDestroy(): void {
     if (this.closeTimeoutId) clearTimeout(this.closeTimeoutId);
@@ -45,5 +49,10 @@ export class AccessibilityWidgetComponent implements OnDestroy {
 
   resetFont(): void {
     this.accessibilityService.resetFont();
+  }
+
+  toggleLanguage(): void {
+    const next = this.languageService.currentLang === 'en' ? 'es' : 'en';
+    this.accessibilityService.setLanguage(next, false);
   }
 }

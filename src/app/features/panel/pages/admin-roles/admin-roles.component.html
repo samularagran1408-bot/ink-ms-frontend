@@ -1,24 +1,24 @@
 <app-panel-shell>
-  <h1 class="page-title">Roles</h1>
-  <p class="page-subtitle">Catálogo de roles y asignación a usuarios.</p>
+  <h1 class="page-title">{{ 'ADMIN_ROLES.TITLE' | translate }}</h1>
+  <p class="page-subtitle">{{ 'ADMIN_ROLES.SUBTITLE' | translate }}</p>
   <p *ngIf="message" class="empty-text">{{ message }}</p>
   <p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
 
   <div class="card" style="margin-bottom: 16px;">
-    <h3 class="section-title">Asignar rol</h3>
+    <h3 class="section-title">{{ 'ADMIN_ROLES.ASSIGN' | translate }}</h3>
     <form class="form-grid" [formGroup]="form" (ngSubmit)="assign()">
       <label>
-        Email usuario
+        {{ 'ADMIN_ROLES.USER_EMAIL' | translate }}
         <input type="email" formControlName="email" list="users-list" />
       </label>
       <label>
-        Rol
+        {{ 'ADMIN_ROLES.ROLE' | translate }}
         <select formControlName="roleName">
-          <option *ngFor="let role of roles" [value]="role.name">{{ role.name }}</option>
+          <option *ngFor="let role of roles" [value]="role.name">{{ [role.name] | rolesLabel }}</option>
         </select>
       </label>
       <div>
-        <button class="btn-primary" type="submit">Asignar</button>
+        <button class="btn-primary" type="submit">{{ 'ADMIN_ROLES.ASSIGN_BTN' | translate }}</button>
       </div>
     </form>
     <datalist id="users-list">
@@ -27,11 +27,11 @@
   </div>
 
   <div class="card">
-    <h3 class="section-title">Roles del sistema</h3>
+    <h3 class="section-title">{{ 'ADMIN_ROLES.SYSTEM' | translate }}</h3>
     <div class="list-item" *ngFor="let role of roles">
       <div>
-        <strong>{{ role.name }}</strong>
-        <div class="kpi-sub">{{ role.description || 'Sin descripción' }}</div>
+        <strong>{{ [role.name] | rolesLabel }}</strong>
+        <div class="kpi-sub">{{ role.description || ('ADMIN_ROLES.NO_DESC' | translate) }}</div>
       </div>
       <span class="status-pill status-pill--ok">ID {{ role.id }}</span>
     </div>

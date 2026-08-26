@@ -2,13 +2,14 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslateService } from '@ngx-translate/core';
-import { Observable, Subscription } from 'rxjs';
+import { Observable, Subscription, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 
-import { AdminAuditLog, RoleInfo, UpdateProfileRequest, UserProfile } from '../../../../core/models/user-profile';
+import { AdminAuditLog, AdminUserActivityItem, RoleInfo, UpdateProfileRequest, UserProfile } from '../../../../core/models/user-profile';
 import { UsersService } from '../../../../core/services/users.service';
 import { SessionService } from '../../../../core/services/session.service';
 import { ConfirmDialogService } from '../../../../core/services/confirm-dialog.service';
-import { disabilityRequiresCompanion } from '../../../auth/models/register-request';
+import { companionRequirement, hasCompanionData } from '../../../auth/models/register-request';
 
 @Component({
   selector: 'app-admin-user-detail',
@@ -23,12 +24,15 @@ export class AdminUserDetailComponent implements OnInit, OnDestroy {
   catalogRoles: RoleInfo[] = [];
   selectedRoleNames = new Set<string>();
   auditLogs: AdminAuditLog[] = [];
+  userActivities: AdminUserActivityItem[] = [];
+  userActivityLastLogin: string | null = null;
   loading = true;
   isSaving = false;
   isSavingRoles = false;
   isProcessingPhoto = false;
   actionBusy = false;
   showCompanionFields = false;
+  companionRequired = false;
   profilePicturePreview: string | null = null;
   message: string | null = null;
   errorMessage: string | null = null;
@@ -112,6 +116,13 @@ export class AdminUserDetailComponent implements OnInit, OnDestroy {
     return !!me && me.toLowerCase() === this.email.toLowerCase();
   }
 
+  get isBlocked(): boolean {
+    if (!this.user) {
+      return false;
+    }
+    return !!this.user.blockedPermanently || !!this.user.blockReason || this.user.isActive === false;
+  }
+
   get statusKey(): string {
     if (!this.user) {
       return 'COMMON.NONE';
@@ -146,6 +157,7 @@ export class AdminUserDetailComponent implements OnInit, OnDestroy {
         this.applyUser(user);
         this.loading = false;
         this.loadAudit();
+        this.loadUserActivity();
       },
       error: (error) => {
         this.loading = false;
@@ -215,6 +227,20 @@ export class AdminUserDetailComponent implements OnInit, OnDestroy {
 
     const raw = this.form.getRawValue();
     const phone = (raw.phone || '').trim();
+    const companion = {
+      fullName: raw.companionFullName,
+      phone: raw.companionPhone,
+      relationship: raw.companionRelationship,
+      email: raw.companionEmail
+    };
+    if (this.companionRequired || hasCompanionData(companion)) {
+      if (!raw.companionFullName?.trim() || !raw.companionPhone?.trim()) {
+        this.form.markAllAsTouched();
+        this.errorMessage = this.translate.instant('PROFILE.COMPANION_INCOMPLETE');
+        return;
+      }
+    }
+
     const payload: UpdateProfileRequest = {
       fullName: raw.fullName,
       bio: raw.bio || '',
@@ -409,6 +435,43 @@ export class AdminUserDetailComponent implements OnInit, OnDestroy {
     });
   }
 
+  private loadUserActivity(): void {
+    this.usersService.getUserActivities(this.email).pipe(
+      catchError(() => of({ lastLoginAt: undefined, items: [] }))
+    ).subscribe({
+      next: (response) => {
+        this.userActivityLastLogin = response.lastLoginAt || this.user?.lastLoginAt || null;
+        this.userActivities = response.items || [];
+      }
+    });
+  }
+
+  formatActivityAction(action?: string): string {
+    const key = `ADMIN_USERS.ACTION_${(action || 'UNKNOWN').toUpperCase()}`;
+    const translated = this.translate.instant(key);
+    return translated === key ? (action || '—') : translated;
+  }
+
+  formatActivityDetails(details?: string): string {
+    if (!details?.trim()) {
+      return '';
+    }
+    try {
+      const parsed = JSON.parse(details);
+      if (parsed && typeof parsed === 'object') {
+        if (parsed.message) {
+          return String(parsed.message);
+        }
+        if (parsed.method) {
+          return this.translate.instant('ADMIN_USERS.LOGIN_METHOD', { method: parsed.method });
+        }
+      }
+    } catch {
+      return details;
+    }
+    return details;
+  }
+
   private async confirmAndRun(
     titleKey: string,
     messageKey: string,
@@ -491,7 +554,12 @@ export class AdminUserDetailComponent implements OnInit, OnDestroy {
       FISICA: 'MOTRIZ',
       MOTORA: 'MOTRIZ',
       AUDITIVA: 'AUDITIVA',
-      INTELECTUAL: 'INTELECTUAL'
+      INTELECTUAL: 'INTELECTUAL',
+      INTELLECTUAL: 'INTELECTUAL',
+      COGNITIVA: 'COGNITIVA',
+      COGNITIVE: 'COGNITIVA',
+      MULTIPLE: 'MULTIPLE',
+      MULTIPLE_DISABILITY: 'MULTIPLE',
     };
     return aliases[upper] ?? upper;
   }
@@ -508,11 +576,13 @@ export class AdminUserDetailComponent implements OnInit, OnDestroy {
   }
 
   private applyCompanionValidators(disability: string): void {
-    this.showCompanionFields = disabilityRequiresCompanion(disability);
+    const requirement = companionRequirement(disability);
+    this.showCompanionFields = requirement !== 'none';
+    this.companionRequired = requirement === 'required';
     const fullName = this.form.get('companionFullName')!;
     const phone = this.form.get('companionPhone')!;
 
-    if (this.showCompanionFields) {
+    if (this.companionRequired) {
       fullName.setValidators([Validators.required, Validators.minLength(3), Validators.maxLength(150)]);
       phone.setValidators([
         Validators.required,

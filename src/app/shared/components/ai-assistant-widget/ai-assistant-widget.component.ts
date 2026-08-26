@@ -9,14 +9,14 @@ import { AppRole } from '../../../core/models/app-role';
 import { ChatCard, ChatCtaAccion, ChatHilo, ChatMensajeUi, ChatPasoActividad, ChatResponse, ChatStreamEvent } from '../../../core/models/chat';
 import { UserProfile } from '../../../core/models/user-profile';
 import { AiAssistantService } from '../../../core/services/ai-assistant.service';
+import { AssistantSection, AssistantUiService } from '../../../core/services/assistant-ui.service';
 import { ChatService } from '../../../core/services/chat.service';
 import { ConfirmDialogService } from '../../../core/services/confirm-dialog.service';
+import { CompetitionProgressService } from '../../../core/services/competition-progress.service';
 import { ReportsService } from '../../../core/services/reports.service';
 import { SessionService } from '../../../core/services/session.service';
 import { UsersService } from '../../../core/services/users.service';
 import { HeroIconName } from '../../icons/heroicons-outline';
-
-type AssistantSection = 'chat' | 'rutinas' | 'riesgo' | 'competencia' | 'estadisticas';
 
 const STORAGE_KEY = 'inklusport.chat.conversacion_id';
 const PUBLIC_PATHS = new Set(['/', '', '/login', '/register', '/guest', '/forgot-password']);
@@ -97,7 +97,9 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     private users: UsersService,
     private reports: ReportsService,
     private confirm: ConfirmDialogService,
-    private translate: TranslateService
+    private translate: TranslateService,
+    private competitionProgress: CompetitionProgressService,
+    private assistantUi: AssistantUiService
   ) {}
 
   ngOnInit(): void {
@@ -110,6 +112,18 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
         .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
         .subscribe(() => this.refreshVisibility())
     );
+    this.subs.add(this.assistantUi.openSection$.subscribe((id) => {
+      this.section = id;
+      if (!this.open) {
+        this.openPanel();
+      }
+      if (id === 'competencia' && !this.competencia && !this.cargandoCompetencia) {
+        this.cargarEstadoCompetencia();
+      }
+      if (id === 'estadisticas' && !this.stats && !this.cargandoStats) {
+        this.cargarEstadisticas();
+      }
+    }));
   }
 
   ngOnDestroy(): void {
@@ -140,6 +154,9 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     this.section = id;
     if (id === 'estadisticas' && !this.stats && !this.cargandoStats) {
       this.cargarEstadisticas();
+    }
+    if (id === 'competencia' && !this.competencia && !this.cargandoCompetencia) {
+      this.cargarEstadoCompetencia();
     }
   }
 
@@ -346,6 +363,19 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     });
   }
 
+  cargarEstadoCompetencia(): void {
+    this.cargandoCompetencia = true;
+    this.errorCompetencia = null;
+    this.ai.obtenerModo().subscribe({
+      next: (res) => {
+        this.cargandoCompetencia = false;
+        this.competencia = res;
+        this.competitionProgress.publish(res);
+      },
+      error: () => this.analizarCompetencia()
+    });
+  }
+
   analizarCompetencia(): void {
     this.cargandoCompetencia = true;
     this.errorCompetencia = null;
@@ -353,6 +383,7 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
       next: (res) => {
         this.cargandoCompetencia = false;
         this.competencia = res;
+        this.competitionProgress.publish(res);
       },
       error: (err) => {
         this.cargandoCompetencia = false;
@@ -368,6 +399,7 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
       next: (res) => {
         this.cargandoCompetencia = false;
         this.competencia = res;
+        this.competitionProgress.publish(res);
       },
       error: (err) => {
         this.cargandoCompetencia = false;

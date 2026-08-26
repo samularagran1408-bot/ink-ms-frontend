@@ -1,62 +1,62 @@
 <app-panel-shell>
-  <h1 class="page-title">Sports</h1>
-  <p class="page-subtitle">Catálogo de deportes adaptados.</p>
+  <h1 class="page-title">{{ 'SPORTS_PAGE.TITLE' | translate }}</h1>
+  <p class="page-subtitle">{{ 'SPORTS_PAGE.SUBTITLE' | translate }}</p>
   <p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
 
   <div class="card" style="margin-bottom: 16px;">
-    <h3 class="section-title">Nuevo deporte</h3>
+    <h3 class="section-title">{{ 'SPORTS_PAGE.NEW' | translate }}</h3>
     <form class="form-grid" [formGroup]="form" (ngSubmit)="create()">
-      <label>Nombre <input formControlName="name" /></label>
-      <label>Dificultad
+      <label>{{ 'CATALOG.NAME' | translate }} <input formControlName="name" /></label>
+      <label>{{ 'SPORTS_PAGE.DIFFICULTY' | translate }}
         <select formControlName="difficulty">
-          <option value="bajo">Bajo</option>
-          <option value="medio">Medio</option>
-          <option value="alto">Alto</option>
+          <option value="bajo">{{ 'SPORTS_PAGE.LOW' | translate }}</option>
+          <option value="medio">{{ 'SPORTS_PAGE.MEDIUM' | translate }}</option>
+          <option value="alto">{{ 'SPORTS_PAGE.HIGH' | translate }}</option>
         </select>
       </label>
-      <label>Materiales <input formControlName="requiredMaterials" /></label>
-      <label>Descripción <input formControlName="description" /></label>
-      <div><button class="btn-primary" type="submit">Crear</button></div>
+      <label>{{ 'SPORTS_PAGE.MATERIALS' | translate }} <input formControlName="requiredMaterials" /></label>
+      <label>{{ 'COMMON.DESCRIPTION' | translate }} <input formControlName="description" /></label>
+      <div><button class="btn-primary" type="submit">{{ 'CATALOG.CREATE' | translate }}</button></div>
     </form>
   </div>
 
   <div class="card">
-    <h3 class="section-title">Catálogo de deportes</h3>
+    <h3 class="section-title">{{ 'SPORTS_PAGE.LIST' | translate }}</h3>
     <div class="search-bar">
       <input
         type="search"
         name="sportQuery"
         [(ngModel)]="searchQuery"
-        placeholder="Buscar deporte por nombre, dificultad o descripción"
+        [placeholder]="'SPORTS_PAGE.SEARCH_PH' | translate"
       />
     </div>
     <div *ngFor="let sport of filteredSports">
       <div class="list-item">
         <div>
           <strong>{{ sport.name }}</strong>
-          <div class="kpi-sub">{{ sport.description || 'Sin descripción' }} · {{ sport.difficulty || '—' }}</div>
+          <div class="kpi-sub">{{ sport.description || ('CATALOG.NO_DESCRIPTION' | translate) }} · {{ sport.difficulty || ('COMMON.NONE' | translate) }}</div>
         </div>
         <div class="item-actions">
           <button class="btn-secondary" type="button" (click)="toggleAdaptations(sport)">
-            {{ expandedSportId === sport.id ? 'Ocultar adaptaciones' : 'Ver adaptaciones' }}
+            {{ (expandedSportId === sport.id ? 'SPORTS_PAGE.HIDE_ADAPT' : 'SPORTS_PAGE.SHOW_ADAPT') | translate }}
           </button>
-          <button class="btn-danger" type="button" (click)="remove(sport)">Eliminar</button>
+          <button class="btn-danger" type="button" (click)="remove(sport)">{{ 'CATALOG.DELETE' | translate }}</button>
         </div>
       </div>
       <div *ngIf="expandedSportId === sport.id" style="padding: 0 8px 12px;">
         <div class="list-item" *ngFor="let item of adaptationsOf(sport)">
           <div>
             <strong>{{ item.name }}</strong>
-            <div class="kpi-sub">{{ item.category || 'Discapacidad asociada' }}</div>
+            <div class="kpi-sub">{{ item.category || ('SPORTS_PAGE.ASSOCIATED' | translate) }}</div>
           </div>
         </div>
         <p *ngIf="!adaptationsOf(sport).length" class="empty-text">
-          Este deporte no tiene adaptaciones registradas.
+          {{ 'HOME.NO_ADAPTATIONS' | translate }}
         </p>
       </div>
     </div>
     <p *ngIf="!filteredSports.length" class="empty-text">
-      {{ searchQuery.trim() ? 'No hay deportes que coincidan con la búsqueda.' : 'No hay deportes registrados.' }}
+      {{ (searchQuery.trim() ? 'SPORTS_PAGE.EMPTY_SEARCH' : 'SPORTS_PAGE.EMPTY') | translate }}
     </p>
   </div>
 </app-panel-shell>

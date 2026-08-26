@@ -1,42 +1,42 @@
 <app-panel-shell>
-  <h1 class="page-title">Panel Organizador</h1>
-  <p class="page-subtitle">Operación de eventos, cupos y seguimiento de atletas inscritos.</p>
-  <p *ngIf="loading" class="empty-text">Cargando...</p>
+  <h1 class="page-title">{{ 'ORGANIZER.TITLE' | translate }}</h1>
+  <p class="page-subtitle">{{ 'ORGANIZER.SUBTITLE' | translate }}</p>
+  <p *ngIf="loading" class="empty-text">{{ 'COMMON.LOADING' | translate }}</p>
   <p *ngIf="successMessage" class="empty-text">{{ successMessage }}</p>
   <p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
   <p *ngIf="!loading && !quizPassed" class="error-text">
-    Completa el quiz de aptitud para crear eventos y gestionar inscritos.
-    <button class="btn-primary" type="button" (click)="goQuiz()" style="margin-left: 8px;">Ir al quiz</button>
+    {{ 'ORGANIZER.QUIZ_BLOCK' | translate }}
+    <button class="btn-primary" type="button" (click)="goQuiz()" style="margin-left: 8px;">{{ 'ORGANIZER.GO_QUIZ' | translate }}</button>
   </p>
 
   <div class="kpi-grid">
     <div class="kpi-card">
-      <div class="kpi-label">Eventos</div>
+      <div class="kpi-label">{{ 'ORGANIZER.EVENTS' | translate }}</div>
       <div class="kpi-value">{{ events.length }}</div>
-      <div class="kpi-sub">En gestión</div>
+      <div class="kpi-sub">{{ 'ORGANIZER.IN_MANAGEMENT' | translate }}</div>
     </div>
     <div class="kpi-card">
-      <div class="kpi-label">Activos</div>
+      <div class="kpi-label">{{ 'ORGANIZER.ACTIVE' | translate }}</div>
       <div class="kpi-value">{{ activeEvents }}</div>
-      <div class="kpi-sub">Estado active</div>
+      <div class="kpi-sub">{{ 'ORGANIZER.STATUS_ACTIVE' | translate }}</div>
     </div>
     <div class="kpi-card">
-      <div class="kpi-label">Cupos ocupados</div>
+      <div class="kpi-label">{{ 'ORGANIZER.OCCUPIED' | translate }}</div>
       <div class="kpi-value">{{ athleteCount }}</div>
-      <div class="kpi-sub">Estimado por capacidad</div>
+      <div class="kpi-sub">{{ 'ORGANIZER.CAPACITY_EST' | translate }}</div>
     </div>
     <div class="kpi-card">
-      <div class="kpi-label">Tasa asistencia</div>
+      <div class="kpi-label">{{ 'ORGANIZER.ATTENDANCE' | translate }}</div>
       <div class="kpi-value">{{ attendanceRatePercent == null ? '—' : (attendanceRatePercent + '%') }}</div>
       <div class="kpi-sub">
-        {{ attendanceSampledEvents ? ('Muestra ' + attendanceSampledEvents + ' eventos') : 'Sin eventos' }}
-        · <button class="linkish" type="button" (click)="goAttendanceReports()">Ver reportes</button>
+        {{ attendanceSampledEvents ? ('ORGANIZER.SAMPLE' | translate:{ count: attendanceSampledEvents }) : ('ORGANIZER.NO_EVENTS' | translate) }}
+        · <button class="linkish" type="button" (click)="goAttendanceReports()">{{ 'ORGANIZER.SEE_REPORTS' | translate }}</button>
       </div>
     </div>
     <div class="kpi-card">
-      <div class="kpi-label">Deportes</div>
+      <div class="kpi-label">{{ 'ORGANIZER.SPORTS' | translate }}</div>
       <div class="kpi-value">{{ sports.length }}</div>
-      <div class="kpi-sub">Disponibles</div>
+      <div class="kpi-sub">{{ 'ORGANIZER.AVAILABLE' | translate }}</div>
     </div>
   </div>
 

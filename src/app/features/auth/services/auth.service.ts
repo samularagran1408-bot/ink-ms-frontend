@@ -104,7 +104,9 @@ export class AuthService {
       visual: 'VISUAL',
       motriz: 'MOTRIZ',
       auditiva: 'AUDITIVA',
-      intelectual: 'INTELECTUAL'
+      intelectual: 'INTELECTUAL',
+      cognitiva: 'COGNITIVA',
+      multiple: 'MULTIPLE'
     };
 
     return map[value] || null;

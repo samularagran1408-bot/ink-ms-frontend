@@ -4,7 +4,7 @@
   <div class="gridOverlay"></div>
   <header class="top-header">
     <div class="brand-logo-container" (click)="goBack()">
-      <button class="back-arrow-btn" aria-label="Volver">
+      <button class="back-arrow-btn" [attr.aria-label]="'AUTH.BACK' | translate">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
           <line x1="19" y1="12" x2="5" y2="12" />
           <polyline points="12 19 5 12 12 5" />
@@ -26,28 +26,26 @@
   <main class="auth-card">
     <div class="hero-panel">
       <div class="hero-content">
-        <span class="highlight-text">SIN LÍMITES</span>
-        <h1 class="hero-title">
-          Impulsamos el<br />deporte adaptado.
-        </h1>
+        <span class="highlight-text">{{ 'AUTH.START_BADGE' | translate }}</span>
+        <h1 class="hero-title" [innerHTML]="'AUTH.START_TITLE' | translate"></h1>
         <p class="hero-desc">
-          Tecnología, inclusión y rendimiento para construir un futuro sin barreras.
+          {{ 'AUTH.START_DESC' | translate }}
         </p>
       </div>
     </div>
 
     <div class="form-panel">
       <div class="card-header">
-        <h2 class="card-title">Bienvenido</h2>
+        <h2 class="card-title">{{ 'AUTH.WELCOME' | translate }}</h2>
         <div class="title-line"></div>
         <p class="card-subtitle">
-          Tu plataforma para el deporte adaptado de alto rendimiento.
+          {{ 'AUTH.WELCOME_SUB' | translate }}
         </p>
       </div>
 
       <div class="button-group">
         <button type="button" class="login-button" (click)="goToLogin()">
-          Iniciar sesión
+          {{ 'AUTH.LOGIN_CTA' | translate }}
           <span class="arrow">
             
           </span>
@@ -55,17 +53,17 @@
 
         <button type="button" class="register-button" (click)="goToRegister()">
           <span class="register-content">
-            <span>Registrarse</span>
+            <span>{{ 'AUTH.REGISTER_CTA' | translate }}</span>
             </span>
         </button>
 
         <button type="button" class="guest-button" (click)="goToGuest()">
-          Iniciar como invitado
+          {{ 'AUTH.GUEST_CTA' | translate }}
         </button>
       </div>
 
       <div class="auth-social">
-        <span class="auth-divider">ÚNETE A LA COMUNIDAD</span>
+        <span class="auth-divider">{{ 'AUTH.COMMUNITY' | translate }}</span>
         <div class="social-buttons">
           <button type="button" class="social-btn" title="Google" aria-label="Continuar con Google">
             <svg width="20" height="20" viewBox="0 0 24 24">

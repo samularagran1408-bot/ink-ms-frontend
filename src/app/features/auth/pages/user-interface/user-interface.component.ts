@@ -5,15 +5,16 @@ import { catchError } from 'rxjs/operators';
 import { TranslateService } from '@ngx-translate/core';
 
 import { EventItem, Registration, Routine, RoutineRegistration, Sport, Disability, SportDisability, CalendarEvent } from '../../../../core/models/sports';
-import { AppNotification } from '../../../../core/models/accessibility-api';
 import { SessionService } from '../../../../core/services/session.service';
 import { SportsService } from '../../../../core/services/sports.service';
 import { PreferencesApiService } from '../../../../core/services/preferences-api.service';
 import { NotificationAnnounceService } from '../../../../core/services/notification-announce.service';
-import { TtsService } from '../../../../core/services/tts.service';
 import { LanguageService } from '../../../../core/services/language.service';
 import { UnreadNotificationsService } from '../../../../core/services/unread-notifications.service';
 import { ConfirmDialogService } from '../../../../core/services/confirm-dialog.service';
+import { AssistantUiService } from '../../../../core/services/assistant-ui.service';
+import { CompetitionProgressService } from '../../../../core/services/competition-progress.service';
+import { CompetitionModeState } from '../../../../core/models/competition';
 import { resolveEventImage } from '../../../../core/utils/event-image.util';
 
 type CatalogFilter = 'all' | 'sports' | 'disabilities' | 'associations' | 'routines';
@@ -34,12 +35,10 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
   registeringRoutineId: string | null = null;
   nextEvent: EventItem | null = null;
   unreadCount = 0;
-  notifications: AppNotification[] = [];
-  showNotifications = false;
   registeringId: string | null = null;
   calendarMonthLabel = '';
   calendarCells: { day: number | null; muted: boolean; selected: boolean; hasEvent: boolean }[] = [];
-  audioMode = false;
+  competition: CompetitionModeState | null = null;
 
   catalogQuery = '';
   catalogFilter: CatalogFilter = 'all';
@@ -54,10 +53,8 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
   private calendarYear = 0;
   private calendarMonth = 0;
 
-  private prefsSub: Subscription | null = null;
-  private playingSub: Subscription | null = null;
   private langSub: Subscription | null = null;
-  playingId: string | null = null;
+  private competitionSub: Subscription | null = null;
 
   constructor(
     private session: SessionService,
@@ -65,21 +62,20 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
     private preferencesApi: PreferencesApiService,
     private router: Router,
     private notificationAnnounce: NotificationAnnounceService,
-    private tts: TtsService,
     private translate: TranslateService,
     private languageService: LanguageService,
     private unreadNotifications: UnreadNotificationsService,
-    private confirm: ConfirmDialogService
+    private confirm: ConfirmDialogService,
+    private competitionProgress: CompetitionProgressService,
+    private assistantUi: AssistantUiService
   ) {}
 
   ngOnInit(): void {
     this.notificationAnnounce.start();
-    this.prefsSub = this.tts.preferences$.subscribe(() => {
-      this.audioMode = this.tts.isAudioNotificationsActive;
+    this.competitionSub = this.competitionProgress.state$.subscribe((state) => {
+      this.competition = state;
     });
-    this.playingSub = this.tts.playingId$.subscribe((id) => {
-      this.playingId = id;
-    });
+    this.competitionProgress.refresh().subscribe();
     this.buildCalendar(new Date());
     this.langSub = this.translate.onLangChange.subscribe(() => this.buildCalendar(new Date()));
     this.loadHomeData();
@@ -103,14 +99,13 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
           ? this.sportsService.getRoutineRegistrationsByUser(userId).pipe(catchError(() => of([] as RoutineRegistration[])))
           : of([] as RoutineRegistration[]),
         unread: this.preferencesApi.getUnreadCount().pipe(catchError(() => of(0))),
-        notifications: this.preferencesApi.getNotifications().pipe(catchError(() => of([] as AppNotification[]))),
         prefs: this.notificationAnnounce.refreshPreferences(),
         sports: this.sportsService.getActiveSports().pipe(catchError(() => of([] as Sport[]))),
         disabilities: this.sportsService.getActiveDisabilities().pipe(catchError(() => of([] as Disability[]))),
         associations: this.sportsService.getAssociations().pipe(catchError(() => of([] as SportDisability[]))),
         calendar: this.sportsService.getEventCalendar().pipe(catchError(() => of([] as CalendarEvent[])))
       }).subscribe({
-        next: ({ events, registrations, routines, routineRegistrations, unread, notifications, sports, disabilities, associations, calendar }) => {
+        next: ({ events, registrations, routines, routineRegistrations, unread, sports, disabilities, associations, calendar }) => {
           this.allEvents = this.sortEvents(events);
           this.events = this.allEvents.slice(0, 6);
           this.registrations = this.sortRegistrations(registrations);
@@ -119,8 +114,6 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
           this.nextEvent = this.resolveNextEvent(events, registrations);
           this.unreadCount = typeof unread === 'number' ? unread : (unread?.count ?? 0);
           this.unreadNotifications.setCount(this.unreadCount);
-          this.notifications = notifications.slice(0, 5);
-          this.audioMode = this.tts.isAudioNotificationsActive;
           this.sports = sports;
           this.disabilities = disabilities;
           this.associations = associations;
@@ -138,9 +131,8 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.prefsSub?.unsubscribe();
-    this.playingSub?.unsubscribe();
     this.langSub?.unsubscribe();
+    this.competitionSub?.unsubscribe();
   }
 
   get confirmedCount(): number {
@@ -164,6 +156,41 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
       return 0;
     }
     return Math.round((this.attendedCount * 100) / this.confirmedCount);
+  }
+
+  get competitionActive(): boolean {
+    return !!this.competition?.activo;
+  }
+
+  get competitionObjective(): string {
+    return (this.competition?.objetivo || '').trim();
+  }
+
+  get competitionPlanPct(): number {
+    const value = Number(this.competition?.plan_pct || 0);
+    return Math.max(0, Math.min(100, Math.round(value)));
+  }
+
+  get competitionWeekLabel(): string {
+    const current = Number(this.competition?.semana_actual || 0);
+    const total = Number(this.competition?.semanas || 0);
+    if (!current || !total) {
+      return '';
+    }
+    return this.translate.instant('HOME.COMPETE_WEEK', { current, total });
+  }
+
+  get competitionEventTitle(): string {
+    const evento = this.competition?.evento_objetivo;
+    if (!evento || typeof evento !== 'object') {
+      return '';
+    }
+    const row = evento as { titulo?: string };
+    return (row.titulo || '').trim();
+  }
+
+  openCompetition(): void {
+    this.assistantUi.open('competencia');
   }
 
   get myRoutines(): { registration: RoutineRegistration; routine: Routine | null }[] {
@@ -231,34 +258,6 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
         }
       });
     });
-  }
-
-  onNotifications(): void {
-    this.showNotifications = !this.showNotifications;
-    if (this.showNotifications && this.unreadCount > 0) {
-      this.preferencesApi.markAllAsRead().subscribe({
-        next: () => {
-          this.unreadCount = 0;
-          this.unreadNotifications.setCount(0);
-          this.notifications = this.notifications.map((n) => ({ ...n, read: true }));
-        }
-      });
-    }
-  }
-
-  togglePlay(note: AppNotification): void {
-    if (!this.audioMode) {
-      return;
-    }
-    if (this.playingId === note.id) {
-      this.tts.stop();
-      return;
-    }
-    this.notificationAnnounce.announceOne(note, true);
-  }
-
-  isPlaying(note: AppNotification): boolean {
-    return this.playingId === note.id;
   }
 
   onSeeAllEvents(): void {

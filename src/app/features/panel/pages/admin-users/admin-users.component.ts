@@ -1,7 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, HostListener, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
+import { TranslateService } from '@ngx-translate/core';
+import { of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 
-import { UserProfile } from '../../../../core/models/user-profile';
+import { AdminUserActivityItem, UserProfile } from '../../../../core/models/user-profile';
 import { UsersService } from '../../../../core/services/users.service';
 import { SessionService } from '../../../../core/services/session.service';
 import { ConfirmDialogService } from '../../../../core/services/confirm-dialog.service';
@@ -22,22 +25,27 @@ export class AdminUsersComponent implements OnInit {
   filter: 'active' | 'all' | 'inactive' = 'active';
   nameQuery = '';
   disabilityQuery = '';
+  activityUser: UserProfile | null = null;
+  activityItems: AdminUserActivityItem[] = [];
+  activityLastLogin: string | null = null;
+  activityLoading = false;
 
   readonly disabilityOptions = [
-    { value: '', label: 'Todas las discapacidades' },
-    { value: 'VISUAL', label: 'Visual' },
-    { value: 'MOTRIZ', label: 'Motriz' },
-    { value: 'AUDITIVA', label: 'Auditiva' },
-    { value: 'INTELECTUAL', label: 'Intelectual' },
-    { value: 'COGNITIVA', label: 'Cognitiva' },
-    { value: 'MULTIPLE', label: 'Múltiple' }
+    { value: '', labelKey: 'ADMIN_USERS.ALL_DISABILITIES' },
+    { value: 'VISUAL', labelKey: 'PROFILE.DISABILITY_VISUAL' },
+    { value: 'MOTRIZ', labelKey: 'PROFILE.DISABILITY_MOTOR' },
+    { value: 'AUDITIVA', labelKey: 'PROFILE.DISABILITY_HEARING' },
+    { value: 'INTELECTUAL', labelKey: 'PROFILE.DISABILITY_INTELLECTUAL' },
+    { value: 'COGNITIVA', labelKey: 'PROFILE.DISABILITY_COGNITIVE' },
+    { value: 'MULTIPLE', labelKey: 'PROFILE.DISABILITY_MULTIPLE' }
   ];
 
   constructor(
     private usersService: UsersService,
     private session: SessionService,
     private confirm: ConfirmDialogService,
-    private router: Router
+    private router: Router,
+    private translate: TranslateService
   ) {}
 
   ngOnInit(): void {
@@ -82,7 +90,7 @@ export class AdminUsersComponent implements OnInit {
         this.loading = false;
       },
       error: (error) => {
-        this.errorMessage = error?.error?.message || 'No se pudieron cargar usuarios.';
+        this.errorMessage = error?.error?.message || this.translate.instant('ADMIN_USERS.LOAD_LIST_ERROR');
         this.loading = false;
       }
     });
@@ -117,7 +125,7 @@ export class AdminUsersComponent implements OnInit {
   }
 
   disabilityLabel(user: UserProfile): string {
-    return user.disability?.trim() || '—';
+    return user.disability?.trim() || this.translate.instant('COMMON.NONE');
   }
 
   initials(user: UserProfile): string {
@@ -139,24 +147,24 @@ export class AdminUsersComponent implements OnInit {
 
   private async confirmBlock(user: UserProfile): Promise<void> {
     const ok = await this.confirm.ask({
-      title: 'Bloquear usuario',
-      message: `¿Confirmas bloquear a ${user.fullName || user.email}?`,
-      confirmLabel: 'Confirmar',
-      cancelLabel: 'Cancelar',
+      title: this.translate.instant('ADMIN_USERS.BLOCK_TITLE'),
+      message: this.translate.instant('ADMIN_USERS.BLOCK_CONFIRM', { name: user.fullName || user.email }),
+      confirmLabel: this.translate.instant('COMMON.CONFIRM'),
+      cancelLabel: this.translate.instant('COMMON.CANCEL'),
       tone: 'danger'
     });
     if (!ok) {
       return;
     }
     this.actionEmail = user.email;
-    this.usersService.blockUser(user.email, { reason: 'Bloqueo administrativo', permanent: false }).subscribe({
+    this.usersService.blockUser(user.email, { reason: this.translate.instant('ADMIN_USERS.BLOCK_TITLE'), permanent: false }).subscribe({
       next: () => {
         this.actionEmail = null;
         this.reload();
       },
       error: (error) => {
         this.actionEmail = null;
-        this.errorMessage = error?.error?.message || 'No se pudo bloquear.';
+        this.errorMessage = error?.error?.message || this.translate.instant('ADMIN_USERS.BLOCK_ERROR');
       }
     });
   }
@@ -167,10 +175,10 @@ export class AdminUsersComponent implements OnInit {
 
   private async confirmActivate(user: UserProfile): Promise<void> {
     const ok = await this.confirm.ask({
-      title: 'Activar usuario',
-      message: `¿Confirmas activar a ${user.fullName || user.email}?`,
-      confirmLabel: 'Confirmar',
-      cancelLabel: 'Cancelar'
+      title: this.translate.instant('ADMIN_USERS.ACTIVATE_TITLE'),
+      message: this.translate.instant('ADMIN_USERS.ACTIVATE_CONFIRM', { name: user.fullName || user.email }),
+      confirmLabel: this.translate.instant('COMMON.CONFIRM'),
+      cancelLabel: this.translate.instant('COMMON.CANCEL')
     });
     if (!ok) {
       return;
@@ -183,7 +191,7 @@ export class AdminUsersComponent implements OnInit {
       },
       error: (error) => {
         this.actionEmail = null;
-        this.errorMessage = error?.error?.message || 'No se pudo activar.';
+        this.errorMessage = error?.error?.message || this.translate.instant('ADMIN_USERS.ACTIVATE_ERROR');
       }
     });
   }
@@ -191,7 +199,7 @@ export class AdminUsersComponent implements OnInit {
   deleteOne(user: UserProfile): void {
     const me = this.session.getProfile()?.email;
     if (me && me.toLowerCase() === user.email.toLowerCase()) {
-      this.errorMessage = 'No puedes eliminarte a ti mismo.';
+      this.errorMessage = this.translate.instant('ADMIN_USERS.CANNOT_DELETE_SELF');
       return;
     }
     void this.confirmDeleteOne(user);
@@ -199,10 +207,10 @@ export class AdminUsersComponent implements OnInit {
 
   private async confirmDeleteOne(user: UserProfile): Promise<void> {
     const ok = await this.confirm.ask({
-      title: 'Eliminar usuario',
-      message: `¿Eliminar lógicamente a ${user.fullName || user.email}? Dejará de aparecer en el panel. Si tiene eventos futuros inscritos, la eliminación se bloqueará.`,
-      confirmLabel: 'Confirmar',
-      cancelLabel: 'Cancelar',
+      title: this.translate.instant('ADMIN_USERS.DELETE_TITLE'),
+      message: this.translate.instant('ADMIN_USERS.DELETE_ONE_CONFIRM', { name: user.fullName || user.email }),
+      confirmLabel: this.translate.instant('COMMON.CONFIRM'),
+      cancelLabel: this.translate.instant('COMMON.CANCEL'),
       tone: 'danger'
     });
     if (!ok) {
@@ -214,13 +222,13 @@ export class AdminUsersComponent implements OnInit {
     this.usersService.deleteUser(user.email).subscribe({
       next: (result) => {
         this.actionEmail = null;
-        this.successMessage = result?.message || `${user.fullName || user.email} fue eliminado lógicamente.`;
+        this.successMessage = result?.message || this.translate.instant('ADMIN_USERS.DELETED_OK', { name: user.fullName || user.email });
         this.reload();
       },
       error: (error) => {
         this.actionEmail = null;
         this.errorMessage = error?.error?.message
-          || 'No se pudo eliminar. Si el usuario tiene eventos futuros inscritos, cancélalos primero.';
+          || this.translate.instant('ADMIN_USERS.DELETE_BLOCKED_EVENTS');
       }
     });
   }
@@ -235,7 +243,7 @@ export class AdminUsersComponent implements OnInit {
       ? emails.filter((email) => email.toLowerCase() !== me.toLowerCase())
       : emails;
     if (!filtered.length) {
-      this.errorMessage = 'No puedes eliminarte a ti mismo.';
+      this.errorMessage = this.translate.instant('ADMIN_USERS.CANNOT_DELETE_SELF');
       return;
     }
     void this.confirmDeleteSelected(filtered);
@@ -243,10 +251,10 @@ export class AdminUsersComponent implements OnInit {
 
   private async confirmDeleteSelected(filtered: string[]): Promise<void> {
     const ok = await this.confirm.ask({
-      title: 'Eliminar usuarios',
-      message: `¿Eliminar lógicamente ${filtered.length} usuario(s) seleccionado(s)? Quienes tengan eventos futuros inscritos no se eliminarán.`,
-      confirmLabel: 'Confirmar',
-      cancelLabel: 'Cancelar',
+      title: this.translate.instant('ADMIN_USERS.DELETE_TITLE'),
+      message: this.translate.instant('ADMIN_USERS.DELETE_BULK_CONFIRM', { count: filtered.length }),
+      confirmLabel: this.translate.instant('COMMON.CONFIRM'),
+      cancelLabel: this.translate.instant('COMMON.CANCEL'),
       tone: 'danger'
     });
     if (!ok) {
@@ -258,7 +266,10 @@ export class AdminUsersComponent implements OnInit {
     this.usersService.bulkDeleteUsers(filtered).subscribe({
       next: (result) => {
         this.bulkLoading = false;
-        this.successMessage = `Eliminados lógicamente: ${result.succeeded}. Bloqueados o fallidos: ${result.failed}.`;
+        this.successMessage = this.translate.instant('ADMIN_USERS.DELETE_BULK_OK', {
+          succeeded: result.succeeded,
+          failed: result.failed
+        });
         if (result.errors?.length) {
           this.errorMessage = result.errors.join(' · ');
         }
@@ -266,7 +277,7 @@ export class AdminUsersComponent implements OnInit {
       },
       error: (error) => {
         this.bulkLoading = false;
-        this.errorMessage = error?.error?.message || 'No se pudo eliminar la selección.';
+        this.errorMessage = error?.error?.message || this.translate.instant('ADMIN_USERS.DELETE_SELECTION_ERROR');
       }
     });
   }
@@ -276,6 +287,93 @@ export class AdminUsersComponent implements OnInit {
   }
 
   isInactive(user: UserProfile): boolean {
-    return user.isActive === false || !!user.blockReason;
+    return user.isActive === false || !!user.blockReason || !!user.blockedPermanently;
+  }
+
+  statusClass(user: UserProfile): string {
+    return this.isInactive(user) ? 'status-pill--bad' : 'status-pill--ok';
+  }
+
+  formatDate(value?: string | null): string {
+    if (!value) {
+      return this.translate.instant('ADMIN_USERS.NEVER_LOGIN');
+    }
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return value;
+    }
+    return date.toLocaleString(undefined, {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  openActivity(user: UserProfile): void {
+    this.activityUser = user;
+    this.activityItems = [];
+    this.activityLastLogin = user.lastLoginAt || null;
+    this.activityLoading = true;
+    this.usersService.getUserActivities(user.email).pipe(
+      catchError(() => of({ lastLoginAt: user.lastLoginAt, items: [] }))
+    ).subscribe({
+      next: (response) => {
+        this.activityLastLogin = response.lastLoginAt || user.lastLoginAt || null;
+        this.activityItems = response.items || [];
+        this.activityLoading = false;
+      }
+    });
+  }
+
+  closeActivity(): void {
+    this.activityUser = null;
+    this.activityItems = [];
+    this.activityLastLogin = null;
+    this.activityLoading = false;
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.activityUser) {
+      this.closeActivity();
+    }
+  }
+
+  formatActivityAction(action?: string): string {
+    const key = `ADMIN_USERS.ACTION_${(action || 'UNKNOWN').toUpperCase()}`;
+    const translated = this.translate.instant(key);
+    return translated === key ? (action || '—') : translated;
+  }
+
+  formatActivitySource(source?: string): string {
+    if (source === 'LOGIN') {
+      return this.translate.instant('ADMIN_USERS.SOURCE_LOGIN');
+    }
+    if (source === 'PROFILE') {
+      return this.translate.instant('ADMIN_USERS.SOURCE_PROFILE');
+    }
+    return source || '';
+  }
+
+  formatActivityDetails(details?: string): string {
+    if (!details?.trim()) {
+      return '';
+    }
+    try {
+      const parsed = JSON.parse(details);
+      if (parsed && typeof parsed === 'object') {
+        if (parsed.message) {
+          return String(parsed.message);
+        }
+        if (parsed.method) {
+          return this.translate.instant('ADMIN_USERS.LOGIN_METHOD', { method: parsed.method });
+        }
+      }
+    } catch {
+      return details;
+    }
+    return details;
   }
 }

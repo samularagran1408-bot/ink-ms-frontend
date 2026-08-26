@@ -12,43 +12,9 @@
           {{ (loading ? 'HOME.LOADING' : 'HOME.WELCOME_TEXT') | translate }}
         </p>
       </div>
-      <button class="notifications-btn" type="button" (click)="onNotifications()">
-        {{ 'NAV.NOTIFICATIONS' | translate | uppercase }}
-        <span *ngIf="unreadCount > 0" class="notif-count">{{ unreadCount }}</span>
-      </button>
     </div>
 
     <p *ngIf="errorMessage" class="panel-error">{{ errorMessage }}</p>
-
-    <div *ngIf="showNotifications" class="notifications-panel">
-      <h4>{{ 'NOTIFICATIONS.TITLE' | translate }}</h4>
-      <p *ngIf="!notifications.length" class="empty-text">{{ 'NOTIFICATIONS.EMPTY' | translate }}</p>
-
-      <ng-container *ngFor="let note of notifications">
-        <div *ngIf="audioMode" class="voice-note" [class.voice-note--playing]="isPlaying(note)">
-          <button
-            class="voice-play-btn"
-            type="button"
-            (click)="togglePlay(note)"
-            [attr.aria-label]="(isPlaying(note) ? 'NOTIFICATIONS.PAUSE' : 'NOTIFICATIONS.PLAY') | translate"
-          >
-            <span *ngIf="!isPlaying(note)">▶</span>
-            <span *ngIf="isPlaying(note)">■</span>
-          </button>
-          <div class="voice-waveform" aria-hidden="true">
-            <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
-          </div>
-          <div class="voice-meta">
-            <span class="voice-label">{{ 'NOTIFICATIONS.AUDIO_MESSAGE' | translate }}</span>
-            <span class="kpi-sub">{{ note.createdAt || '' }}</span>
-          </div>
-        </div>
-        <div *ngIf="!audioMode" class="notification-item">
-          <strong>{{ note.title }}</strong>
-          <span>{{ note.body }}</span>
-        </div>
-      </ng-container>
-    </div>
 
     <div class="stats-grid">
       <div class="stat-box">
@@ -263,6 +229,17 @@
 
         <article class="activity-card">
           <h3 class="activity-card-title">{{ 'HOME.ACTIVITY_PROGRESS' | translate }}</h3>
+          <div *ngIf="competitionActive" class="compete-banner">
+            <app-icon name="trophy" [size]="16"></app-icon>
+            <div class="compete-banner-copy">
+              <strong>{{ 'HOME.COMPETE_ON' | translate }}</strong>
+              <span *ngIf="competitionObjective">{{ competitionObjective }}</span>
+              <span *ngIf="competitionEventTitle" class="kpi-sub">{{ competitionEventTitle }}</span>
+            </div>
+            <button class="compete-open-btn" type="button" (click)="openCompetition()">
+              {{ 'HOME.COMPETE_OPEN' | translate }}
+            </button>
+          </div>
           <div class="progress-block">
             <div class="progress-label-row">
               <span>{{ 'HOME.ATTENDANCE_RATE' | translate }}</span>
@@ -271,6 +248,16 @@
             <div class="progress-track" role="progressbar" [attr.aria-valuenow]="attendanceProgress" aria-valuemin="0" aria-valuemax="100">
               <div class="progress-fill" [style.width.%]="attendanceProgress"></div>
             </div>
+          </div>
+          <div *ngIf="competitionActive" class="progress-block">
+            <div class="progress-label-row">
+              <span>{{ 'HOME.COMPETE_PLAN' | translate }}</span>
+              <strong>{{ competitionPlanPct }}%</strong>
+            </div>
+            <div class="progress-track" role="progressbar" [attr.aria-valuenow]="competitionPlanPct" aria-valuemin="0" aria-valuemax="100">
+              <div class="progress-fill progress-fill--compete" [style.width.%]="competitionPlanPct"></div>
+            </div>
+            <p class="kpi-sub" *ngIf="competitionWeekLabel">{{ competitionWeekLabel }}</p>
           </div>
           <div class="progress-metrics">
             <div class="progress-metric">

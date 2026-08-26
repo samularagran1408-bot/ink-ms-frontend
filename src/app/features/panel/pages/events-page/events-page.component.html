@@ -1,24 +1,24 @@
 <app-panel-shell [fixedSidebar]="mode !== 'user'">
-  <h1 class="page-title">{{ mode === 'user' ? 'Eventos' : 'Gestión de eventos' }}</h1>
+  <h1 class="page-title">{{ mode === 'user' ? ('EVENTS_PAGE.TITLE_USER' | translate) : ('EVENTS_PAGE.TITLE_MANAGE' | translate) }}</h1>
   <p class="page-subtitle">
     {{ mode === 'user'
-      ? 'Eventos disponibles, calendario, inscripciones y pase QR de asistencia.'
-      : 'Crear, editar, cancelar eventos, calendario, check-in por QR y reportes de asistencia.' }}
+      ? ('EVENTS_PAGE.SUBTITLE_USER' | translate)
+      : ('EVENTS_PAGE.SUBTITLE_MANAGE' | translate) }}
   </p>
 
   <p *ngIf="successMessage" class="empty-text">{{ successMessage }}</p>
   <p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
-  <p *ngIf="loading" class="empty-text">Cargando eventos...</p>
+  <p *ngIf="loading" class="empty-text">{{ 'EVENTS_PAGE.LOADING' | translate }}</p>
 
   <div class="card" style="margin-bottom: 16px;">
-    <h3 class="section-title">Buscar evento</h3>
+    <h3 class="section-title">{{ 'EVENTS_PAGE.SEARCH' | translate }}</h3>
     <form class="form-grid" (ngSubmit)="searchEvent()">
       <label>
-        ID o nombre del evento
-        <input name="lookupEventId" [(ngModel)]="lookupEventId" placeholder="UUID o nombre del evento" />
+        {{ 'EVENTS_PAGE.ID_OR_NAME' | translate }}
+        <input name="lookupEventId" [(ngModel)]="lookupEventId" [placeholder]="'EVENTS_PAGE.ID_PH' | translate" />
       </label>
       <div style="display: flex; align-items: end;">
-        <button class="btn-secondary" type="submit">Buscar por ID</button>
+        <button class="btn-secondary" type="submit">{{ 'EVENTS_PAGE.SEARCH_BY_ID' | translate }}</button>
       </div>
     </form>
     <div class="search-bar">
@@ -26,7 +26,7 @@
         type="search"
         name="catalogQuery"
         [(ngModel)]="catalogQuery"
-        placeholder="Filtrar catálogo por nombre, deporte o ubicación"
+        [placeholder]="'EVENTS_PAGE.FILTER_PH' | translate"
       />
     </div>
     <div class="list-item" *ngIf="lookupEvent">
@@ -513,11 +513,11 @@
                     aria-label="Seleccionar ausentes"
                   />
                 </th>
-                <th>Nombre</th>
-                <th>Email</th>
-                <th>Estado</th>
-                <th>Check-in</th>
-                <th>Acción</th>
+                <th>{{ 'CATALOG.NAME' | translate }}</th>
+                <th>{{ 'CATALOG.EMAIL' | translate }}</th>
+                <th>{{ 'CATALOG.STATUS' | translate }}</th>
+                <th>{{ 'CATALOG.CHECKIN' | translate }}</th>
+                <th>{{ 'CATALOG.ACTIONS' | translate }}</th>
               </tr>
             </thead>
             <tbody>
@@ -535,7 +535,7 @@
                 <td>{{ row.email || '—' }}</td>
                 <td>
                   <span class="status-pill" [class.status-pill--ok]="row.attended" [class.status-pill--warn]="!row.attended">
-                    {{ row.attended ? 'Asistió' : 'Sin check-in' }}
+                    {{ (row.attended ? 'CATALOG.ATTENDED' : 'CATALOG.NO_CHECKIN') | translate }}
                   </span>
                 </td>
                 <td>{{ row.checkInTime || '—' }}</td>
@@ -609,9 +609,9 @@
           <table class="data-table">
             <thead>
               <tr>
-                <th>Nombre</th>
-                <th>Email</th>
-                <th>Check-in</th>
+                <th>{{ 'CATALOG.NAME' | translate }}</th>
+                <th>{{ 'CATALOG.EMAIL' | translate }}</th>
+                <th>{{ 'CATALOG.CHECKIN' | translate }}</th>
                 <th>Método</th>
               </tr>
             </thead>
@@ -634,8 +634,8 @@
           <table class="data-table">
             <thead>
               <tr>
-                <th>Nombre</th>
-                <th>Email</th>
+                <th>{{ 'CATALOG.NAME' | translate }}</th>
+                <th>{{ 'CATALOG.EMAIL' | translate }}</th>
                 <th>User ID</th>
               </tr>
             </thead>

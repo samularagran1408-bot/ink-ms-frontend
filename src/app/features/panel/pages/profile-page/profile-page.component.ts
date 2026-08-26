@@ -6,7 +6,7 @@ import { Subscription } from 'rxjs';
 import { SessionService } from '../../../../core/services/session.service';
 import { UsersService } from '../../../../core/services/users.service';
 import { UpdateProfileRequest } from '../../../../core/models/user-profile';
-import { disabilityRequiresCompanion } from '../../../auth/models/register-request';
+import { companionRequirement, hasCompanionData } from '../../../auth/models/register-request';
 
 @Component({
   selector: 'app-profile-page',
@@ -19,6 +19,7 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
   errorMessage: string | null = null;
   rolesLabel = '';
   showCompanionFields = false;
+  companionRequired = false;
   profilePicturePreview: string | null = null;
   isSaving = false;
   isProcessingPhoto = false;
@@ -193,16 +194,23 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
       MOTORA: 'MOTRIZ',
       AUDITIVA: 'AUDITIVA',
       INTELECTUAL: 'INTELECTUAL',
+      INTELLECTUAL: 'INTELECTUAL',
+      COGNITIVA: 'COGNITIVA',
+      COGNITIVE: 'COGNITIVA',
+      MULTIPLE: 'MULTIPLE',
+      MULTIPLE_DISABILITY: 'MULTIPLE',
     };
     return aliases[upper] ?? upper;
   }
 
   private applyCompanionValidators(disability: string): void {
-    this.showCompanionFields = disabilityRequiresCompanion(disability);
+    const requirement = companionRequirement(disability);
+    this.showCompanionFields = requirement !== 'none';
+    this.companionRequired = requirement === 'required';
     const fullName = this.form.get('companionFullName')!;
     const phone = this.form.get('companionPhone')!;
 
-    if (this.showCompanionFields) {
+    if (this.companionRequired) {
       fullName.setValidators([Validators.required, Validators.minLength(3), Validators.maxLength(150)]);
       phone.setValidators([
         Validators.required,
@@ -230,6 +238,20 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
 
     const raw = this.form.getRawValue();
     const phone = (raw.phone || '').trim();
+    const companion = {
+      fullName: raw.companionFullName,
+      phone: raw.companionPhone,
+      relationship: raw.companionRelationship,
+      email: raw.companionEmail
+    };
+    if (this.companionRequired || hasCompanionData(companion)) {
+      if (!raw.companionFullName?.trim() || !raw.companionPhone?.trim()) {
+        this.form.markAllAsTouched();
+        this.errorMessage = this.translate.instant('PROFILE.COMPANION_INCOMPLETE');
+        return;
+      }
+    }
+
     const payload: UpdateProfileRequest = {
       fullName: raw.fullName,
       bio: raw.bio || '',

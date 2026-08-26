@@ -9,6 +9,7 @@ import { LoginRequest } from '../../models/login-request';
 import { AccessibilityService } from '../../../../core/services/accessibility.service';
 import { SessionService } from '../../../../core/services/session.service';
 import { NotificationAnnounceService } from '../../../../core/services/notification-announce.service';
+import { TranslateService } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-login',
@@ -33,7 +34,8 @@ export class LoginComponent {
     private route: ActivatedRoute,
     private router: Router,
     public accessibilityService: AccessibilityService,
-    private notificationAnnounce: NotificationAnnounceService
+    private notificationAnnounce: NotificationAnnounceService,
+    private translate: TranslateService
   ) {
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
@@ -90,7 +92,7 @@ export class LoginComponent {
           this.attemptedEmail = this.loginForm.value.email;
           this.loginFailed = true;
         } else {
-          this.errorMessage = error?.error?.message || 'Credenciales inválidas. Intenta de nuevo.';
+            this.errorMessage = error?.error?.message || this.translate.instant('AUTH.DENIED_DESC');
         }
       }
     });

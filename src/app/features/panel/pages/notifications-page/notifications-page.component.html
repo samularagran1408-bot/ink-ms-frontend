@@ -21,8 +21,10 @@
 
   <div class="card">
     <div class="list-item" *ngFor="let note of notifications">
-      <ng-container *ngIf="audioMode">
-        <div class="voice-note" [class.voice-note--playing]="isPlaying(note)">
+      <div>
+        <strong>{{ note.title }}</strong>
+        <div class="kpi-sub">{{ note.body || ('NOTIFICATIONS.NO_DETAIL' | translate) }} · {{ note.createdAt || '' }}</div>
+        <div *ngIf="audioMode" class="voice-note" [class.voice-note--playing]="isPlaying(note)">
           <button
             class="voice-play-btn"
             type="button"
@@ -37,43 +39,22 @@
           </div>
           <div class="voice-meta">
             <span class="voice-label">{{ 'NOTIFICATIONS.AUDIO_MESSAGE' | translate }}</span>
-            <span class="kpi-sub">{{ note.createdAt || '' }}</span>
           </div>
         </div>
-        <div class="actions-row list-item-actions">
-          <button
-            *ngIf="!note.read"
-            class="btn-secondary"
-            type="button"
-            (click)="markOne(note)"
-          >
-            {{ 'NOTIFICATIONS.MARK_ONE' | translate }}
-          </button>
-          <span *ngIf="note.read" class="status-pill status-pill--ok">
-            {{ 'NOTIFICATIONS.READ' | translate }}
-          </span>
-        </div>
-      </ng-container>
-
-      <ng-container *ngIf="!audioMode">
-        <div>
-          <strong>{{ note.title }}</strong>
-          <div class="kpi-sub">{{ note.body || ('NOTIFICATIONS.NO_DETAIL' | translate) }} · {{ note.createdAt || '' }}</div>
-        </div>
-        <div class="actions-row list-item-actions">
-          <button
-            *ngIf="!note.read"
-            class="btn-secondary"
-            type="button"
-            (click)="markOne(note)"
-          >
-            {{ 'NOTIFICATIONS.MARK_ONE' | translate }}
-          </button>
-          <span *ngIf="note.read" class="status-pill status-pill--ok">
-            {{ 'NOTIFICATIONS.READ' | translate }}
-          </span>
-        </div>
-      </ng-container>
+      </div>
+      <div class="actions-row list-item-actions">
+        <button
+          *ngIf="!note.read"
+          class="btn-secondary"
+          type="button"
+          (click)="markOne(note)"
+        >
+          {{ 'NOTIFICATIONS.MARK_ONE' | translate }}
+        </button>
+        <span *ngIf="note.read" class="status-pill status-pill--ok">
+          {{ 'NOTIFICATIONS.READ' | translate }}
+        </span>
+      </div>
     </div>
     <p *ngIf="!loading && !notifications.length" class="empty-text">
       {{ 'NOTIFICATIONS.EMPTY' | translate }}

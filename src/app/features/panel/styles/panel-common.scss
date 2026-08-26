@@ -26,6 +26,9 @@
   border-radius: 14px;
   padding: 18px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
 }
 
 .kpi-label {
@@ -98,7 +101,14 @@
 .data-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: 0.8125rem;
+}
+
+.table-wrap {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .data-table th,
@@ -106,6 +116,17 @@
   text-align: left;
   padding: 12px 10px;
   border-bottom: 1px solid #F1F5F9;
+  vertical-align: middle;
+}
+
+.data-table .actions,
+.data-table .item-actions,
+.item-actions {
+  white-space: normal;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
 }
 
 .data-table th {

@@ -10,7 +10,7 @@
   <!-- 1. TOP HEADER -->
   <header class="top-header">
     <div class="brand-logo-container" (click)="goBack()">
-      <button class="back-arrow-btn" aria-label="Volver">
+      <button class="back-arrow-btn" [attr.aria-label]="'AUTH.BACK' | translate">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
           <line x1="19" y1="12" x2="5" y2="12" />
           <polyline points="12 19 5 12 12 5" />
@@ -26,11 +26,9 @@
     <div class="hero-panel">
       <div class="hero-overlay"></div>
       <div class="hero-content">
-        <h1 class="hero-title">
-          Supera tus<br />límites cada<br />día.
-        </h1>
+        <h1 class="hero-title" [innerHTML]="'AUTH.HERO_TITLE' | translate"></h1>
         <p class="hero-desc">
-          Accede a tu panel de deportista para gestionar tus entrenamientos y eventos.
+          {{ 'AUTH.HERO_DESC' | translate }}
         </p>
       </div>
     </div>
@@ -38,14 +36,14 @@
     <!-- PANEL DERECHO FORMULARIO -->
     <div class="form-panel">
       <div class="auth-header">
-        <h2 class="auth-title">Iniciar Sesión</h2>
+        <h2 class="auth-title">{{ 'AUTH.LOGIN_TITLE' | translate }}</h2>
         <div class="title-line"></div>
       </div>
 
       <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
         <!-- Correo Electrónico -->
         <div class="input-group">
-          <label class="input-label">CORREO ELECTRÓNICO</label>
+          <label class="input-label">{{ 'AUTH.EMAIL' | translate }}</label>
           <div class="input-box" [class.input-box--invalid]="fieldInvalid('email')">
             <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
@@ -59,20 +57,20 @@
             />
           </div>
           <span class="field-error" *ngIf="fieldInvalid('email')">
-            <span *ngIf="loginForm.get('email')?.errors?.['required']">Este campo es obligatorio.</span>
-            <span *ngIf="loginForm.get('email')?.errors?.['email']">Ingresa un correo electrónico válido.</span>
+            <span *ngIf="loginForm.get('email')?.errors?.['required']">{{ 'AUTH.REQUIRED' | translate }}</span>
+            <span *ngIf="loginForm.get('email')?.errors?.['email']">{{ 'AUTH.INVALID_EMAIL' | translate }}</span>
           </span>
         </div>
 
         <!-- Contraseña -->
         <div class="input-group">
           <div class="input-header-row">
-            <label class="input-label">CONTRASEÑA</label>
+            <label class="input-label">{{ 'AUTH.PASSWORD' | translate }}</label>
             <a
               routerLink="/forgot-password"
               [queryParams]="{ email: loginForm.get('email')?.value || null }"
               class="forgot-link"
-            >¿Olvidaste tu contraseña?</a>
+            >{{ 'AUTH.FORGOT' | translate }}</a>
           </div>
           <div class="input-box" [class.input-box--invalid]="fieldInvalid('password')">
             <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -89,7 +87,7 @@
               type="button"
               class="toggle-password"
               (click)="togglePasswordVisibility()"
-              aria-label="Mostrar u ocultar contraseña"
+              [attr.aria-label]="'AUTH.SHOW_PASSWORD' | translate"
             >
               <svg *ngIf="showPassword" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
@@ -102,7 +100,7 @@
             </button>
           </div>
           <span class="field-error" *ngIf="fieldInvalid('password')">
-            <span *ngIf="loginForm.get('password')?.errors?.['required']">Este campo es obligatorio.</span>
+            <span *ngIf="loginForm.get('password')?.errors?.['required']">{{ 'AUTH.REQUIRED' | translate }}</span>
           </span>
         </div>
 
@@ -113,18 +111,18 @@
 
         <!-- Mensaje de éxito -->
         <div class="form-success-banner" *ngIf="loginSuccess">
-          Inicio de sesión exitoso.
+          {{ 'AUTH.SUCCESS' | translate }}
         </div>
 
         <!-- Botón Iniciar Sesión -->
         <button type="submit" class="submit-btn" [disabled]="isSubmitting">
-          <span>{{ isSubmitting ? 'ACCEDIENDO...' : 'ACCEDER' }}</span>
+          <span>{{ (isSubmitting ? 'AUTH.SUBMITTING' : 'AUTH.SUBMIT') | translate }}</span>
         </button>
       </form>
 
       <!-- Social Login -->
       <div class="auth-social">
-        <span class="auth-divider">O INICIA SESIÓN CON</span>
+        <span class="auth-divider">{{ 'AUTH.SOCIAL' | translate }}</span>
         <div class="social-buttons">
           <button type="button" class="social-btn" title="Google">
             <svg width="18" height="18" viewBox="0 0 24 24">
@@ -146,8 +144,8 @@
       <!-- Enlace a Registro -->
       <div class="auth-footer">
         <p>
-          ¿No tienes una cuenta?
-          <a routerLink="/register" class="auth-link">Regístrate aquí</a>
+          {{ 'AUTH.NO_ACCOUNT' | translate }}
+          <a routerLink="/register" class="auth-link">{{ 'AUTH.REGISTER_HERE' | translate }}</a>
         </p>
       </div>
     </div>
@@ -163,11 +161,11 @@
       </svg>
     </div>
 
-    <h2 class="error-title">Credenciales Denegadas</h2>
+    <h2 class="error-title">{{ 'AUTH.DENIED_TITLE' | translate }}</h2>
     <div class="error-title-line"></div>
 
     <p class="error-desc">
-      El correo o la contraseña proporcionados no coinciden con nuestros registros. Revisa tu información.
+      {{ 'AUTH.DENIED_DESC' | translate }}
     </p>
 
     <div class="error-email-box">
@@ -177,28 +175,25 @@
           <polyline points="22,6 12,13 2,6" />
         </svg>
       </span>
-      <span>{{ attemptedEmail }} (intentado)</span>
+      <span>{{ attemptedEmail }} ({{ 'AUTH.ATTEMPTED' | translate }})</span>
     </div>
 
-    <p class="error-recover-label">¿Has olvidado tu contraseña?</p>
+    <p class="error-recover-label">{{ 'AUTH.RECOVER_LABEL' | translate }}</p>
     <a
       routerLink="/forgot-password"
       [queryParams]="{ email: attemptedEmail || null }"
       class="error-recover-link"
-    >Recuperar contraseña</a>
+    >{{ 'AUTH.RECOVER' | translate }}</a>
 
     <div class="error-divider">
-      <span (click)="onNeedHelp()">¿Necesitas ayuda?</span>
+      <span (click)="onNeedHelp()">{{ 'AUTH.HELP' | translate }}</span>
     </div>
 
     <button type="button" class="retry-btn" (click)="retry()">
-      Reintentar
+      {{ 'AUTH.RETRY' | translate }}
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
         <polyline points="9 18 15 12 9 6" />
       </svg>
     </button>
   </div>
-
-  <!-- 3. WIDGET DE ACCESIBILIDAD (compartido) -->
-  <app-accessibility-widget></app-accessibility-widget>
 </div>

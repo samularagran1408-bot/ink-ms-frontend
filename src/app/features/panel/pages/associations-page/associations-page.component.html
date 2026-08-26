@@ -1,7 +1,7 @@
 <app-panel-shell>
-  <h1 class="page-title">Asociaciones</h1>
-  <p class="page-subtitle">Vincula deportes con discapacidades y define adaptaciones.</p>
-  <p *ngIf="loading" class="empty-text">Cargando...</p>
+  <h1 class="page-title">{{ 'ASSOCIATIONS_PAGE.TITLE' | translate }}</h1>
+  <p class="page-subtitle">{{ 'ASSOCIATIONS_PAGE.SUBTITLE' | translate }}</p>
+  <p *ngIf="loading" class="empty-text">{{ 'COMMON.LOADING' | translate }}</p>
   <p *ngIf="successMessage" class="empty-text">{{ successMessage }}</p>
   <p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
 

@@ -1,14 +1,13 @@
 <app-panel-shell>
-  <h1 class="page-title">Atletas inscritos</h1>
-  <p class="page-subtitle">Usuarios inscritos por evento, con filtro por estado de asistencia.</p>
-  <p *ngIf="loading" class="empty-text">Cargando...</p>
+  <h1 class="page-title">{{ 'ATHLETES.TITLE' | translate }}</h1>
+  <p class="page-subtitle">{{ 'ATHLETES.SUBTITLE' | translate }}</p>
+  <p *ngIf="loading" class="empty-text">{{ 'COMMON.LOADING' | translate }}</p>
   <p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
 
   <div class="card" *ngFor="let summary of summaries" style="margin-bottom: 12px;">
     <h3 class="section-title">{{ summary.event.name }}</h3>
     <div class="kpi-sub" style="margin-bottom: 10px;">
-      {{ summary.occupied }}/{{ summary.event.maxCapacity }} inscritos ·
-      Waitlist: {{ summary.waitlist.length }}
+      {{ 'ATHLETES.ENROLLED' | translate:{ occupied: summary.occupied, capacity: summary.event.maxCapacity, waitlist: summary.waitlist.length } }}
     </div>
 
     <div class="filter-chips">
@@ -18,7 +17,7 @@
         [class.filter-chip--active]="summary.filter === 'all'"
         (click)="setFilter(summary, 'all')"
       >
-        Todos ({{ summary.enrolled.length }})
+        {{ 'ATHLETES.ALL' | translate:{ count: summary.enrolled.length } }}
       </button>
       <button
         type="button"
@@ -26,7 +25,7 @@
         [class.filter-chip--active]="summary.filter === 'attended'"
         (click)="setFilter(summary, 'attended')"
       >
-        Asistieron ({{ attendedCount(summary) }})
+        {{ 'ATHLETES.ATTENDED' | translate:{ count: attendedCount(summary) } }}
       </button>
       <button
         type="button"
@@ -34,7 +33,7 @@
         [class.filter-chip--active]="summary.filter === 'absent'"
         (click)="setFilter(summary, 'absent')"
       >
-        Ausentes ({{ absentCount(summary) }})
+        {{ 'ATHLETES.ABSENT' | translate:{ count: absentCount(summary) } }}
       </button>
     </div>
 
@@ -42,40 +41,40 @@
       <table class="data-table">
         <thead>
           <tr>
-            <th>Nombre</th>
-            <th>Email</th>
-            <th>Estado</th>
-            <th>Check-in</th>
+            <th>{{ 'CATALOG.NAME' | translate }}</th>
+            <th>{{ 'CATALOG.EMAIL' | translate }}</th>
+            <th>{{ 'CATALOG.STATUS' | translate }}</th>
+            <th>{{ 'CATALOG.CHECKIN' | translate }}</th>
           </tr>
         </thead>
         <tbody>
           <tr *ngFor="let row of filteredEnrolled(summary)">
-            <td>{{ row.fullName || row.userId || 'Usuario' }}</td>
-            <td>{{ row.email || '—' }}</td>
+            <td>{{ row.fullName || row.userId || ('ROLES.USER_FALLBACK' | translate) }}</td>
+            <td>{{ row.email || ('COMMON.NONE' | translate) }}</td>
             <td>
               <span class="status-pill" [class.status-pill--ok]="row.attended" [class.status-pill--warn]="!row.attended">
-                {{ row.attended ? 'Asistió' : 'Sin check-in' }}
+                {{ (row.attended ? 'CATALOG.ATTENDED' : 'CATALOG.NO_CHECKIN') | translate }}
               </span>
             </td>
-            <td>{{ row.checkInTime || '—' }}</td>
+            <td>{{ row.checkInTime || ('COMMON.NONE' | translate) }}</td>
           </tr>
         </tbody>
       </table>
     </div>
     <ng-template #noEnrolled>
-      <p class="empty-text">No hay inscritos con ese filtro.</p>
+      <p class="empty-text">{{ 'ATHLETES.EMPTY_FILTER' | translate }}</p>
     </ng-template>
 
     <div *ngIf="summary.waitlist.length" style="margin-top: 16px;">
-      <h4 class="section-title">Waitlist</h4>
+      <h4 class="section-title">{{ 'ATHLETES.WAITLIST' | translate }}</h4>
       <div class="list-item" *ngFor="let item of summary.waitlist">
         <div>
             <strong>{{ item.userFullName || item.userEmail || ('User ' + item.userId) }}</strong>
-            <div class="kpi-sub">Posición {{ item.waitlistPosition ?? '—' }} · {{ item.userEmail || item.userId }}</div>
+            <div class="kpi-sub">{{ 'ATHLETES.POSITION' | translate:{ position: (item.waitlistPosition ?? '—') } }} · {{ item.userEmail || item.userId }}</div>
         </div>
       </div>
     </div>
   </div>
 
-  <p *ngIf="!loading && !summaries.length" class="empty-text">No hay eventos para mostrar atletas.</p>
+  <p *ngIf="!loading && !summaries.length" class="empty-text">{{ 'ATHLETES.EMPTY' | translate }}</p>
 </app-panel-shell>

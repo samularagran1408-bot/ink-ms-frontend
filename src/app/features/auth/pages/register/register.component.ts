@@ -5,7 +5,11 @@ import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 
 import { AuthService } from '../../services/auth.service';
-import { disabilityRequiresCompanion, RegisterRequest } from '../../models/register-request';
+import {
+  companionRequirement,
+  hasCompanionData,
+  RegisterRequest
+} from '../../models/register-request';
 import { DisabilityType } from '../../models/disability-type';
 import { AccessibilityService } from '../../../../core/services/accessibility.service';
 import { SessionService } from '../../../../core/services/session.service';
@@ -25,12 +29,15 @@ export class RegisterComponent implements OnDestroy {
   registrationComplete = false;
   registeredEmail = '';
   showCompanionFields = false;
+  companionRequired = false;
 
   readonly disabilityOptions: { value: DisabilityType; label: string }[] = [
     { value: 'visual', label: 'Discapacidad Visual' },
     { value: 'motriz', label: 'Discapacidad Motriz' },
     { value: 'auditiva', label: 'Discapacidad Auditiva' },
     { value: 'intelectual', label: 'Discapacidad Intelectual' },
+    { value: 'cognitiva', label: 'Discapacidad Cognitiva' },
+    { value: 'multiple', label: 'Discapacidad Múltiple' },
     { value: 'otra', label: 'Otra / Ninguna' },
   ];
 
@@ -74,11 +81,13 @@ export class RegisterComponent implements OnDestroy {
   }
 
   private applyCompanionValidators(disabilityType: string): void {
-    this.showCompanionFields = disabilityRequiresCompanion(disabilityType);
+    const requirement = companionRequirement(disabilityType);
+    this.showCompanionFields = requirement !== 'none';
+    this.companionRequired = requirement === 'required';
     const fullName = this.companionGroup.get('fullName')!;
     const phone = this.companionGroup.get('phone')!;
 
-    if (this.showCompanionFields) {
+    if (this.companionRequired) {
       fullName.setValidators([Validators.required, Validators.minLength(3), Validators.maxLength(150)]);
       phone.setValidators([
         Validators.required,
@@ -89,7 +98,9 @@ export class RegisterComponent implements OnDestroy {
     } else {
       fullName.clearValidators();
       phone.clearValidators();
-      this.companionGroup.reset({ fullName: '', phone: '', relationship: '', email: '' });
+      if (!this.showCompanionFields) {
+        this.companionGroup.reset({ fullName: '', phone: '', relationship: '', email: '' });
+      }
     }
 
     fullName.updateValueAndValidity({ emitEvent: false });
@@ -150,7 +161,13 @@ export class RegisterComponent implements OnDestroy {
       acceptTerms: raw.acceptTerms,
     };
 
-    if (disabilityRequiresCompanion(raw.disabilityType)) {
+    if (this.companionRequired || hasCompanionData(raw.companion)) {
+      if (!raw.companion?.fullName?.trim() || !raw.companion?.phone?.trim()) {
+        this.companionGroup.markAllAsTouched();
+        this.errorMessage = 'Si registras un acompañante, indica al menos nombre y teléfono.';
+        this.isSubmitting = false;
+        return;
+      }
       payload.companion = {
         fullName: raw.companion.fullName,
         phone: raw.companion.phone,

@@ -846,6 +846,60 @@ a.register-event-btn:hover {
   min-width: 0;
 }
 
+.progress-fill--compete {
+  background: linear-gradient(90deg, #0D9488, #14B8A6);
+}
+
+.compete-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 12px;
+  background: #FEF2F2;
+  border: 1px solid #FECACA;
+  color: #7F1D1D;
+}
+
+.compete-banner app-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: #A30D11;
+}
+
+.compete-banner-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.compete-banner-copy strong {
+  font-size: 12px;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.compete-banner-copy span {
+  font-size: 13px;
+  color: #334155;
+}
+
+.compete-open-btn {
+  flex-shrink: 0;
+  border: none;
+  background: #A30D11;
+  color: #fff;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  cursor: pointer;
+  text-transform: uppercase;
+}
+
 .progress-metrics {
   display: grid;
   grid-template-columns: 1fr;
@@ -897,5 +951,13 @@ a.register-event-btn:hover {
 
   .welcome-banner {
     flex-direction: column;
+  }
+
+  .compete-banner {
+    flex-wrap: wrap;
+  }
+
+  .compete-open-btn {
+    width: 100%;
   }
 }
