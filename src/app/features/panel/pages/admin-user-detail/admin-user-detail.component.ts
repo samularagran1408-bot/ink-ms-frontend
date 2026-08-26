@@ -354,7 +354,7 @@ export class AdminUserDetailComponent implements OnInit, OnDestroy {
     );
   }
 
-  formatDate(value?: string): string {
+  formatDate(value?: string | null): string {
     if (!value) {
       return '—';
     }
@@ -371,7 +371,7 @@ export class AdminUserDetailComponent implements OnInit, OnDestroy {
     });
   }
 
-  yesNo(value?: boolean): string {
+  yesNo(value?: boolean | null): string {
     if (value === true) {
       return this.translate.instant('ADMIN_USERS.YES');
     }
@@ -543,7 +543,7 @@ export class AdminUserDetailComponent implements OnInit, OnDestroy {
     });
   }
 
-  private normalizeDisability(value?: string): string {
+  private normalizeDisability(value?: string | null): string {
     if (!value) {
       return '';
     }

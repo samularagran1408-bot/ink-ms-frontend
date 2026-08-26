@@ -182,7 +182,7 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
     });
   }
 
-  private normalizeDisability(value?: string): string {
+  private normalizeDisability(value?: string | null): string {
     if (!value) {
       return '';
     }

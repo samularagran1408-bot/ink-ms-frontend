@@ -21,6 +21,11 @@ import { HeroIconName } from '../../icons/heroicons-outline';
 const STORAGE_KEY = 'inklusport.chat.conversacion_id';
 const PUBLIC_PATHS = new Set(['/', '', '/login', '/register', '/guest', '/forgot-password']);
 
+interface ChatHiloGrupo {
+  labelKey: string;
+  hilos: ChatHilo[];
+}
+
 @Component({
   selector: 'app-ai-assistant-widget',
   templateUrl: './ai-assistant-widget.component.html',
@@ -29,6 +34,7 @@ const PUBLIC_PATHS = new Set(['/', '', '/login', '/register', '/guest', '/forgot
 export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
   @ViewChild('timeline') timeline?: ElementRef<HTMLElement>;
   @ViewChild('inputEl') inputEl?: ElementRef<HTMLTextAreaElement>;
+  @ViewChild('historyWrap') historyWrap?: ElementRef<HTMLElement>;
 
   visible = false;
   open = false;
@@ -51,6 +57,7 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
   conversacionId: string | null = null;
   hilos: ChatHilo[] = [];
   historialAbierto = false;
+  busquedaHistorial = '';
   cargandoHilos = false;
   cargandoHilo = false;
   errorHistorial: string | null = null;
@@ -137,8 +144,23 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
 
   @HostListener('document:keydown.escape')
   onEscape(): void {
+    if (this.historialAbierto) {
+      this.cerrarHistorial();
+      return;
+    }
     if (this.open) {
       this.closePanel();
+    }
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    if (!this.historialAbierto) {
+      return;
+    }
+    const wrap = this.historyWrap?.nativeElement;
+    if (wrap && !wrap.contains(event.target as Node)) {
+      this.cerrarHistorial();
     }
   }
 
@@ -151,6 +173,7 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
   }
 
   selectSection(id: AssistantSection): void {
+    this.cerrarHistorial();
     this.section = id;
     if (id === 'estadisticas' && !this.stats && !this.cargandoStats) {
       this.cargarEstadisticas();
@@ -189,6 +212,7 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
   }
 
   nuevaConversacion(): void {
+    this.cerrarHistorial();
     this.conversacionId = null;
     sessionStorage.removeItem(STORAGE_KEY);
     this.mensajes = [];
@@ -206,11 +230,55 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     });
   }
 
-  toggleHistorial(): void {
+  toggleHistorial(event?: Event): void {
+    event?.stopPropagation();
     this.historialAbierto = !this.historialAbierto;
     if (this.historialAbierto) {
+      this.busquedaHistorial = '';
       this.cargarHilos();
     }
+  }
+
+  cerrarHistorial(): void {
+    this.historialAbierto = false;
+    this.busquedaHistorial = '';
+  }
+
+  hilosAgrupados(): ChatHiloGrupo[] {
+    const q = this.busquedaHistorial.trim().toLowerCase();
+    const filtrados = q
+      ? this.hilos.filter((h) => (h.titulo || '').toLowerCase().includes(q))
+      : this.hilos;
+    if (!filtrados.length) {
+      return [];
+    }
+    const inicioHoy = new Date();
+    inicioHoy.setHours(0, 0, 0, 0);
+    const inicioAyer = new Date(inicioHoy);
+    inicioAyer.setDate(inicioAyer.getDate() - 1);
+    const inicioSemana = new Date(inicioHoy);
+    inicioSemana.setDate(inicioSemana.getDate() - 7);
+    const grupos: Record<string, ChatHilo[]> = {
+      'CHAT.TODAY': [],
+      'CHAT.YESTERDAY': [],
+      'CHAT.LAST_7_DAYS': [],
+      'CHAT.OLDER': []
+    };
+    for (const hilo of filtrados) {
+      const fecha = this.fechaDeHilo(hilo);
+      if (!fecha || fecha >= inicioHoy) {
+        grupos['CHAT.TODAY'].push(hilo);
+      } else if (fecha >= inicioAyer) {
+        grupos['CHAT.YESTERDAY'].push(hilo);
+      } else if (fecha >= inicioSemana) {
+        grupos['CHAT.LAST_7_DAYS'].push(hilo);
+      } else {
+        grupos['CHAT.OLDER'].push(hilo);
+      }
+    }
+    return Object.entries(grupos)
+      .filter(([, hilos]) => hilos.length)
+      .map(([labelKey, hilos]) => ({ labelKey, hilos }));
   }
 
   abrirHilo(hilo: ChatHilo): void {
@@ -254,21 +322,13 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     });
   }
 
-  fechaHilo(hilo: ChatHilo): string {
+  private fechaDeHilo(hilo: ChatHilo): Date | null {
     const raw = hilo.ultima_interaccion || hilo.creada_en;
     if (!raw) {
-      return '';
+      return null;
     }
     const fecha = new Date(raw);
-    if (Number.isNaN(fecha.getTime())) {
-      return '';
-    }
-    return fecha.toLocaleString(this.translate.currentLang || 'es', {
-      day: '2-digit',
-      month: 'short',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    return Number.isNaN(fecha.getTime()) ? null : fecha;
   }
 
   tituloHiloActual(): string {
@@ -317,8 +377,47 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
 
   private descargarPdf(card: ChatCard): void {
     const filename = card.cta?.filename || `inklusport-dashboard-${new Date().toISOString().slice(0, 10)}.pdf`;
+    const url = card.cta?.url || '/api/dashboard/export/pdf';
+    const kind = (card.cta?.kind || '').toLowerCase();
+    const esAuditoria =
+      kind === 'auditoria' || url.includes('audit') || url.includes('analysis') || filename.includes('audit');
+    if (esAuditoria) {
+      this.descargarPdfAuditoria(filename, url.includes('analysis') || kind === 'auditoria');
+      return;
+    }
     this.reports.exportDashboardPdf().subscribe({
       next: (blob) => this.reports.downloadBlob(blob, filename),
+      error: () => {
+        this.errorChat = 'No se pudo descargar el PDF.';
+      }
+    });
+  }
+
+  private descargarPdfAuditoria(filename: string, analisis: boolean): void {
+    this.users.getAuditLogs().subscribe({
+      next: (logs) => {
+        const payload = {
+          logs: (logs || []).map((log) => ({
+            id: log.id,
+            adminEmail: log.adminEmail,
+            action: log.action,
+            targetEmail: log.targetEmail,
+            targetUserId: log.targetUserId,
+            details: log.details,
+            ipAddress: log.ipAddress,
+            createdAt: log.createdAt
+          }))
+        };
+        const req$ = analisis
+          ? this.reports.exportAnalysisPdf(payload)
+          : this.reports.exportAuditPdf(payload);
+        req$.subscribe({
+          next: (blob) => this.reports.downloadBlob(blob, filename),
+          error: () => {
+            this.errorChat = 'No se pudo descargar el PDF.';
+          }
+        });
+      },
       error: () => {
         this.errorChat = 'No se pudo descargar el PDF.';
       }
@@ -794,7 +893,7 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
           sugerencias: Array.isArray(m.sugerencias) ? m.sugerencias : [],
           fuente: m.fuente
         }));
-        this.historialAbierto = false;
+        this.cerrarHistorial();
         this.scrollChat();
       },
       error: () => {
@@ -808,6 +907,7 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
   }
 
   private closePanel(): void {
+    this.cerrarHistorial();
     this.closing = true;
     this.closeTimeout = setTimeout(() => {
       this.open = false;

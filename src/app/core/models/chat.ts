@@ -30,6 +30,8 @@ export interface ChatCardCta {
   id?: string;
   url?: string;
   filename?: string;
+  kind?: string;
+  method?: string;
 }
 
 export interface ChatCard {

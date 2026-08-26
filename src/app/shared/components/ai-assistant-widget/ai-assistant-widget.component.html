@@ -45,43 +45,79 @@
 
     <div class="ai-body">
       <!-- Chat / agente -->
-      <section *ngIf="section === 'chat'" class="ai-section">
-        <div class="ai-toolbar">
-          <button type="button" class="ai-link" (click)="toggleHistorial()" [attr.aria-expanded]="historialAbierto">
-            <app-icon name="clock" [size]="14"></app-icon>
-            {{ 'CHAT.HISTORY' | translate }}
-            <span *ngIf="hilos.length">({{ hilos.length }})</span>
-          </button>
-          <button type="button" class="ai-link" (click)="nuevaConversacion()">{{ 'CHAT.NEW' | translate }}</button>
-        </div>
-        <p class="ai-hilo-actual" *ngIf="conversacionId && !historialAbierto">{{ tituloHiloActual() }}</p>
-        <div class="ai-hilos" *ngIf="historialAbierto">
-          <p class="ai-hilos-hint">{{ 'CHAT.HISTORY_HINT' | translate }}</p>
-          <p *ngIf="cargandoHilos">{{ 'COMMON.LOADING' | translate }}</p>
-          <p *ngIf="errorHistorial" class="ai-error">{{ errorHistorial }}</p>
-          <p *ngIf="!cargandoHilos && !hilos.length" class="ai-empty">{{ 'CHAT.HISTORY_EMPTY' | translate }}</p>
-          <div
-            *ngFor="let hilo of hilos"
-            class="ai-hilo"
-            [class.ai-hilo--active]="hilo.conversacion_id === conversacionId"
-          >
-            <button type="button" class="ai-hilo-open" (click)="abrirHilo(hilo)">
-              <strong>{{ hilo.titulo }}</strong>
-              <small>
-                {{ fechaHilo(hilo) }}
-                <ng-container *ngIf="hilo.total_mensajes"> · {{ hilo.total_mensajes }} {{ 'CHAT.MESSAGES' | translate }}</ng-container>
-              </small>
+      <section *ngIf="section === 'chat'" class="ai-section ai-section--chat">
+        <div class="ai-history" #historyWrap>
+          <div class="ai-history-bar">
+            <button
+              type="button"
+              class="ai-history-trigger"
+              (click)="toggleHistorial($event)"
+              [attr.aria-expanded]="historialAbierto"
+              aria-haspopup="listbox"
+            >
+              <app-icon name="clock" [size]="16"></app-icon>
+              <span class="ai-history-title">{{ tituloHiloActual() }}</span>
+              <span class="ai-chevron" [class.ai-chevron--open]="historialAbierto" aria-hidden="true">
+                <app-icon name="chevron-down" [size]="16"></app-icon>
+              </span>
             </button>
             <button
               type="button"
-              class="ai-hilo-del"
-              (click)="borrarHilo($event, hilo)"
-              [attr.aria-label]="'CHAT.DELETE' | translate"
+              class="ai-history-new"
+              (click)="nuevaConversacion()"
+              [attr.aria-label]="'CHAT.NEW' | translate"
             >
-              <app-icon name="trash" [size]="14"></app-icon>
+              <app-icon name="plus" [size]="16"></app-icon>
             </button>
           </div>
+          <div class="ai-history-menu" *ngIf="historialAbierto" role="listbox" [attr.aria-label]="'CHAT.HISTORY' | translate">
+            <label class="ai-history-search">
+              <app-icon name="magnifying-glass" [size]="16"></app-icon>
+              <span class="sr-only">{{ 'CHAT.SEARCH' | translate }}</span>
+              <input
+                type="search"
+                [(ngModel)]="busquedaHistorial"
+                [placeholder]="'CHAT.SEARCH_PH' | translate"
+                autocomplete="off"
+              />
+            </label>
+            <div class="ai-history-scroll">
+              <p *ngIf="cargandoHilos" class="ai-history-status">{{ 'COMMON.LOADING' | translate }}</p>
+              <p *ngIf="errorHistorial" class="ai-error">{{ errorHistorial }}</p>
+              <p *ngIf="!cargandoHilos && !hilos.length" class="ai-history-status">{{ 'CHAT.HISTORY_EMPTY' | translate }}</p>
+              <p *ngIf="!cargandoHilos && hilos.length && !hilosAgrupados().length" class="ai-history-status">
+                {{ 'CHAT.NO_RESULTS' | translate }}
+              </p>
+              <ng-container *ngFor="let grupo of hilosAgrupados()">
+                <p class="ai-history-label">{{ grupo.labelKey | translate }}</p>
+                <div
+                  *ngFor="let hilo of grupo.hilos"
+                  class="ai-hilo"
+                  [class.ai-hilo--active]="hilo.conversacion_id === conversacionId"
+                >
+                  <button type="button" class="ai-hilo-open" (click)="abrirHilo(hilo)">
+                    <strong>{{ hilo.titulo }}</strong>
+                  </button>
+                  <button
+                    type="button"
+                    class="ai-hilo-del"
+                    (click)="borrarHilo($event, hilo)"
+                    [attr.aria-label]="'CHAT.DELETE' | translate"
+                  >
+                    <app-icon name="trash" [size]="14"></app-icon>
+                  </button>
+                </div>
+              </ng-container>
+            </div>
+          </div>
         </div>
+        <button
+          type="button"
+          class="ai-history-scrim"
+          *ngIf="historialAbierto"
+          (click)="cerrarHistorial()"
+          [attr.aria-label]="'COMMON.CLOSE_MENU' | translate"
+        ></button>
         <div #timeline class="ai-timeline" role="log" aria-live="polite">
           <p *ngIf="cargandoHilo" class="ai-empty">{{ 'COMMON.LOADING' | translate }}</p>
           <p *ngIf="!mensajes.length && !cargandoHilo" class="ai-empty">{{ 'CHAT.EMPTY' | translate }}</p>
