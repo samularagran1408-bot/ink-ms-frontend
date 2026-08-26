@@ -133,6 +133,7 @@
             [class.ai-bubble--bot]="msg.remitente === 'asistente'"
           >
             <p>{{ textoBurbuja(msg.texto) }}</p>
+            <app-body-map *ngIf="msg.cuerpo" [mapa]="msg.cuerpo" [compact]="true"></app-body-map>
             <div class="ai-cards" *ngIf="msg.cards?.length">
               <button
                 *ngFor="let card of msg.cards"
@@ -175,6 +176,16 @@
         </div>
         <p *ngIf="errorChat" class="ai-error" role="alert">{{ errorChat }}</p>
         <div class="ai-composer">
+          <label class="ai-limit">
+            Limitación
+            <input
+              type="text"
+              [(ngModel)]="limitacion"
+              [disabled]="enviando || cargandoHilo"
+              placeholder="Ej. dolor en rodilla izquierda"
+              maxlength="240"
+            />
+          </label>
           <textarea
             #inputEl
             rows="2"
@@ -238,6 +249,10 @@
           {{ 'AI_WIDGET.PAIN' | translate }}
         </label>
         <label>
+          Limitación
+          <input type="text" [(ngModel)]="limitacion" placeholder="Ej. dolor de hombro derecho" maxlength="240" />
+        </label>
+        <label>
           {{ 'AI_WIDGET.DAYS_OFF' | translate }}
           <input type="number" min="0" max="30" [(ngModel)]="diasSinDescanso" />
         </label>
@@ -260,6 +275,7 @@
             <li *ngFor="let r of recomendacionesRiesgo()">{{ r }}</li>
           </ul>
           <small>{{ asText(riesgo['disclaimer']) }}</small>
+          <app-body-map *ngIf="cuerpoDeRiesgo() as mapa" [mapa]="mapa" [compact]="true"></app-body-map>
         </article>
       </section>
 

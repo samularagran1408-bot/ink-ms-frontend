@@ -1,0 +1,74 @@
+.body-map {
+  margin: 10px 0 0;
+  padding: 10px;
+  border: 1px solid #fee2e2;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #fff7f7 0%, #ffffff 70%);
+  animation: inkRise 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.body-map svg {
+  display: block;
+  width: 100%;
+  max-height: 320px;
+}
+
+.body-map--compact svg {
+  max-height: 240px;
+}
+
+.body-map-label {
+  fill: #64748b;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: Inter, system-ui, sans-serif;
+  text-anchor: middle;
+}
+
+.zona {
+  fill: #f3d7c6;
+  stroke: #9a5b45;
+  stroke-width: 1.2;
+  transition: fill 0.35s ease, stroke 0.35s ease;
+}
+
+.zona--dolor {
+  fill: #dc2626;
+  stroke: #7f1d1d;
+  animation: painPulse 1.6s ease-in-out infinite;
+}
+
+@keyframes painPulse {
+  0%, 100% { fill: #dc2626; }
+  50% { fill: #ef4444; }
+}
+
+.body-map-limit,
+.body-map-note {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: #475569;
+  line-height: 1.4;
+}
+
+.body-map-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+
+.body-map-tags li {
+  background: #fee2e2;
+  color: #991b1b;
+  border-radius: 999px;
+  padding: 3px 9px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+body.reduced-motion .zona--dolor {
+  animation: none;
+}

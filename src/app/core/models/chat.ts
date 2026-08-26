@@ -1,3 +1,5 @@
+import { BodyMapData } from './body-map';
+
 export type ChatCardTipo =
   | 'evento'
   | 'deporte'
@@ -68,6 +70,7 @@ export interface ChatResponse {
   herramientas_usadas: string[];
   cards: ChatCard[];
   mcp?: ChatMcp | null;
+  cuerpo?: BodyMapData | null;
 }
 
 export interface ChatHilo {
@@ -88,6 +91,7 @@ export interface ChatMensajeGuardado {
   fecha?: string;
   cards?: ChatCard[];
   sugerencias?: string[];
+  cuerpo?: BodyMapData | null;
 }
 
 export interface ChatHiloDetalle extends ChatHilo {
@@ -104,6 +108,7 @@ export interface ChatMensajeUi {
   mcp?: ChatMcp | null;
   herramientas?: string[];
   pasos?: ChatPasoActividad[];
+  cuerpo?: BodyMapData | null;
 }
 
 export interface ChatPasoActividad {

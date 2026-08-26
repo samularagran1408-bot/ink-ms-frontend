@@ -102,14 +102,22 @@
 }
 
 .chat-composer {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto;
   gap: 10px;
-  align-items: flex-end;
+  align-items: end;
   margin-top: 8px;
 }
 
+.chat-composer input {
+  grid-column: 1 / -1;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font: inherit;
+}
+
 .chat-composer textarea {
-  flex: 1;
   border: 1px solid #E2E8F0;
   border-radius: 12px;
   padding: 10px 12px;

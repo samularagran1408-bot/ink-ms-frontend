@@ -598,9 +598,27 @@ export class EventsPageComponent implements OnInit, OnDestroy {
     return this.attendanceCheckInMethod === 'qr';
   }
 
-  /** Inscrito confirmado, aún no asistió y eligió el formulario. */
+  /** Inscrito confirmado, aún no asistió, eligió el formulario y el evento ya empezó. */
   canFillAttendance(event: EventItem): boolean {
-    return this.isRegistered(event.id) && !this.hasAttended(event.id) && !this.attendanceByQr;
+    return this.isRegistered(event.id)
+      && !this.hasAttended(event.id)
+      && !this.attendanceByQr
+      && this.eventHasStarted(event);
+  }
+
+  /** El formulario existe, pero todavía no llega la hora del evento. */
+  canFillAttendanceSoon(event: EventItem | null | undefined): boolean {
+    if (!event) {
+      return false;
+    }
+    return this.isRegistered(event.id)
+      && !this.hasAttended(event.id)
+      && !this.attendanceByQr
+      && !this.eventHasStarted(event);
+  }
+
+  canRecordAttendance(event: EventItem | null | undefined): boolean {
+    return this.eventHasStarted(event);
   }
 
   catalogButtonLabel(event: EventItem): string {
@@ -627,6 +645,10 @@ export class EventsPageComponent implements OnInit, OnDestroy {
   }
 
   openMyAttendance(event: EventItem): void {
+    if (!this.eventHasStarted(event)) {
+      this.errorMessage = `El llenado de asistencia se habilita a partir de ${this.eventStartLabel(event)}.`;
+      return;
+    }
     const registration = this.registrationFor(event.id);
     if (!registration?.qrCode) {
       this.errorMessage = 'No se encontró tu inscripción para este evento.';
@@ -667,7 +689,7 @@ export class EventsPageComponent implements OnInit, OnDestroy {
       return false;
     }
     const start = this.eventStartMs(event);
-    return start != null && this.nowMs >= start;
+    return start == null || this.nowMs >= start;
   }
 
   eventStartLabel(event: EventItem | null | undefined): string {
@@ -685,6 +707,10 @@ export class EventsPageComponent implements OnInit, OnDestroy {
   }
 
   openCheckIn(event: EventItem): void {
+    if (!this.eventHasStarted(event)) {
+      this.errorMessage = `El check-in se habilita a partir de ${this.eventStartLabel(event)}.`;
+      return;
+    }
     this.checkInEvent = event;
     this.checkInOpen = true;
     this.manualQrCode = '';
@@ -847,6 +873,10 @@ export class EventsPageComponent implements OnInit, OnDestroy {
     if (row.attended || this.attendanceBusyId) {
       return;
     }
+    if (!this.canRecordAttendance(this.enrolledEvent)) {
+      this.enrolledError = `El registro de asistencia se habilita a partir de ${this.eventStartLabel(this.enrolledEvent)}.`;
+      return;
+    }
     void this.confirmMarkManual(row);
   }
 
@@ -883,6 +913,10 @@ export class EventsPageComponent implements OnInit, OnDestroy {
       .filter((row) => !row.attended && this.enrolledSelected.has(row.registrationId))
       .map((row) => row.registrationId);
     if (!ids.length || this.bulkAttendanceLoading) {
+      return;
+    }
+    if (!this.canRecordAttendance(this.enrolledEvent)) {
+      this.enrolledError = `El registro de asistencia se habilita a partir de ${this.eventStartLabel(this.enrolledEvent)}.`;
       return;
     }
     void this.confirmMarkSelected(ids);

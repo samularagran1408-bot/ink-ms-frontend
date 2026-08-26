@@ -12,6 +12,7 @@ import { PlaceLocationPickerComponent } from './components/place-location-picker
 import { EventLocationMapComponent } from './components/event-location-map/event-location-map.component';
 import { ConfirmDialogComponent } from './components/confirm-dialog/confirm-dialog.component';
 import { AiAssistantWidgetComponent } from './components/ai-assistant-widget/ai-assistant-widget.component';
+import { BodyMapComponent } from './components/body-map/body-map.component';
 import { DisabilityLabelPipe, RolesLabelPipe } from './pipes/catalog-label.pipe';
 
 @NgModule({
@@ -24,6 +25,7 @@ import { DisabilityLabelPipe, RolesLabelPipe } from './pipes/catalog-label.pipe'
     EventLocationMapComponent,
     ConfirmDialogComponent,
     AiAssistantWidgetComponent,
+    BodyMapComponent,
     DisabilityLabelPipe,
     RolesLabelPipe
   ],
@@ -42,6 +44,7 @@ import { DisabilityLabelPipe, RolesLabelPipe } from './pipes/catalog-label.pipe'
     EventLocationMapComponent,
     ConfirmDialogComponent,
     AiAssistantWidgetComponent,
+    BodyMapComponent,
     TranslateModule,
     DisabilityLabelPipe,
     RolesLabelPipe

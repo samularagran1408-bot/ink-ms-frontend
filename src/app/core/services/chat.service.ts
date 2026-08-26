@@ -15,10 +15,14 @@ export class ChatService {
     private session: SessionService
   ) {}
 
-  enviar(mensaje: string, conversacionId?: string | null): Observable<ChatResponse> {
-    const body: { mensaje: string; conversacion_id?: string } = { mensaje };
+  enviar(mensaje: string, conversacionId?: string | null, limitacion?: string | null): Observable<ChatResponse> {
+    const body: { mensaje: string; conversacion_id?: string; limitacion?: string } = { mensaje };
     if (conversacionId) {
       body.conversacion_id = conversacionId;
+    }
+    const lim = (limitacion || '').trim();
+    if (lim) {
+      body.limitacion = lim;
     }
     return this.http.post<ChatResponse>(`${this.base}/`, body);
   }
@@ -26,11 +30,12 @@ export class ChatService {
   enviarConProgreso(
     mensaje: string,
     conversacionId: string | null | undefined,
-    onEvento: (evento: ChatStreamEvent) => void
+    onEvento: (evento: ChatStreamEvent) => void,
+    limitacion?: string | null
   ): Observable<ChatResponse> {
     return new Observable<ChatResponse>((subscriber) => {
       const controller = new AbortController();
-      this.leerStream(mensaje, conversacionId, onEvento, controller.signal)
+      this.leerStream(mensaje, conversacionId, onEvento, controller.signal, limitacion)
         .then((res) => {
           subscriber.next(res);
           subscriber.complete();
@@ -46,7 +51,7 @@ export class ChatService {
             subscriber.error(err);
             return;
           }
-          this.enviar(mensaje, conversacionId).subscribe({
+          this.enviar(mensaje, conversacionId, limitacion).subscribe({
             next: (res) => subscriber.next(res),
             error: (fallbackErr) => subscriber.error(fallbackErr),
             complete: () => subscriber.complete()
@@ -84,12 +89,17 @@ export class ChatService {
     mensaje: string,
     conversacionId: string | null | undefined,
     onEvento: (evento: ChatStreamEvent) => void,
-    signal: AbortSignal
+    signal: AbortSignal,
+    limitacion?: string | null
   ): Promise<ChatResponse> {
     const token = this.session.getToken();
-    const body: { mensaje: string; conversacion_id?: string } = { mensaje };
+    const body: { mensaje: string; conversacion_id?: string; limitacion?: string } = { mensaje };
     if (conversacionId) {
       body.conversacion_id = conversacionId;
+    }
+    const lim = (limitacion || '').trim();
+    if (lim) {
+      body.limitacion = lim;
     }
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',

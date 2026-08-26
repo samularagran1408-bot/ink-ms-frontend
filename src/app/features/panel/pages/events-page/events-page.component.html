@@ -165,11 +165,22 @@
         <p *ngIf="!pass.loadingQr && !pass.qrDataUrl" class="error-text">
           No hay QR disponible para esta inscripción.
         </p>
+        <p *ngIf="pass.event && canFillAttendanceSoon(pass.event)" class="kpi-sub">
+          El llenado de asistencia se habilita a partir de {{ eventStartLabel(pass.event) }}.
+        </p>
         <button
           class="btn-primary"
           type="button"
-          *ngIf="pass.event && !attendanceByQr"
+          *ngIf="pass.event && !attendanceByQr && eventHasStarted(pass.event)"
           (click)="openMyAttendance(pass.event)"
+        >
+          Llenar asistencia
+        </button>
+        <button
+          class="btn-primary"
+          type="button"
+          *ngIf="pass.event && canFillAttendanceSoon(pass.event)"
+          disabled
         >
           Llenar asistencia
         </button>
@@ -221,13 +232,24 @@
           Lista de espera · pos. {{ waitlistPositionFor(event.id) }}
         </button>
         <button
-          *ngIf="isRegistered(event.id) && !canFillAttendance(event) && !hasAttended(event.id)"
+          *ngIf="isRegistered(event.id) && !canFillAttendance(event) && !canFillAttendanceSoon(event) && !hasAttended(event.id)"
           class="btn-primary"
           type="button"
           disabled
         >
           Inscrito
         </button>
+        <button
+          *ngIf="canFillAttendanceSoon(event)"
+          class="btn-primary"
+          type="button"
+          disabled
+        >
+          Llenar asistencia
+        </button>
+        <p *ngIf="canFillAttendanceSoon(event)" class="kpi-sub" style="flex-basis: 100%;">
+          Disponible a partir de {{ eventStartLabel(event) }}
+        </p>
         <button
           *ngIf="canFillAttendance(event)"
           class="btn-primary"
@@ -286,7 +308,13 @@
             [class.status-pill--bad]="row.event.status === 'cancelled'"
             [class.status-pill--warn]="row.event.status === 'finished'"
           >{{ row.event.status || 'active' }}</span>
-          <button class="btn-primary" type="button" (click)="openCheckIn(row.event)">
+          <button
+            class="btn-primary"
+            type="button"
+            (click)="openCheckIn(row.event)"
+            [disabled]="!canRecordAttendance(row.event)"
+            [title]="canRecordAttendance(row.event) ? '' : ('Se habilita a partir de ' + eventStartLabel(row.event))"
+          >
             Check-in QR
           </button>
           <button class="btn-secondary" type="button" (click)="openEnrolledList(row.event)">
@@ -459,6 +487,9 @@
       </div>
 
       <p class="kpi-sub">Lista de inscritos. Marca asistencia individual o masiva.</p>
+      <p *ngIf="enrolledEvent && !canRecordAttendance(enrolledEvent)" class="kpi-sub">
+        El registro de asistencia se habilita a partir de {{ eventStartLabel(enrolledEvent) }}.
+      </p>
       <p *ngIf="enrolledLoading" class="empty-text">Cargando inscritos...</p>
       <p *ngIf="enrolledError" class="error-text">{{ enrolledError }}</p>
 
@@ -494,7 +525,7 @@
           <button
             class="btn-primary"
             type="button"
-            [disabled]="!selectedAbsenteeCount || bulkAttendanceLoading"
+            [disabled]="!selectedAbsenteeCount || bulkAttendanceLoading || !canRecordAttendance(enrolledEvent)"
             (click)="markSelectedAttendance()"
           >
             {{ bulkAttendanceLoading ? 'Registrando...' : ('Marcar asistencia (' + selectedAbsenteeCount + ')') }}
@@ -544,7 +575,7 @@
                     *ngIf="!row.attended"
                     class="btn-primary"
                     type="button"
-                    [disabled]="attendanceBusyId === row.registrationId || bulkAttendanceLoading"
+                    [disabled]="attendanceBusyId === row.registrationId || bulkAttendanceLoading || !canRecordAttendance(enrolledEvent)"
                     (click)="markManualAttendance(row)"
                   >
                     {{ attendanceBusyId === row.registrationId ? '...' : 'Marcar asistencia' }}

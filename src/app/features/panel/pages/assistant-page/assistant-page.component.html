@@ -26,6 +26,7 @@
       [class.chat-bubble--bot]="msg.remitente === 'asistente'"
     >
       <p class="chat-text">{{ msg.texto }}</p>
+      <app-body-map *ngIf="msg.cuerpo" [mapa]="msg.cuerpo"></app-body-map>
 
       <p class="chat-meta" *ngIf="msg.remitente === 'asistente'">
         <span>{{ etiquetaFuente(msg.fuente) }}</span>
@@ -68,6 +69,15 @@
   <p *ngIf="enviando" class="empty-text">{{ 'CHAT.SENDING' | translate }}</p>
 
   <div class="chat-composer">
+    <label class="sr-only" for="chat-limitacion">Limitación</label>
+    <input
+      id="chat-limitacion"
+      type="text"
+      [(ngModel)]="limitacion"
+      [disabled]="enviando"
+      placeholder="Limitación (ej. dolor en rodilla izquierda)"
+      maxlength="240"
+    />
     <label class="sr-only" for="chat-input">{{ 'CHAT.INPUT' | translate }}</label>
     <textarea
       #inputEl

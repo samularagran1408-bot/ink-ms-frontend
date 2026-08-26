@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { catchError, switchMap } from 'rxjs/operators';
@@ -8,18 +8,20 @@ import { EventItem, QrAttendanceInfo, Registration } from '../../../../core/mode
 import { PreferencesApiService } from '../../../../core/services/preferences-api.service';
 import { SessionService } from '../../../../core/services/session.service';
 import { SportsService } from '../../../../core/services/sports.service';
-import { extractQrCode } from '../../../../core/utils/qr-attendance.util';
+import { extractQrCode, eventDateTimeMs } from '../../../../core/utils/qr-attendance.util';
 
 @Component({
   selector: 'app-attendance-checkin-page',
   templateUrl: './attendance-checkin-page.component.html',
   styleUrl: './attendance-checkin-page.component.scss'
 })
-export class AttendanceCheckinPageComponent implements OnInit {
+export class AttendanceCheckinPageComponent implements OnInit, OnDestroy {
   loading = true;
   submitting = false;
   errorMessage: string | null = null;
   successMessage: string | null = null;
+  nowMs = Date.now();
+  private clockTimer: ReturnType<typeof setInterval> | null = null;
 
   qrCode = '';
   info: QrAttendanceInfo | null = null;
@@ -42,6 +44,12 @@ export class AttendanceCheckinPageComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.clockTimer = setInterval(() => {
+      this.nowMs = Date.now();
+      if (!this.loading && !this.alreadyAttended && this.attendanceByQr && this.eventHasStarted && !this.submitting && !this.successMessage) {
+        this.submitAttendance();
+      }
+    }, 15_000);
     this.qrCode = extractQrCode(this.route.snapshot.queryParamMap.get('code') || '');
     if (!this.qrCode) {
       this.loading = false;
@@ -49,6 +57,12 @@ export class AttendanceCheckinPageComponent implements OnInit {
       return;
     }
     this.reload();
+  }
+
+  ngOnDestroy(): void {
+    if (this.clockTimer) {
+      clearInterval(this.clockTimer);
+    }
   }
 
   get surveyReady(): boolean {
@@ -72,6 +86,14 @@ export class AttendanceCheckinPageComponent implements OnInit {
     const date = this.info?.eventDate || this.event?.eventDate || '';
     const time = (this.info?.eventTime || this.event?.eventTime || '').toString().substring(0, 5);
     return `${date} ${time}`.trim();
+  }
+
+  get eventHasStarted(): boolean {
+    const start = eventDateTimeMs(
+      this.info?.eventDate || this.event?.eventDate,
+      this.info?.eventTime || this.event?.eventTime
+    );
+    return start == null || this.nowMs >= start;
   }
 
   reload(): void {
@@ -109,7 +131,7 @@ export class AttendanceCheckinPageComponent implements OnInit {
           this.errorMessage = 'No encontramos una inscripción válida para este código QR.';
           return;
         }
-        if (!this.alreadyAttended && this.attendanceByQr) {
+        if (!this.alreadyAttended && this.attendanceByQr && this.eventHasStarted) {
           this.submitAttendance();
         }
       },
@@ -121,7 +143,7 @@ export class AttendanceCheckinPageComponent implements OnInit {
   }
 
   submit(): void {
-    if (!this.surveyReady) {
+    if (!this.surveyReady || !this.eventHasStarted) {
       return;
     }
     this.submitAttendance();
@@ -134,6 +156,10 @@ export class AttendanceCheckinPageComponent implements OnInit {
 
   private submitAttendance(): void {
     if (this.submitting || this.alreadyAttended) {
+      return;
+    }
+    if (!this.eventHasStarted) {
+      this.errorMessage = `El registro de asistencia se habilita a partir de ${this.eventWhen || 'la hora del evento'}.`;
       return;
     }
 

@@ -7,6 +7,7 @@ import { TranslateService } from '@ngx-translate/core';
 
 import { AppRole } from '../../../core/models/app-role';
 import { ChatCard, ChatCtaAccion, ChatHilo, ChatMensajeUi, ChatPasoActividad, ChatResponse, ChatStreamEvent } from '../../../core/models/chat';
+import { BodyMapData } from '../../../core/models/body-map';
 import { UserProfile } from '../../../core/models/user-profile';
 import { AiAssistantService } from '../../../core/services/ai-assistant.service';
 import { AssistantSection, AssistantUiService } from '../../../core/services/assistant-ui.service';
@@ -51,6 +52,7 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
 
   mensajes: ChatMensajeUi[] = [];
   borrador = '';
+  limitacion = '';
   enviando = false;
   pasosAgente: ChatPasoActividad[] = [];
   errorChat: string | null = null;
@@ -195,7 +197,7 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     this.iniciarAnimacionEspera();
     this.scrollChat();
     this.chatSub?.unsubscribe();
-    this.chatSub = this.chat.enviarConProgreso(texto, this.conversacionId, (ev) => this.onChatEvento(ev)).subscribe({
+    this.chatSub = this.chat.enviarConProgreso(texto, this.conversacionId, (ev) => this.onChatEvento(ev), this.limitacion).subscribe({
       next: (res) => this.aplicarChat(res),
       error: (err) => {
         this.enviando = false;
@@ -449,7 +451,8 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     this.ai.evaluarRiesgo({
       rpe_reciente: this.rpe,
       dolor_reportado: this.dolor,
-      dias_sin_descanso: this.diasSinDescanso
+      dias_sin_descanso: this.diasSinDescanso,
+      limitacion: this.limitacion
     }).subscribe({
       next: (res) => {
         this.cargandoRiesgo = false;
@@ -891,7 +894,8 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
           texto: m.mensaje || '',
           cards: Array.isArray(m.cards) ? m.cards : [],
           sugerencias: Array.isArray(m.sugerencias) ? m.sugerencias : [],
-          fuente: m.fuente
+          fuente: m.fuente,
+          cuerpo: m.cuerpo || null
         }));
         this.cerrarHistorial();
         this.scrollChat();
@@ -1004,7 +1008,8 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
       sugerencias: res.sugerencias || [],
       fuente: res.fuente,
       mcp: res.mcp,
-      herramientas: res.mcp?.tools_usadas?.length ? res.mcp.tools_usadas : res.herramientas_usadas
+      herramientas: res.mcp?.tools_usadas?.length ? res.mcp.tools_usadas : res.herramientas_usadas,
+      cuerpo: this.cuerpoDe(res)
     });
     this.cargarHilos();
     this.scrollChat();
@@ -1017,6 +1022,25 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
         el.scrollTop = el.scrollHeight;
       }
     }, 0);
+  }
+
+  cuerpoDeRiesgo(): BodyMapData | null {
+    const raw = this.riesgo?.['cuerpo'];
+    if (!raw || typeof raw !== 'object') {
+      return null;
+    }
+    return raw as BodyMapData;
+  }
+
+  private cuerpoDe(res: ChatResponse): BodyMapData | null {
+    if (res.cuerpo && typeof res.cuerpo === 'object') {
+      return res.cuerpo;
+    }
+    const raw = res.datos?.['cuerpo'];
+    if (!raw || typeof raw !== 'object') {
+      return null;
+    }
+    return raw as BodyMapData;
   }
 
   private rutaPara(

@@ -37,6 +37,32 @@ body.reader-mode {
   line-height: 1.7;
 }
 
+@keyframes inkFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes inkRise {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes inkSoftGlow {
+  0%, 100% { box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02); }
+  50% { box-shadow: 0 8px 22px rgba(163, 13, 17, 0.08); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 body.reduced-motion *,
 body.reduced-motion *::before,
 body.reduced-motion *::after {

@@ -14,11 +14,14 @@
   <div class="card" *ngIf="!loading && (info || registration)">
     <h3 class="section-title">{{ eventTitle }}</h3>
     <p class="kpi-sub" *ngIf="eventWhen">{{ eventWhen }}</p>
+    <p class="kpi-sub" *ngIf="!eventHasStarted && !alreadyAttended && !successMessage">
+      El llenado de asistencia se habilita cuando llegue la fecha y hora del evento.
+    </p>
     <p class="kpi-sub" *ngIf="info?.location || event?.location">
       {{ info?.location || event?.location }}
     </p>
 
-    <div class="attendance-survey" *ngIf="!attendanceByQr && !alreadyAttended && !successMessage">
+    <div class="attendance-survey" *ngIf="!attendanceByQr && !alreadyAttended && !successMessage && eventHasStarted">
       <label class="survey-check">
         <input type="checkbox" [(ngModel)]="survey.present" name="surveyPresent" />
         Confirmo que estoy en el lugar del evento

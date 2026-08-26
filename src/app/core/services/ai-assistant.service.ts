@@ -26,11 +26,13 @@ export class AiAssistantService {
     rpe_reciente?: number | null;
     dolor_reportado?: boolean;
     dias_sin_descanso?: number;
+    limitacion?: string;
   }): Observable<Record<string, unknown>> {
     return this.http.post<Record<string, unknown>>(`${this.base}/riesgo/evaluar`, {
       rpe_reciente: body.rpe_reciente ?? null,
       dolor_reportado: !!body.dolor_reportado,
-      dias_sin_descanso: body.dias_sin_descanso || 0
+      dias_sin_descanso: body.dias_sin_descanso || 0,
+      limitacion: body.limitacion || undefined
     });
   }
 

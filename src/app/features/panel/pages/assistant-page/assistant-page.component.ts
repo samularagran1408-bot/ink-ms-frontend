@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 
 import { AppRole } from '../../../../core/models/app-role';
 import { ChatCard, ChatCtaAccion, ChatMensajeUi, ChatResponse } from '../../../../core/models/chat';
+import { BodyMapData } from '../../../../core/models/body-map';
 import { ChatService } from '../../../../core/services/chat.service';
 import { ReportsService } from '../../../../core/services/reports.service';
 import { SessionService } from '../../../../core/services/session.service';
@@ -20,6 +21,7 @@ export class AssistantPageComponent implements OnInit {
 
   mensajes: ChatMensajeUi[] = [];
   borrador = '';
+  limitacion = '';
   enviando = false;
   error: string | null = null;
   estadoA11y = '';
@@ -59,7 +61,7 @@ export class AssistantPageComponent implements OnInit {
     this.borrador = '';
     this.scrollAlFinal();
 
-    this.chat.enviar(texto, this.conversacionId).subscribe({
+    this.chat.enviar(texto, this.conversacionId, this.limitacion).subscribe({
       next: (res) => this.aplicarRespuesta(res),
       error: (err) => {
         this.enviando = false;
@@ -137,7 +139,8 @@ export class AssistantPageComponent implements OnInit {
       mcp: res.mcp,
       herramientas: res.mcp?.tools_usadas?.length
         ? res.mcp.tools_usadas
-        : res.herramientas_usadas
+        : res.herramientas_usadas,
+      cuerpo: this.cuerpoDe(res)
     });
     const tools = res.mcp?.llm_eligio_tools
       ? `Tools MCP: ${(res.mcp.tools_usadas || []).join(', ') || 'ninguna'}`
@@ -146,6 +149,17 @@ export class AssistantPageComponent implements OnInit {
         : 'Respuesta del agente';
     this.estadoA11y = `${tools}. ${res.respuesta}`;
     this.scrollAlFinal();
+  }
+
+  private cuerpoDe(res: ChatResponse): BodyMapData | null {
+    if (res.cuerpo && typeof res.cuerpo === 'object') {
+      return res.cuerpo;
+    }
+    const raw = res.datos?.['cuerpo'];
+    if (!raw || typeof raw !== 'object') {
+      return null;
+    }
+    return raw as BodyMapData;
   }
 
   private rutaPara(
