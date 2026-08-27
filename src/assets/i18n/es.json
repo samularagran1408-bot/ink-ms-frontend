@@ -110,7 +110,7 @@
     "CHAT_HINT": "Pregunta por tu perfil, eventos o estadísticas. No hace falta que pases correo ni ID. Las altas piden Confirmo.",
     "ROUTINES_HINT": "Genera una sesión adaptada a tu perfil (motor de rutinas del asistente).",
     "RISK_HINT": "Estimación orientativa de riesgo de lesión. No es un diagnóstico médico.",
-    "COMPETE_HINT": "Analiza tu panorama competitivo o activa un plan de preparación.",
+    "COMPETE_HINT": "Analiza tu panorama, marca la lista del plan y registra sesiones de tus rutinas.",
     "STATS_HINT": "Resumen visual de inscripciones, comparativa y alertas. El admin puede buscar por nombre.",
     "OBJECTIVE": "Objetivo",
     "TYPE": "Tipo / contexto",
@@ -140,6 +140,9 @@
     "WEEK": "Semana",
     "SESSIONS": "sesiones",
     "CHECKLIST": "Lista de preparación",
+    "CHECKLIST_HINT": "Marca cada punto al completarlo. Cuenta la mitad del progreso del plan.",
+    "LOG_SESSION": "Registrar sesión de rutina",
+    "JOIN_ROUTINE_HINT": "Únete a una rutina en el panel para registrar sesiones y subir el plan.",
     "RISKS": "Riesgos a vigilar"
   },
   "ACCESSIBILITY": {
@@ -205,6 +208,13 @@
     "LOAD_ERROR": "No se pudo cargar el panel.",
     "NO_PROFILE": "No se encontró el perfil del usuario.",
     "REGISTER_ERROR": "No se pudo completar la inscripción.",
+    "CANCEL_REGISTRATION": "CANCELAR INSCRIPCIÓN",
+    "LEAVE_WAITLIST": "SALIR DE ESPERA",
+    "CONFIRM_CANCEL_REGISTRATION": "¿Confirmas cancelar tu inscripción a \"{{name}}\"? Si hay lista de espera, la persona en la posición 1 quedará inscrita automáticamente.",
+    "CONFIRM_LEAVE_WAITLIST": "¿Confirmas salir de la lista de espera de \"{{name}}\"?",
+    "CANCEL_REGISTRATION_OK": "Inscripción a \"{{name}}\" cancelada. Si había lista de espera, el primero fue inscrito automáticamente.",
+    "LEAVE_WAITLIST_OK": "Saliste de la lista de espera de \"{{name}}\".",
+    "CANCEL_REGISTRATION_ERROR": "No se pudo cancelar la inscripción.",
     "NO_DATE": "Sin fecha",
     "NEXT_EVENT": "SIGUIENTE EVENTO",
     "NO_UPCOMING": "Sin eventos próximos",
@@ -218,7 +228,7 @@
     "SEE_ALL": "VER TODO",
     "NO_EVENTS": "No hay eventos disponibles por ahora.",
     "LOCATION_TBD": "Ubicación por confirmar",
-    "SPOTS": "{{count}} cupos disponibles",
+    "SPOTS": "{{occupied}}/{{total}} cupos",
     "REGISTERED": "INSCRITO",
     "REGISTER": "INSCRIBIRSE",
     "MY_CALENDAR": "Mi calendario",
@@ -257,7 +267,12 @@
     "COMPETE_ON": "Modo competencia activo",
     "COMPETE_PLAN": "Plan de competencia",
     "COMPETE_WEEK": "Semana {{current}} de {{total}}",
+    "COMPETE_MIX": "{{list}} lista · {{sessions}} sesiones",
     "COMPETE_OPEN": "Ver plan",
+    "LOG_SESSION": "Registrar sesión",
+    "CONFIRM_LOG_SESSION": "¿Registras una sesión de \"{{name}}\" en tu plan de competencia?",
+    "SESSION_LOGGED": "Sesión registrada. El plan de competencia se actualizó.",
+    "SESSION_LOG_ERROR": "No se pudo registrar la sesión.",
     "NO_AVAILABLE_ROUTINES": "No hay rutinas publicadas por ahora.",
     "ROUTINE_FALLBACK": "Rutina",
     "CATALOG_TITLE": "Explorar catálogo",
@@ -654,9 +669,9 @@
     "SUBTITLE_MANAGE": "Crear, editar, cancelar eventos, calendario, check-in por QR y reportes de asistencia.",
     "LOADING": "Cargando eventos...",
     "SEARCH": "Buscar evento",
-    "ID_OR_NAME": "ID o nombre del evento",
-    "ID_PH": "UUID o nombre del evento",
-    "SEARCH_BY_ID": "Buscar por ID",
+    "ID_OR_NAME": "Nombre del evento",
+    "ID_PH": "Nombre del evento",
+    "SEARCH_BY_ID": "Buscar",
     "FILTER_PH": "Filtrar catálogo por nombre, deporte o ubicación"
   },
   "CHAT": {
@@ -685,5 +700,11 @@
     "DELETE_CONFIRM": "Se eliminará este hilo de tu historial. No se puede deshacer.",
     "LOAD_ERROR": "No se pudo cargar el historial.",
     "MESSAGES": "mensajes"
+  },
+  "BODY_MAP": {
+    "FRONT": "Frente",
+    "BACK": "Espalda",
+    "LIMITATION": "Limitación",
+    "NOTE": "Las zonas en rojo marcan el dolor o la limitación reportada."
   }
 }

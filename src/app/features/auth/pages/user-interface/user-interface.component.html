@@ -14,6 +14,7 @@
       </div>
     </div>
 
+    <p *ngIf="successMessage" class="panel-success">{{ successMessage }}</p>
     <p *ngIf="errorMessage" class="panel-error">{{ errorMessage }}</p>
 
     <div class="stats-grid">
@@ -171,17 +172,28 @@
           <div class="activity-list" *ngIf="registrations.length">
             <div class="activity-row" *ngFor="let reg of registrations.slice(0, 6)">
               <div>
-                <strong>{{ reg.eventName || (('HOME.EVENT_FALLBACK' | translate) + ' ' + reg.eventId) }}</strong>
+                <strong>{{ reg.eventName || ('HOME.EVENT_FALLBACK' | translate) }}</strong>
                 <div class="kpi-sub">{{ historyDate(reg) }}</div>
               </div>
-              <span
-                class="status-pill"
-                [class.status-pill--ok]="reg.attended"
-                [class.status-pill--warn]="!reg.attended && reg.waitlistPosition == null"
-                [class.status-pill--bad]="reg.waitlistPosition != null"
-              >
-                {{ eventStatusLabel(reg) }}
-              </span>
+              <div class="event-card-actions">
+                <span
+                  class="status-pill"
+                  [class.status-pill--ok]="reg.attended"
+                  [class.status-pill--warn]="!reg.attended && reg.waitlistPosition == null"
+                  [class.status-pill--bad]="reg.waitlistPosition != null"
+                >
+                  {{ eventStatusLabel(reg) }}
+                </span>
+                <button
+                  *ngIf="canCancelRegistration(reg)"
+                  class="register-event-btn register-event-btn--cancel"
+                  type="button"
+                  [disabled]="cancellingRegistrationId === reg.id"
+                  (click)="onCancelRegistrationRecord(reg)"
+                >
+                  {{ cancellingRegistrationId === reg.id ? '...' : (reg.waitlistPosition != null ? ('HOME.LEAVE_WAITLIST' | translate) : ('HOME.CANCEL_REGISTRATION' | translate)) }}
+                </button>
+              </div>
             </div>
           </div>
           <button class="talk-ai-btn" type="button" (click)="onSeeAllEvents()">
@@ -201,7 +213,18 @@
                   <span *ngIf="item.routine?.durationMinutes"> · {{ item.routine?.durationMinutes }} min</span>
                 </div>
               </div>
-              <span class="status-pill status-pill--ok">{{ 'HOME.JOINED' | translate }}</span>
+              <div class="activity-row-actions">
+                <span class="status-pill status-pill--ok">{{ 'HOME.JOINED' | translate }}</span>
+                <button
+                  *ngIf="competitionActive"
+                  class="register-event-btn"
+                  type="button"
+                  [disabled]="loggingSessionRoutineId === item.registration.routineId"
+                  (click)="onLogRoutineSession(item)"
+                >
+                  {{ loggingSessionRoutineId === item.registration.routineId ? '...' : ('HOME.LOG_SESSION' | translate) }}
+                </button>
+              </div>
             </div>
           </div>
 
@@ -258,6 +281,7 @@
               <div class="progress-fill progress-fill--compete" [style.width.%]="competitionPlanPct"></div>
             </div>
             <p class="kpi-sub" *ngIf="competitionWeekLabel">{{ competitionWeekLabel }}</p>
+            <p class="kpi-sub" *ngIf="competitionMixLabel">{{ competitionMixLabel }}</p>
           </div>
           <div class="progress-metrics">
             <div class="progress-metric">
@@ -315,47 +339,58 @@
               </div>
             </div>
             <div class="event-card-footer">
-              <span class="spots-available">{{ 'HOME.SPOTS' | translate:{ count: event.availableCapacity ?? 0 } }}</span>
-              <button
-                *ngIf="canJoinEvent(event.id)"
-                class="register-event-btn"
-                type="button"
-                [disabled]="registeringId === event.id"
-                (click)="onRegisterEvent(event)"
-              >
-                {{ joinLabel(event) }}
-              </button>
-              <button
-                *ngIf="isOnWaitlist(event.id)"
-                class="register-event-btn"
-                type="button"
-                disabled
-              >
-                {{ 'HOME.WAITLIST' | translate }} · {{ waitlistPositionFor(event.id) }}
-              </button>
-              <button
-                *ngIf="isRegistered(event.id) && !canFillAttendance(event) && !hasAttended(event.id)"
-                class="register-event-btn"
-                type="button"
-                disabled
-              >
-                {{ 'HOME.REGISTERED' | translate }}
-              </button>
-              <a
-                *ngIf="canFillAttendance(event)"
-                class="register-event-btn"
-                routerLink="/home/events"
-              >
-                Llenar asistencia
-              </a>
-              <button
-                *ngIf="hasAttended(event.id)"
-                class="register-event-btn"
-                type="button"
-                disabled
-              >
-                Asistió
-              </button>
+              <span class="spots-available">{{ 'HOME.SPOTS' | translate:{ occupied: occupied(event), total: event.maxCapacity || 0 } }}</span>
+              <div class="event-card-actions">
+                <button
+                  *ngIf="canJoinEvent(event.id)"
+                  class="register-event-btn"
+                  type="button"
+                  [disabled]="registeringId === event.id"
+                  (click)="onRegisterEvent(event)"
+                >
+                  {{ joinLabel(event) }}
+                </button>
+                <button
+                  *ngIf="isOnWaitlist(event.id)"
+                  class="register-event-btn"
+                  type="button"
+                  disabled
+                >
+                  {{ 'HOME.WAITLIST' | translate }} · {{ waitlistPositionFor(event.id) }}
+                </button>
+                <button
+                  *ngIf="isRegistered(event.id) && !canFillAttendance(event) && !hasAttended(event.id)"
+                  class="register-event-btn"
+                  type="button"
+                  disabled
+                >
+                  {{ 'HOME.REGISTERED' | translate }}
+                </button>
+                <a
+                  *ngIf="canFillAttendance(event)"
+                  class="register-event-btn"
+                  routerLink="/home/events"
+                >
+                  Llenar asistencia
+                </a>
+                <button
+                  *ngIf="hasAttended(event.id)"
+                  class="register-event-btn"
+                  type="button"
+                  disabled
+                >
+                  Asistió
+                </button>
+                <button
+                  *ngIf="canCancelEventRegistration(event)"
+                  class="register-event-btn register-event-btn--cancel"
+                  type="button"
+                  [disabled]="cancellingRegistrationId === anyRegistrationFor(event.id)?.id"
+                  (click)="onCancelRegistration(event)"
+                >
+                  {{ cancelLabel(event) }}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -422,7 +457,7 @@
           <div class="ai-metrics-list">
             <div class="ai-metric-row" *ngFor="let reg of registrations.slice(0, 4)">
               <div class="ai-metric-dot ai-metric-dot--rose"></div>
-              <span>{{ reg.eventName || (('HOME.EVENT_FALLBACK' | translate) + ' ' + reg.eventId) }}</span>
+              <span>{{ reg.eventName || ('HOME.EVENT_FALLBACK' | translate) }}</span>
             </div>
           </div>
           <button class="talk-ai-btn" type="button" (click)="onSeeAllEvents()">

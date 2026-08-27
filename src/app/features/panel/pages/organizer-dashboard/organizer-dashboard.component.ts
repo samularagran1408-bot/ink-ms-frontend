@@ -172,6 +172,11 @@ export class OrganizerDashboardComponent implements OnInit {
     return resolveEventImage(event);
   }
 
+  occupied(event: EventItem): number {
+    const max = event.maxCapacity || 0;
+    return Math.max(max - (event.availableCapacity ?? max), 0);
+  }
+
   private loadAthleteCount(events: EventItem[]): void {
     if (!events.length) {
       this.athleteCount = 0;

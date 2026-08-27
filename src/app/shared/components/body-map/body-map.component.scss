@@ -7,40 +7,48 @@
   animation: inkRise 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-.body-map svg {
-  display: block;
-  width: 100%;
-  max-height: 320px;
+.body-map-views {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  align-items: start;
 }
 
-.body-map--compact svg {
-  max-height: 240px;
+.body-map-view {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
 }
 
 .body-map-label {
-  fill: #64748b;
+  color: #64748b;
   font-size: 13px;
   font-weight: 700;
   font-family: Inter, system-ui, sans-serif;
-  text-anchor: middle;
 }
 
-.zona {
-  fill: #f3d7c6;
-  stroke: #9a5b45;
-  stroke-width: 1.2;
-  transition: fill 0.35s ease, stroke 0.35s ease;
+.body-map-chart {
+  width: 100%;
+  min-height: 240px;
 }
 
-.zona--dolor {
-  fill: #dc2626;
-  stroke: #7f1d1d;
-  animation: painPulse 1.6s ease-in-out infinite;
+.body-map--compact .body-map-chart {
+  min-height: 170px;
 }
 
-@keyframes painPulse {
-  0%, 100% { fill: #dc2626; }
-  50% { fill: #ef4444; }
+.body-map-chart .body-chart-container {
+  padding: 0.25rem !important;
+}
+
+.body-map-chart .body-chart-svg {
+  max-height: 280px !important;
+  max-width: 180px !important;
+  filter: drop-shadow(0 2px 8px rgba(15, 23, 42, 0.12)) !important;
+}
+
+.body-map--compact .body-chart-svg {
+  max-height: 180px !important;
 }
 
 .body-map-limit,
@@ -69,6 +77,13 @@
   font-weight: 700;
 }
 
-body.reduced-motion .zona--dolor {
-  animation: none;
+@keyframes inkRise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }

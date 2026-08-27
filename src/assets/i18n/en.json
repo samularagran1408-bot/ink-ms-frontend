@@ -110,7 +110,7 @@
     "CHAT_HINT": "Ask about your profile, events or stats. No need to share email or ID. Creates ask for Confirmo.",
     "ROUTINES_HINT": "Generate a session adapted to your profile (assistant routine engine).",
     "RISK_HINT": "Heuristic injury-risk estimate. This is not a medical diagnosis.",
-    "COMPETE_HINT": "Review your competitive outlook or turn on a prep plan.",
+    "COMPETE_HINT": "Review your outlook, tick the plan checklist and log routine sessions.",
     "STATS_HINT": "Visual summary of sign-ups, comparison and alerts. Admins can search by name.",
     "OBJECTIVE": "Goal",
     "TYPE": "Type / context",
@@ -140,6 +140,9 @@
     "WEEK": "Week",
     "SESSIONS": "sessions",
     "CHECKLIST": "Prep checklist",
+    "CHECKLIST_HINT": "Tick each item as you complete it. It is half of the plan progress.",
+    "LOG_SESSION": "Log a routine session",
+    "JOIN_ROUTINE_HINT": "Join a routine on the home panel to log sessions and raise the plan.",
     "RISKS": "Risks to watch"
   },
   "ACCESSIBILITY": {
@@ -205,6 +208,13 @@
     "LOAD_ERROR": "Could not load the dashboard.",
     "NO_PROFILE": "User profile not found.",
     "REGISTER_ERROR": "Could not complete registration.",
+    "CANCEL_REGISTRATION": "CANCEL REGISTRATION",
+    "LEAVE_WAITLIST": "LEAVE WAITLIST",
+    "CONFIRM_CANCEL_REGISTRATION": "Cancel your registration to \"{{name}}\"? If there is a waitlist, the person in position 1 will be registered automatically.",
+    "CONFIRM_LEAVE_WAITLIST": "Leave the waitlist for \"{{name}}\"?",
+    "CANCEL_REGISTRATION_OK": "Registration to \"{{name}}\" cancelled. If there was a waitlist, the first person was registered automatically.",
+    "LEAVE_WAITLIST_OK": "You left the waitlist for \"{{name}}\".",
+    "CANCEL_REGISTRATION_ERROR": "Could not cancel the registration.",
     "NO_DATE": "No date",
     "NEXT_EVENT": "NEXT EVENT",
     "NO_UPCOMING": "No upcoming events",
@@ -218,7 +228,7 @@
     "SEE_ALL": "SEE ALL",
     "NO_EVENTS": "No events available right now.",
     "LOCATION_TBD": "Location to be confirmed",
-    "SPOTS": "{{count}} spots available",
+    "SPOTS": "{{occupied}}/{{total}} spots",
     "REGISTERED": "REGISTERED",
     "REGISTER": "REGISTER",
     "MY_CALENDAR": "My calendar",
@@ -257,7 +267,12 @@
     "COMPETE_ON": "Competition mode on",
     "COMPETE_PLAN": "Competition plan",
     "COMPETE_WEEK": "Week {{current}} of {{total}}",
+    "COMPETE_MIX": "{{list}} checklist · {{sessions}} sessions",
     "COMPETE_OPEN": "View plan",
+    "LOG_SESSION": "Log session",
+    "CONFIRM_LOG_SESSION": "Log a session of \"{{name}}\" toward your competition plan?",
+    "SESSION_LOGGED": "Session logged. Your competition plan was updated.",
+    "SESSION_LOG_ERROR": "Could not log the session.",
     "NO_AVAILABLE_ROUTINES": "No published routines right now.",
     "ROUTINE_FALLBACK": "Routine",
     "CATALOG_TITLE": "Browse catalog",
@@ -654,9 +669,9 @@
     "SUBTITLE_MANAGE": "Create, edit and cancel events, calendar, QR check-in and attendance reports.",
     "LOADING": "Loading events...",
     "SEARCH": "Search event",
-    "ID_OR_NAME": "Event ID or name",
-    "ID_PH": "UUID or event name",
-    "SEARCH_BY_ID": "Search by ID",
+    "ID_OR_NAME": "Event name",
+    "ID_PH": "Event name",
+    "SEARCH_BY_ID": "Search",
     "FILTER_PH": "Filter catalog by name, sport or location"
   },
   "CHAT": {
@@ -685,5 +700,11 @@
     "DELETE_CONFIRM": "This thread will be removed from your history. This cannot be undone.",
     "LOAD_ERROR": "Could not load history.",
     "MESSAGES": "messages"
+  },
+  "BODY_MAP": {
+    "FRONT": "Front",
+    "BACK": "Back",
+    "LIMITATION": "Limitation",
+    "NOTE": "Red areas mark the reported pain or limitation."
   }
 }

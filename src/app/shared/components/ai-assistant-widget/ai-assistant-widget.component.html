@@ -328,19 +328,43 @@
           </article>
           <h4 *ngIf="fasesCompetencia().length">{{ 'AI_WIDGET.PHASES' | translate }}</h4>
           <div class="ai-fases" *ngIf="fasesCompetencia().length">
-            <article *ngFor="let fase of fasesCompetencia()">
+            <article *ngFor="let fase of fasesCompetencia()" [class.ai-fase--actual]="fase.actual">
               <span>{{ 'AI_WIDGET.WEEK' | translate }} {{ fase.semana }}</span>
               <strong>{{ fase.foco }}</strong>
               <small>{{ fase.intensidad }}<ng-container *ngIf="fase.sesiones"> · {{ fase.sesiones }} {{ 'AI_WIDGET.SESSIONS' | translate }}</ng-container></small>
             </article>
           </div>
-          <h4 *ngIf="textosVista('checklist').length">{{ 'AI_WIDGET.CHECKLIST' | translate }}</h4>
-          <ul class="ai-list" *ngIf="textosVista('checklist').length">
-            <li *ngFor="let item of textosVista('checklist')">
-              <app-icon name="clipboard-document-list" [size]="14"></app-icon>
-              <div>{{ item }}</div>
+          <h4 *ngIf="checklistItems().length">{{ 'AI_WIDGET.CHECKLIST' | translate }}</h4>
+          <p class="ai-lead" *ngIf="competenciaModoActivo() && checklistItems().length">{{ 'AI_WIDGET.CHECKLIST_HINT' | translate }}</p>
+          <ul class="ai-list" *ngIf="checklistItems().length">
+            <li *ngFor="let item of checklistItems()">
+              <button
+                type="button"
+                class="ai-check-item"
+                [class.ai-check-item--done]="item.hecho"
+                [disabled]="!competenciaModoActivo() || loggingChecklistId === item.id"
+                (click)="toggleChecklist(item)"
+              >
+                <app-icon [name]="item.hecho ? 'shield-check' : 'clipboard-document-list'" [size]="14"></app-icon>
+                <div>{{ item.texto }}</div>
+              </button>
             </li>
           </ul>
+          <ng-container *ngIf="competenciaModoActivo()">
+            <h4>{{ 'AI_WIDGET.LOG_SESSION' | translate }}</h4>
+            <p class="ai-lead" *ngIf="!rutinasInscritas().length">{{ 'AI_WIDGET.JOIN_ROUTINE_HINT' | translate }}</p>
+            <div class="ai-actions" *ngIf="rutinasInscritas().length">
+              <button
+                *ngFor="let rutina of rutinasInscritas()"
+                type="button"
+                class="ai-secondary"
+                [disabled]="loggingRoutineId === rutina.id"
+                (click)="registrarSesionRutina(rutina.id)"
+              >
+                {{ loggingRoutineId === rutina.id ? ('COMMON.LOADING' | translate) : rutina.nombre }}
+              </button>
+            </div>
+          </ng-container>
           <h4 *ngIf="textosVista('riesgos').length">{{ 'AI_WIDGET.RISKS' | translate }}</h4>
           <ul class="ai-alerts" *ngIf="textosVista('riesgos').length">
             <li *ngFor="let item of textosVista('riesgos')">

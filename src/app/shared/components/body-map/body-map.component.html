@@ -1,67 +1,22 @@
-<figure class="body-map" [class.body-map--compact]="compact" role="img" [attr.aria-label]="nota">
-  <svg viewBox="0 0 400 470" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-    <!-- Frente -->
-    <g transform="translate(20,8)">
-      <text x="90" y="16" class="body-map-label">Frente</text>
-      <g transform="translate(0,22)">
-        <ellipse class="zona" [class.zona--dolor]="esDolor('cabeza')" cx="90" cy="34" rx="26" ry="32" />
-        <rect class="zona" [class.zona--dolor]="esDolor('cuello')" x="80" y="64" width="20" height="22" rx="6" />
-        <ellipse class="zona" [class.zona--dolor]="esDolor('hombro_izq')" cx="48" cy="100" rx="22" ry="16" />
-        <ellipse class="zona" [class.zona--dolor]="esDolor('hombro_der')" cx="132" cy="100" rx="22" ry="16" />
-        <path class="zona" [class.zona--dolor]="esDolor('pecho')" d="M58 98 h64 v52 c0 8-10 14-32 14s-32-6-32-14z" />
-        <path class="zona" [class.zona--dolor]="esDolor('abdomen')" d="M62 160 h56 v46 c0 12-10 20-28 20s-28-8-28-20z" />
-        <path class="zona" [class.zona--dolor]="esDolor('brazo_izq')" d="M28 108 c-18 8-26 28-24 52 l8 6 c4-22 10-38 24-48z" />
-        <path class="zona" [class.zona--dolor]="esDolor('brazo_der')" d="M152 108 c18 8 26 28 24 52 l-8 6 c-4-22-10-38-24-48z" />
-        <ellipse class="zona" [class.zona--dolor]="esDolor('codo_izq')" cx="18" cy="176" rx="11" ry="10" />
-        <ellipse class="zona" [class.zona--dolor]="esDolor('codo_der')" cx="162" cy="176" rx="11" ry="10" />
-        <path class="zona" [class.zona--dolor]="esDolor('muneca_izq')" d="M10 186 c-8 16-10 34-6 48 l12 2 c-2-16 2-32 8-46z" />
-        <path class="zona" [class.zona--dolor]="esDolor('muneca_der')" d="M170 186 c8 16 10 34 6 48 l-12 2 c2-16-2-32-8-46z" />
-        <ellipse class="zona" [class.zona--dolor]="esDolor('cadera_izq')" cx="70" cy="228" rx="20" ry="16" />
-        <ellipse class="zona" [class.zona--dolor]="esDolor('cadera_der')" cx="110" cy="228" rx="20" ry="16" />
-        <path class="zona" [class.zona--dolor]="esDolor('muslo_izq')" d="M54 238 h28 v70 c0 8-6 12-14 12s-14-4-14-12z" />
-        <path class="zona" [class.zona--dolor]="esDolor('muslo_der')" d="M98 238 h28 v70 c0 8-6 12-14 12s-14-4-14-12z" />
-        <ellipse class="zona" [class.zona--dolor]="esDolor('rodilla_izq')" cx="68" cy="324" rx="13" ry="12" />
-        <ellipse class="zona" [class.zona--dolor]="esDolor('rodilla_der')" cx="112" cy="324" rx="13" ry="12" />
-        <path class="zona" [class.zona--dolor]="esDolor('pantorrilla_izq')" d="M56 334 h24 v62 c0 8-5 12-12 12s-12-4-12-12z" />
-        <path class="zona" [class.zona--dolor]="esDolor('pantorrilla_der')" d="M100 334 h24 v62 c0 8-5 12-12 12s-12-4-12-12z" />
-        <ellipse class="zona" [class.zona--dolor]="esDolor('pie_izq')" cx="64" cy="414" rx="18" ry="10" />
-        <ellipse class="zona" [class.zona--dolor]="esDolor('pie_der')" cx="116" cy="414" rx="18" ry="10" />
-      </g>
-    </g>
-
-    <!-- Espalda -->
-    <g transform="translate(210,8)">
-      <text x="90" y="16" class="body-map-label">Espalda</text>
-      <g transform="translate(0,22)">
-        <ellipse class="zona" [class.zona--dolor]="esDolor('cabeza')" cx="90" cy="34" rx="26" ry="32" />
-        <rect class="zona" [class.zona--dolor]="esDolor('cuello')" x="80" y="64" width="20" height="22" rx="6" />
-        <ellipse class="zona" [class.zona--dolor]="esDolor('hombro_izq')" cx="132" cy="100" rx="22" ry="16" />
-        <ellipse class="zona" [class.zona--dolor]="esDolor('hombro_der')" cx="48" cy="100" rx="22" ry="16" />
-        <path class="zona" [class.zona--dolor]="esDolor('espalda_alta')" d="M58 98 h64 v58 c0 8-10 12-32 12s-32-4-32-12z" />
-        <path class="zona" [class.zona--dolor]="esDolor('lumbar')" d="M64 164 h52 v40 c0 10-8 16-26 16s-26-6-26-16z" />
-        <path class="zona" [class.zona--dolor]="esDolor('brazo_izq')" d="M152 108 c18 8 26 28 24 52 l-8 6 c-4-22-10-38-24-48z" />
-        <path class="zona" [class.zona--dolor]="esDolor('brazo_der')" d="M28 108 c-18 8-26 28-24 52 l8 6 c4-22 10-38 24-48z" />
-        <ellipse class="zona" [class.zona--dolor]="esDolor('gluteo_izq')" cx="110" cy="226" rx="22" ry="18" />
-        <ellipse class="zona" [class.zona--dolor]="esDolor('gluteo_der')" cx="70" cy="226" rx="22" ry="18" />
-        <path class="zona" [class.zona--dolor]="esDolor('muslo_izq')" d="M98 240 h28 v68 c0 8-6 12-14 12s-14-4-14-12z" />
-        <path class="zona" [class.zona--dolor]="esDolor('muslo_der')" d="M54 240 h28 v68 c0 8-6 12-14 12s-14-4-14-12z" />
-        <ellipse class="zona" [class.zona--dolor]="esDolor('rodilla_izq')" cx="112" cy="324" rx="13" ry="12" />
-        <ellipse class="zona" [class.zona--dolor]="esDolor('rodilla_der')" cx="68" cy="324" rx="13" ry="12" />
-        <path class="zona" [class.zona--dolor]="esDolor('pantorrilla_izq')" d="M100 334 h24 v62 c0 8-5 12-12 12s-12-4-12-12z" />
-        <path class="zona" [class.zona--dolor]="esDolor('pantorrilla_der')" d="M56 334 h24 v62 c0 8-5 12-12 12s-12-4-12-12z" />
-        <ellipse class="zona" [class.zona--dolor]="esDolor('pie_izq')" cx="116" cy="414" rx="18" ry="10" />
-        <ellipse class="zona" [class.zona--dolor]="esDolor('pie_der')" cx="64" cy="414" rx="18" ry="10" />
-      </g>
-    </g>
-  </svg>
+<figure class="body-map" [class.body-map--compact]="compact" [attr.aria-label]="nota || ('BODY_MAP.NOTE' | translate)">
+  <div class="body-map-views">
+    <div class="body-map-view">
+      <span class="body-map-label">{{ 'BODY_MAP.FRONT' | translate }}</span>
+      <div #frenteChart class="body-map-chart"></div>
+    </div>
+    <div class="body-map-view">
+      <span class="body-map-label">{{ 'BODY_MAP.BACK' | translate }}</span>
+      <div #espaldaChart class="body-map-chart"></div>
+    </div>
+  </div>
 
   <figcaption>
     <p class="body-map-limit" *ngIf="limitacion">
-      <strong>Limitación:</strong> {{ limitacion }}
+      <strong>{{ 'BODY_MAP.LIMITATION' | translate }}:</strong> {{ limitacion }}
     </p>
     <ul class="body-map-tags" *ngIf="etiquetas.length">
       <li *ngFor="let etiqueta of etiquetas">{{ etiqueta }}</li>
     </ul>
-    <p class="body-map-note">{{ nota }}</p>
+    <p class="body-map-note">{{ nota || ('BODY_MAP.NOTE' | translate) }}</p>
   </figcaption>
 </figure>

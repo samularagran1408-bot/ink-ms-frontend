@@ -33,9 +33,12 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
   routines: Routine[] = [];
   routineRegistrations: RoutineRegistration[] = [];
   registeringRoutineId: string | null = null;
+  loggingSessionRoutineId: string | null = null;
   nextEvent: EventItem | null = null;
   unreadCount = 0;
   registeringId: string | null = null;
+  cancellingRegistrationId: string | null = null;
+  successMessage: string | null = null;
   calendarMonthLabel = '';
   calendarCells: { day: number | null; muted: boolean; selected: boolean; hasEvent: boolean }[] = [];
   competition: CompetitionModeState | null = null;
@@ -180,6 +183,20 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
     return this.translate.instant('HOME.COMPETE_WEEK', { current, total });
   }
 
+  get competitionMixLabel(): string {
+    const checkHechos = Number(this.competition?.checklist_hechos || 0);
+    const checkTotal = Number(this.competition?.checklist_total || 0);
+    const sesHechas = Number(this.competition?.sesiones_hechas || 0);
+    const sesObj = Number(this.competition?.sesiones_objetivo || 0);
+    if (!checkTotal && !sesObj) {
+      return '';
+    }
+    return this.translate.instant('HOME.COMPETE_MIX', {
+      list: `${checkHechos}/${checkTotal || 0}`,
+      sessions: `${sesHechas}/${sesObj || 0}`
+    });
+  }
+
   get competitionEventTitle(): string {
     const evento = this.competition?.evento_objetivo;
     if (!evento || typeof evento !== 'object') {
@@ -221,6 +238,42 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
 
   onRegisterRoutine(routine: Routine): void {
     void this.confirmJoinRoutine(routine);
+  }
+
+  onLogRoutineSession(item: { registration: RoutineRegistration; routine: Routine | null }): void {
+    void this.confirmLogRoutineSession(item);
+  }
+
+  private async confirmLogRoutineSession(item: {
+    registration: RoutineRegistration;
+    routine: Routine | null;
+  }): Promise<void> {
+    const name = item.routine?.name || this.routineName(item.registration.routineId);
+    const ok = await this.confirm.ask({
+      title: this.translate.instant('HOME.LOG_SESSION'),
+      message: this.translate.instant('HOME.CONFIRM_LOG_SESSION', { name }),
+      confirmLabel: this.translate.instant('COMMON.CONFIRM'),
+      cancelLabel: this.translate.instant('COMMON.CANCEL')
+    });
+    if (!ok) {
+      return;
+    }
+    const routineId = item.registration.routineId;
+    if (!routineId) {
+      return;
+    }
+    this.loggingSessionRoutineId = routineId;
+    this.competitionProgress.registrarSesion(routineId).subscribe({
+      next: () => {
+        this.loggingSessionRoutineId = null;
+        this.successMessage = this.translate.instant('HOME.SESSION_LOGGED');
+        this.errorMessage = null;
+      },
+      error: (error) => {
+        this.loggingSessionRoutineId = null;
+        this.errorMessage = error?.error?.detail || this.translate.instant('HOME.SESSION_LOG_ERROR');
+      }
+    });
   }
 
   private async confirmJoinRoutine(routine: Routine): Promise<void> {
@@ -327,6 +380,91 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
     return !this.isRegistered(eventId) && !this.isOnWaitlist(eventId);
   }
 
+  anyRegistrationFor(eventId: string): Registration | null {
+    return this.registrations.find((reg) => reg.eventId === eventId) || null;
+  }
+
+  canCancelEventRegistration(event: EventItem): boolean {
+    return this.canCancelRegistration(this.anyRegistrationFor(event.id), event);
+  }
+
+  canCancelRegistration(reg: Registration | null | undefined, event?: EventItem | null): boolean {
+    if (!reg?.id || reg.attended) {
+      return false;
+    }
+    const status = event?.status || reg.eventStatus;
+    return status !== 'finished' && status !== 'cancelled';
+  }
+
+  onCancelRegistration(event: EventItem): void {
+    const registration = this.anyRegistrationFor(event.id);
+    if (!registration) {
+      return;
+    }
+    void this.confirmCancelRegistration(registration, event.name, event);
+  }
+
+  onCancelRegistrationRecord(reg: Registration): void {
+    const event = this.allEvents.find((item) => item.id === reg.eventId)
+      || this.events.find((item) => item.id === reg.eventId)
+      || null;
+    void this.confirmCancelRegistration(reg, reg.eventName || event?.name || this.translate.instant('HOME.EVENT_FALLBACK'), event);
+  }
+
+  private async confirmCancelRegistration(
+    registration: Registration,
+    eventName: string,
+    event?: EventItem | null
+  ): Promise<void> {
+    if (this.cancellingRegistrationId || !this.canCancelRegistration(registration, event)) {
+      return;
+    }
+
+    const onWaitlist = registration.waitlistPosition != null;
+    const ok = await this.confirm.ask({
+      title: onWaitlist
+        ? this.translate.instant('HOME.LEAVE_WAITLIST')
+        : this.translate.instant('HOME.CANCEL_REGISTRATION'),
+      message: this.translate.instant(
+        onWaitlist ? 'HOME.CONFIRM_LEAVE_WAITLIST' : 'HOME.CONFIRM_CANCEL_REGISTRATION',
+        { name: eventName }
+      ),
+      confirmLabel: this.translate.instant('COMMON.CONFIRM'),
+      cancelLabel: this.translate.instant('COMMON.CANCEL'),
+      tone: 'danger'
+    });
+    if (!ok) {
+      return;
+    }
+
+    this.cancellingRegistrationId = registration.id;
+    this.sportsService.cancelRegistration(registration.id).subscribe({
+      next: () => {
+        this.cancellingRegistrationId = null;
+        this.errorMessage = null;
+        this.successMessage = this.translate.instant(
+          onWaitlist ? 'HOME.LEAVE_WAITLIST_OK' : 'HOME.CANCEL_REGISTRATION_OK',
+          { name: eventName }
+        );
+        this.loadHomeData();
+      },
+      error: (error) => {
+        this.cancellingRegistrationId = null;
+        this.successMessage = null;
+        this.errorMessage = error?.error?.message || this.translate.instant('HOME.CANCEL_REGISTRATION_ERROR');
+      }
+    });
+  }
+
+  cancelLabel(event: EventItem): string {
+    if (this.cancellingRegistrationId === this.anyRegistrationFor(event.id)?.id) {
+      return '...';
+    }
+    return this.isOnWaitlist(event.id)
+      ? this.translate.instant('HOME.LEAVE_WAITLIST')
+      : this.translate.instant('HOME.CANCEL_REGISTRATION');
+  }
+
   joinLabel(event: EventItem): string {
     if (this.registeringId === event.id) {
       return '...';
@@ -359,6 +497,14 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
 
   eventImage(event: EventItem): string {
     return resolveEventImage(event);
+  }
+
+  occupied(event: { maxCapacity?: number | null; availableCapacity?: number | null } | null | undefined): number {
+    if (!event) {
+      return 0;
+    }
+    const max = event.maxCapacity || 0;
+    return Math.max(max - (event.availableCapacity ?? max), 0);
   }
 
   setCatalogFilter(filter: CatalogFilter): void {

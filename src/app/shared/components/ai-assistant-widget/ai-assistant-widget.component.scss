@@ -834,6 +834,38 @@
   padding: 10px;
 }
 
+.ai-fase--actual {
+  border-color: #a30d11;
+  box-shadow: 0 0 0 1px rgba(163, 13, 17, 0.12);
+}
+
+.ai-check-item {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.ai-check-item:disabled {
+  cursor: wait;
+}
+
+.ai-check-item--done {
+  color: #0f766e;
+  text-decoration: line-through;
+}
+
+.ai-check-item--done app-icon {
+  color: #0f766e;
+}
+
 .ai-fases span {
   display: block;
   font-size: 11px;

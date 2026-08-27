@@ -39,18 +39,6 @@ interface MyPassRow {
   loadingQr: boolean;
 }
 
-type AttendanceFilter = 'all' | 'attended' | 'absent';
-
-interface EnrolledUserRow {
-  registrationId: string;
-  userId?: string;
-  fullName?: string;
-  email?: string;
-  attended: boolean;
-  checkInTime?: string;
-  checkInMethod?: string;
-}
-
 @Component({
   selector: 'app-events-page',
   templateUrl: './events-page.component.html',
@@ -80,6 +68,7 @@ export class EventsPageComponent implements OnInit, OnDestroy {
   calendarItems: CalendarEvent[] = [];
   calendarLoaded = false;
   cancellingId: string | null = null;
+  cancellingRegistrationId: string | null = null;
 
   checkInOpen = false;
   checkInEvent: EventItem | null = null;
@@ -94,16 +83,6 @@ export class EventsPageComponent implements OnInit, OnDestroy {
   reportLoading = false;
   reportError: string | null = null;
   attendanceReport: AttendanceReport | null = null;
-
-  enrolledOpen = false;
-  enrolledEvent: EventItem | null = null;
-  enrolledFilter: AttendanceFilter = 'all';
-  enrolledRows: EnrolledUserRow[] = [];
-  enrolledLoading = false;
-  enrolledError: string | null = null;
-  enrolledSelected = new Set<string>();
-  attendanceBusyId: string | null = null;
-  bulkAttendanceLoading = false;
 
   myAttendanceOpen = false;
   myAttendanceEvent: EventItem | null = null;
@@ -382,7 +361,7 @@ export class EventsPageComponent implements OnInit, OnDestroy {
   searchEvent(): void {
     const id = (this.lookupEventId || '').trim();
     if (!id) {
-      this.errorMessage = 'Indica el ID o el nombre del evento.';
+      this.errorMessage = 'Indica el nombre del evento.';
       this.lookupEvent = null;
       return;
     }
@@ -420,7 +399,7 @@ export class EventsPageComponent implements OnInit, OnDestroy {
       error: (error) => {
         this.lookupEvent = null;
         this.successMessage = null;
-        this.errorMessage = error?.error?.message || `Evento no encontrado con ID: ${id}`;
+        this.errorMessage = error?.error?.message || 'Evento no encontrado.';
       }
     });
   }
@@ -590,6 +569,76 @@ export class EventsPageComponent implements OnInit, OnDestroy {
     return this.registrations.find((reg) => reg.eventId === eventId && reg.waitlistPosition == null) || null;
   }
 
+  anyRegistrationFor(eventId: string): Registration | null {
+    return this.registrations.find((reg) => reg.eventId === eventId) || null;
+  }
+
+  canCancelRegistration(reg: Registration | null | undefined, event?: EventItem | null): boolean {
+    if (!reg?.id || reg.attended) {
+      return false;
+    }
+    const status = event?.status || reg.eventStatus;
+    return status !== 'finished' && status !== 'cancelled';
+  }
+
+  canCancelEventRegistration(event: EventItem): boolean {
+    return this.canCancelRegistration(this.anyRegistrationFor(event.id), event);
+  }
+
+  cancelMyRegistration(event: EventItem): void {
+    const registration = this.anyRegistrationFor(event.id);
+    if (!registration) {
+      return;
+    }
+    void this.confirmCancelRegistration(registration, event.name, event);
+  }
+
+  cancelRegistrationRecord(reg: Registration): void {
+    const event = this.events.find((item) => item.id === reg.eventId) || null;
+    void this.confirmCancelRegistration(reg, reg.eventName || event?.name || 'este evento', event);
+  }
+
+  private async confirmCancelRegistration(
+    registration: Registration,
+    eventName: string,
+    event?: EventItem | null
+  ): Promise<void> {
+    if (this.cancellingRegistrationId || !this.canCancelRegistration(registration, event)) {
+      return;
+    }
+
+    const onWaitlist = registration.waitlistPosition != null;
+    const ok = await this.confirm.ask({
+      title: onWaitlist ? 'Salir de lista de espera' : 'Cancelar inscripción',
+      message: onWaitlist
+        ? `¿Confirmas salir de la lista de espera de "${eventName}"?`
+        : `¿Confirmas cancelar tu inscripción a "${eventName}"? Si hay lista de espera, la persona en la posición 1 quedará inscrita automáticamente.`,
+      confirmLabel: 'Confirmar',
+      cancelLabel: 'Volver',
+      tone: 'danger'
+    });
+    if (!ok) {
+      return;
+    }
+
+    this.cancellingRegistrationId = registration.id;
+    this.sportsService.cancelRegistration(registration.id).subscribe({
+      next: () => {
+        this.cancellingRegistrationId = null;
+        this.successMessage = onWaitlist
+          ? `Saliste de la lista de espera de "${eventName}".`
+          : `Inscripción a "${eventName}" cancelada. Si había lista de espera, el primero fue inscrito automáticamente.`;
+        this.errorMessage = null;
+        this.reload();
+      },
+      error: (error) => {
+        this.cancellingRegistrationId = null;
+        this.successMessage = null;
+        this.errorMessage = error?.error?.message || 'No se pudo cancelar la inscripción.';
+      }
+    });
+  }
+
   hasAttended(eventId: string): boolean {
     return !!this.registrationFor(eventId)?.attended;
   }
@@ -680,8 +729,12 @@ export class EventsPageComponent implements OnInit, OnDestroy {
     row.showWaitlist = !row.showWaitlist;
   }
 
-  occupied(event: EventItem): number {
-    return Math.max((event.maxCapacity || 0) - (event.availableCapacity ?? (event.maxCapacity || 0)), 0);
+  occupied(event: { maxCapacity?: number | null; availableCapacity?: number | null } | null | undefined): number {
+    if (!event) {
+      return 0;
+    }
+    const max = event.maxCapacity || 0;
+    return Math.max(max - (event.availableCapacity ?? max), 0);
   }
 
   eventHasStarted(event: EventItem | null | undefined): boolean {
@@ -796,183 +849,6 @@ export class EventsPageComponent implements OnInit, OnDestroy {
 
   submitManualQr(): void {
     void this.submitQrCode(this.manualQrCode);
-  }
-
-  openEnrolledList(event: EventItem): void {
-    this.enrolledEvent = event;
-    this.enrolledOpen = true;
-    this.enrolledFilter = 'all';
-    this.enrolledRows = [];
-    this.enrolledError = null;
-    this.enrolledSelected.clear();
-    this.enrolledLoading = true;
-
-    this.sportsService.getAttendanceReport(event.id).subscribe({
-      next: (report) => {
-        const attendees: EnrolledUserRow[] = (report.attendees || []).map((row) => ({
-          registrationId: row.registrationId,
-          userId: row.userId,
-          fullName: row.fullName,
-          email: row.email,
-          attended: true,
-          checkInTime: row.checkInTime,
-          checkInMethod: row.checkInMethod
-        }));
-        const absentees: EnrolledUserRow[] = (report.absentees || []).map((row) => ({
-          registrationId: row.registrationId,
-          userId: row.userId,
-          fullName: row.fullName,
-          email: row.email,
-          attended: false
-        }));
-        this.enrolledRows = [...attendees, ...absentees];
-        this.enrolledLoading = false;
-      },
-      error: (error) => {
-        this.enrolledLoading = false;
-        this.enrolledError = error?.error?.message || 'No se pudo cargar la lista de inscritos.';
-      }
-    });
-  }
-
-  closeEnrolledList(): void {
-    this.enrolledOpen = false;
-    this.enrolledEvent = null;
-    this.enrolledRows = [];
-    this.enrolledError = null;
-    this.enrolledSelected.clear();
-  }
-
-  toggleEnrolled(registrationId: string, checked: boolean): void {
-    if (checked) {
-      this.enrolledSelected.add(registrationId);
-    } else {
-      this.enrolledSelected.delete(registrationId);
-    }
-  }
-
-  toggleAllEnrolledAbsentees(checked: boolean): void {
-    const absentees = this.enrolledRows.filter((row) => !row.attended);
-    if (checked) {
-      absentees.forEach((row) => this.enrolledSelected.add(row.registrationId));
-    } else {
-      absentees.forEach((row) => this.enrolledSelected.delete(row.registrationId));
-    }
-  }
-
-  get allAbsenteesSelected(): boolean {
-    const absentees = this.enrolledRows.filter((row) => !row.attended);
-    return absentees.length > 0 && absentees.every((row) => this.enrolledSelected.has(row.registrationId));
-  }
-
-  get selectedAbsenteeCount(): number {
-    return this.enrolledRows.filter((row) => !row.attended && this.enrolledSelected.has(row.registrationId)).length;
-  }
-
-  markManualAttendance(row: EnrolledUserRow): void {
-    if (row.attended || this.attendanceBusyId) {
-      return;
-    }
-    if (!this.canRecordAttendance(this.enrolledEvent)) {
-      this.enrolledError = `El registro de asistencia se habilita a partir de ${this.eventStartLabel(this.enrolledEvent)}.`;
-      return;
-    }
-    void this.confirmMarkManual(row);
-  }
-
-  private async confirmMarkManual(row: EnrolledUserRow): Promise<void> {
-    const ok = await this.confirm.ask({
-      title: 'Registrar asistencia',
-      message: `¿Confirmas la asistencia de ${row.fullName || row.email || 'este usuario'}?`,
-      confirmLabel: 'Confirmar',
-      cancelLabel: 'Cancelar'
-    });
-    if (!ok) {
-      return;
-    }
-    this.attendanceBusyId = row.registrationId;
-    this.enrolledError = null;
-    const verifiedBy = this.session.getProfile()?.id || this.session.getDisplayName();
-    this.sportsService.markAttendance(row.registrationId, 'manual', verifiedBy).subscribe({
-      next: (response) => {
-        this.attendanceBusyId = null;
-        this.successMessage = response?.message || `Asistencia de ${row.fullName || row.email || 'usuario'} registrada.`;
-        if (this.enrolledEvent) {
-          this.openEnrolledList(this.enrolledEvent);
-        }
-      },
-      error: (error) => {
-        this.attendanceBusyId = null;
-        this.enrolledError = error?.error?.message || 'No se pudo registrar la asistencia.';
-      }
-    });
-  }
-
-  markSelectedAttendance(): void {
-    const ids = this.enrolledRows
-      .filter((row) => !row.attended && this.enrolledSelected.has(row.registrationId))
-      .map((row) => row.registrationId);
-    if (!ids.length || this.bulkAttendanceLoading) {
-      return;
-    }
-    if (!this.canRecordAttendance(this.enrolledEvent)) {
-      this.enrolledError = `El registro de asistencia se habilita a partir de ${this.eventStartLabel(this.enrolledEvent)}.`;
-      return;
-    }
-    void this.confirmMarkSelected(ids);
-  }
-
-  private async confirmMarkSelected(ids: string[]): Promise<void> {
-    const ok = await this.confirm.ask({
-      title: 'Registrar asistencia',
-      message: `¿Confirmas marcar asistencia de ${ids.length} persona(s)?`,
-      confirmLabel: 'Confirmar',
-      cancelLabel: 'Cancelar'
-    });
-    if (!ok) {
-      return;
-    }
-    this.bulkAttendanceLoading = true;
-    this.enrolledError = null;
-    const verifiedBy = this.session.getProfile()?.id || this.session.getDisplayName();
-    this.sportsService.markBulkAttendance(ids, 'admin', verifiedBy).subscribe({
-      next: (response) => {
-        this.bulkAttendanceLoading = false;
-        this.successMessage = response?.message || `Asistencias registradas: ${response.succeeded ?? ids.length}.`;
-        if (response.errors?.length) {
-          this.enrolledError = response.errors.join(' · ');
-        }
-        if (this.enrolledEvent) {
-          this.openEnrolledList(this.enrolledEvent);
-        }
-      },
-      error: (error) => {
-        this.bulkAttendanceLoading = false;
-        this.enrolledError = error?.error?.message || 'No se pudo registrar la asistencia masiva.';
-      }
-    });
-  }
-
-  setEnrolledFilter(filter: AttendanceFilter): void {
-    this.enrolledFilter = filter;
-  }
-
-  get filteredEnrolledRows(): EnrolledUserRow[] {
-    if (this.enrolledFilter === 'attended') {
-      return this.enrolledRows.filter((row) => row.attended);
-    }
-    if (this.enrolledFilter === 'absent') {
-      return this.enrolledRows.filter((row) => !row.attended);
-    }
-    return this.enrolledRows;
-  }
-
-  get enrolledAttendedCount(): number {
-    return this.enrolledRows.filter((row) => row.attended).length;
-  }
-
-  get enrolledAbsentCount(): number {
-    return this.enrolledRows.filter((row) => !row.attended).length;
   }
 
   openAttendanceReport(event: EventItem): void {

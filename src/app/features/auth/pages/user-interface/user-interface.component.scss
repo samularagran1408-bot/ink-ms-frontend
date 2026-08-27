@@ -311,6 +311,20 @@
   justify-content: center;
 }
 
+.register-event-btn--cancel {
+  background-color: #FFFFFF;
+  color: #A30D11;
+  border: 1px solid #A30D11;
+}
+
+.event-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
 a.register-event-btn:hover {
   color: #FFFFFF;
   filter: brightness(0.95);
@@ -603,6 +617,10 @@ a.register-event-btn:hover {
   color: #DC2626;
 }
 
+.panel-success {
+  color: #0D9488;
+}
+
 .event-image--fallback {
   background: linear-gradient(135deg, #FEE2E2, #FECACA);
   min-height: 140px;
@@ -800,6 +818,14 @@ a.register-event-btn:hover {
   gap: 10px;
   padding-bottom: 8px;
   border-bottom: 1px solid #F1F5F9;
+}
+
+.activity-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
 }
 
 .activity-row:last-child {

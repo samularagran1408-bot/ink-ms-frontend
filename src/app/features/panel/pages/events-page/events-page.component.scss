@@ -8,6 +8,35 @@
   gap: 8px;
 }
 
+.event-catalog-main {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.event-catalog-main .event-list-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.event-catalog-main .event-list-body strong {
+  display: block;
+  overflow-wrap: break-word;
+}
+
+.event-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.event-availability-hint {
+  margin: 0;
+}
+
 .event-user-row--highlight {
   background: #FEF2F2;
   border-radius: 12px;
@@ -175,30 +204,6 @@
   margin: 12px 0 8px;
 }
 
-.filter-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 12px 0 14px;
-}
-
-.filter-chip {
-  border: 1px solid #E2E8F0;
-  background: #fff;
-  color: #475569;
-  border-radius: 999px;
-  padding: 6px 12px;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.filter-chip--active {
-  background: #A30D11;
-  color: #fff;
-  border-color: #A30D11;
-}
-
 .attendance-survey {
   margin: 12px 0 16px;
   display: grid;
@@ -236,10 +241,6 @@
 
 .table-wrap {
   overflow-x: auto;
-}
-
-.col-check {
-  width: 36px;
 }
 
 .data-table {

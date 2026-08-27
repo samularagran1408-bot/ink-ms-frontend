@@ -85,6 +85,8 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
   errorCompetencia: string | null = null;
   competencia: Record<string, unknown> | null = null;
   objetivoCompetencia = '';
+  loggingChecklistId: string | null = null;
+  loggingRoutineId: string | null = null;
 
   cargandoStats = false;
   errorStats: string | null = null;
@@ -126,11 +128,16 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
       if (!this.open) {
         this.openPanel();
       }
-      if (id === 'competencia' && !this.competencia && !this.cargandoCompetencia) {
+      if (id === 'competencia' && !this.cargandoCompetencia) {
         this.cargarEstadoCompetencia();
       }
       if (id === 'estadisticas' && !this.stats && !this.cargandoStats) {
         this.cargarEstadisticas();
+      }
+    }));
+    this.subs.add(this.competitionProgress.raw$.subscribe((raw) => {
+      if (raw && (raw['activo'] || raw['vista'])) {
+        this.competencia = raw;
       }
     }));
   }
@@ -180,7 +187,7 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     if (id === 'estadisticas' && !this.stats && !this.cargandoStats) {
       this.cargarEstadisticas();
     }
-    if (id === 'competencia' && !this.competencia && !this.cargandoCompetencia) {
+    if (id === 'competencia' && !this.cargandoCompetencia) {
       this.cargarEstadoCompetencia();
     }
   }
@@ -510,6 +517,40 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     });
   }
 
+  toggleChecklist(item: { id: string; hecho: boolean }): void {
+    if (!item?.id || this.loggingChecklistId || !this.competenciaModoActivo()) {
+      return;
+    }
+    this.loggingChecklistId = item.id;
+    this.errorCompetencia = null;
+    this.competitionProgress.marcarChecklist(item.id, !item.hecho).subscribe({
+      next: () => {
+        this.loggingChecklistId = null;
+      },
+      error: (err) => {
+        this.loggingChecklistId = null;
+        this.errorCompetencia = err?.error?.detail || 'No se pudo actualizar la lista del plan.';
+      }
+    });
+  }
+
+  registrarSesionRutina(routineId: string): void {
+    if (!routineId || this.loggingRoutineId || !this.competenciaModoActivo()) {
+      return;
+    }
+    this.loggingRoutineId = routineId;
+    this.errorCompetencia = null;
+    this.competitionProgress.registrarSesion(routineId).subscribe({
+      next: () => {
+        this.loggingRoutineId = null;
+      },
+      error: (err) => {
+        this.loggingRoutineId = null;
+        this.errorCompetencia = err?.error?.detail || 'No se pudo registrar la sesión.';
+      }
+    });
+  }
+
   esAdmin(): boolean {
     return this.session.hasRole('ADMIN');
   }
@@ -757,7 +798,14 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     });
   }
 
-  fasesCompetencia(): Array<{ semana: string; foco: string; intensidad: string; sesiones: string; nota: string }> {
+  fasesCompetencia(): Array<{
+    semana: string;
+    foco: string;
+    intensidad: string;
+    sesiones: string;
+    nota: string;
+    actual: boolean;
+  }> {
     const lista = this.vistaCompetencia()['fases'];
     if (!Array.isArray(lista)) {
       return [];
@@ -769,22 +817,54 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
         foco: String(row['foco'] || ''),
         intensidad: String(row['intensidad'] || ''),
         sesiones: String(row['sesiones'] ?? ''),
-        nota: String(row['nota'] || '')
+        nota: String(row['nota'] || ''),
+        actual: !!row['actual']
       };
     });
   }
 
+  checklistItems(): Array<{ id: string; texto: string; hecho: boolean }> {
+    const lista = this.vistaCompetencia()['checklist'] || this.competencia?.['checklist'];
+    if (!Array.isArray(lista)) {
+      return [];
+    }
+    return lista.map((item, index) => {
+      if (item && typeof item === 'object') {
+        const row = item as Record<string, unknown>;
+        return {
+          id: String(row['id'] || `c${index + 1}`),
+          texto: String(row['texto'] || row['text'] || ''),
+          hecho: !!row['hecho']
+        };
+      }
+      return { id: `c${index + 1}`, texto: String(item), hecho: false };
+    }).filter((item) => !!item.texto);
+  }
+
+  rutinasInscritas(): Array<{ id: string; nombre: string }> {
+    const lista = this.vistaCompetencia()['rutinas_inscritas'] || this.competencia?.['rutinas_inscritas'];
+    if (!Array.isArray(lista)) {
+      return [];
+    }
+    return lista.map((item) => {
+      const row = (item && typeof item === 'object') ? item as Record<string, unknown> : {};
+      return {
+        id: String(row['id'] || ''),
+        nombre: String(row['nombre'] || 'Rutina')
+      };
+    }).filter((item) => !!item.id);
+  }
+
   textosVista(clave: 'ventajas' | 'desventajas' | 'recomendaciones' | 'checklist' | 'riesgos'): string[] {
+    if (clave === 'checklist') {
+      return this.checklistItems().map((item) => item.texto);
+    }
     const lista = this.vistaCompetencia()[clave];
     if (Array.isArray(lista) && lista.length) {
       return lista.map(String);
     }
     if (clave === 'ventajas' || clave === 'desventajas' || clave === 'recomendaciones') {
       return this.listaCompetencia(clave);
-    }
-    if (clave === 'checklist') {
-      const directo = this.competencia?.['checklist'];
-      return Array.isArray(directo) ? directo.map(String) : [];
     }
     if (clave === 'riesgos') {
       const directo = this.competencia?.['riesgos'];

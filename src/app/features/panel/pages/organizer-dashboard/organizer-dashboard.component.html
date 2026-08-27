@@ -75,7 +75,7 @@
             <strong>{{ event.name }}</strong>
             <div class="kpi-sub">
               {{ event.eventDate }} {{ event.eventTime }} ·
-              {{ event.availableCapacity ?? 0 }}/{{ event.maxCapacity }} libres
+              {{ occupied(event) }}/{{ event.maxCapacity }} cupos
             </div>
           </div>
           <span class="status-pill status-pill--ok">{{ event.status || 'active' }}</span>

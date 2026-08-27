@@ -9,6 +9,8 @@ import { AiAssistantService } from './ai-assistant.service';
 export class CompetitionProgressService {
   private readonly stateSubject = new BehaviorSubject<CompetitionModeState | null>(null);
   readonly state$ = this.stateSubject.asObservable();
+  private readonly rawSubject = new BehaviorSubject<Record<string, unknown> | null>(null);
+  readonly raw$ = this.rawSubject.asObservable();
 
   constructor(private ai: AiAssistantService) {}
 
@@ -29,7 +31,23 @@ export class CompetitionProgressService {
   }
 
   publish(raw: Record<string, unknown> | CompetitionModeState): void {
-    this.stateSubject.next(this.normalize(raw as Record<string, unknown>));
+    const record = raw as Record<string, unknown>;
+    this.rawSubject.next(record);
+    this.stateSubject.next(this.normalize(record));
+  }
+
+  marcarChecklist(itemId: string, hecho: boolean): Observable<CompetitionModeState> {
+    return this.ai.marcarChecklist(itemId, hecho).pipe(
+      tap((raw) => this.publish(raw)),
+      map(() => this.snapshot || { activo: false })
+    );
+  }
+
+  registrarSesion(routineId: string): Observable<CompetitionModeState> {
+    return this.ai.registrarSesion(routineId).pipe(
+      tap((raw) => this.publish(raw)),
+      map(() => this.snapshot || { activo: false })
+    );
   }
 
   private normalize(raw: Record<string, unknown>): CompetitionModeState {
@@ -44,6 +62,12 @@ export class CompetitionProgressService {
       semanas: Number(raw['semanas'] ?? vista['semanas'] ?? 0) || null,
       semana_actual: Number(raw['semana_actual'] ?? vista['semana_actual'] ?? 0) || 0,
       plan_pct: Number(raw['plan_pct'] ?? vista['plan_pct'] ?? 0) || 0,
+      checklist_pct: Number(raw['checklist_pct'] ?? vista['checklist_pct'] ?? 0) || 0,
+      sesiones_pct: Number(raw['sesiones_pct'] ?? vista['sesiones_pct'] ?? 0) || 0,
+      checklist_hechos: Number(raw['checklist_hechos'] ?? vista['checklist_hechos'] ?? 0) || 0,
+      checklist_total: Number(raw['checklist_total'] ?? vista['checklist_total'] ?? 0) || 0,
+      sesiones_hechas: Number(raw['sesiones_hechas'] ?? vista['sesiones_hechas'] ?? 0) || 0,
+      sesiones_objetivo: Number(raw['sesiones_objetivo'] ?? vista['sesiones_objetivo'] ?? 0) || 0,
       evento_objetivo: this.normalizeEvento(eventoRaw),
       progreso_panel: panelRaw && typeof panelRaw === 'object' ? panelRaw : undefined,
       vista

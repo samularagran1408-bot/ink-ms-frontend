@@ -52,6 +52,19 @@ export class AiAssistantService {
     return this.http.get<Record<string, unknown>>(`${this.base}/competencia/modo`);
   }
 
+  marcarChecklist(itemId: string, hecho: boolean): Observable<Record<string, unknown>> {
+    return this.http.post<Record<string, unknown>>(`${this.base}/competencia/checklist`, {
+      item_id: itemId,
+      hecho
+    });
+  }
+
+  registrarSesion(routineId: string): Observable<Record<string, unknown>> {
+    return this.http.post<Record<string, unknown>>(`${this.base}/competencia/sesion`, {
+      routine_id: routineId
+    });
+  }
+
   dashboard(usuarioId?: string): Observable<Record<string, unknown>> {
     const path = usuarioId
       ? `${this.base}/dashboard/${encodeURIComponent(usuarioId)}`
