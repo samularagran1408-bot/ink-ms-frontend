@@ -178,6 +178,54 @@
     </div>
 
     <div class="card">
+      <h3 class="section-title">{{ 'ADMIN_USERS.REGISTERED_EVENTS' | translate }} ({{ userEventRows.length }})</h3>
+      <p class="kpi-sub">{{ 'ADMIN_USERS.REGISTERED_EVENTS_HINT' | translate }}</p>
+      <p *ngIf="userEventsLoading" class="empty-text">{{ 'ADMIN_USERS.REGISTERED_EVENTS_LOADING' | translate }}</p>
+      <p *ngIf="userEventsError" class="error-text">{{ 'ADMIN_USERS.REGISTERED_EVENTS_ERROR' | translate }}</p>
+      <table class="data-table" *ngIf="!userEventsLoading && userEventRows.length">
+        <thead>
+          <tr>
+            <th>{{ 'ADMIN_USERS.EVENT_NAME' | translate }}</th>
+            <th>{{ 'ADMIN_USERS.EVENT_SPORT' | translate }}</th>
+            <th>{{ 'ADMIN_USERS.EVENT_DATE' | translate }}</th>
+            <th>{{ 'ADMIN_USERS.EVENT_LOCATION' | translate }}</th>
+            <th>{{ 'ADMIN_USERS.REGISTRATION_STATUS' | translate }}</th>
+            <th>{{ 'ADMIN_USERS.REGISTERED_AT' | translate }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let row of userEventRows">
+            <td>
+              <a
+                *ngIf="row.registration.eventId"
+                class="event-link"
+                [routerLink]="['/admin/events']"
+                [queryParams]="{ eventoId: row.registration.eventId }"
+              >
+                {{ row.event?.name || row.registration.eventName || ('ADMIN_USERS.EVENT_FALLBACK' | translate) }}
+              </a>
+              <ng-container *ngIf="!row.registration.eventId">
+                {{ row.event?.name || row.registration.eventName || ('ADMIN_USERS.EVENT_FALLBACK' | translate) }}
+              </ng-container>
+            </td>
+            <td>{{ eventSport(row) }}</td>
+            <td>{{ eventDateLabel(row) }}</td>
+            <td>{{ eventLocation(row) }}</td>
+            <td>
+              <span class="status-pill" [ngClass]="registrationStatusClass(row)">
+                {{ registrationStatusKey(row) | translate:{ position: row.registration.waitlistPosition } }}
+              </span>
+            </td>
+            <td>{{ formatDate(row.registration.registrationDate) }}</td>
+          </tr>
+        </tbody>
+      </table>
+      <p *ngIf="!userEventsLoading && !userEventsError && !userEventRows.length" class="empty-text">
+        {{ 'ADMIN_USERS.REGISTERED_EVENTS_EMPTY' | translate }}
+      </p>
+    </div>
+
+    <div class="card">
       <h3 class="section-title">{{ 'ADMIN_USERS.USER_ACTIVITY' | translate }}</h3>
       <p class="kpi-sub">{{ 'ADMIN_USERS.LAST_LOGIN' | translate }}: {{ (userActivityLastLogin || user.lastLoginAt) ? formatDate(userActivityLastLogin || user.lastLoginAt) : ('ADMIN_USERS.NEVER_LOGIN' | translate) }}</p>
       <ul class="activity-feed" *ngIf="userActivities.length; else noUserActivity">

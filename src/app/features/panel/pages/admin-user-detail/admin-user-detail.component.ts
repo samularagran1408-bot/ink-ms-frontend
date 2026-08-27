@@ -2,14 +2,21 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslateService } from '@ngx-translate/core';
-import { Observable, Subscription, of } from 'rxjs';
+import { forkJoin, Observable, Subscription, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
 import { AdminAuditLog, AdminUserActivityItem, RoleInfo, UpdateProfileRequest, UserProfile } from '../../../../core/models/user-profile';
+import { EventItem, Registration } from '../../../../core/models/sports';
 import { UsersService } from '../../../../core/services/users.service';
+import { SportsService } from '../../../../core/services/sports.service';
 import { SessionService } from '../../../../core/services/session.service';
 import { ConfirmDialogService } from '../../../../core/services/confirm-dialog.service';
 import { companionRequirement, hasCompanionData } from '../../../auth/models/register-request';
+
+interface AdminUserEventRow {
+  registration: Registration;
+  event: EventItem | null;
+}
 
 @Component({
   selector: 'app-admin-user-detail',
@@ -26,6 +33,9 @@ export class AdminUserDetailComponent implements OnInit, OnDestroy {
   auditLogs: AdminAuditLog[] = [];
   userActivities: AdminUserActivityItem[] = [];
   userActivityLastLogin: string | null = null;
+  userEventRows: AdminUserEventRow[] = [];
+  userEventsLoading = false;
+  userEventsError = false;
   loading = true;
   isSaving = false;
   isSavingRoles = false;
@@ -56,6 +66,7 @@ export class AdminUserDetailComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private usersService: UsersService,
+    private sportsService: SportsService,
     private session: SessionService,
     private confirm: ConfirmDialogService,
     private translate: TranslateService
@@ -158,6 +169,7 @@ export class AdminUserDetailComponent implements OnInit, OnDestroy {
         this.loading = false;
         this.loadAudit();
         this.loadUserActivity();
+        this.loadUserEvents(user.id);
       },
       error: (error) => {
         this.loading = false;
@@ -444,6 +456,90 @@ export class AdminUserDetailComponent implements OnInit, OnDestroy {
         this.userActivities = response.items || [];
       }
     });
+  }
+
+  private loadUserEvents(userId?: string): void {
+    if (!userId) {
+      this.userEventRows = [];
+      this.userEventsLoading = false;
+      this.userEventsError = false;
+      return;
+    }
+
+    this.userEventsLoading = true;
+    this.userEventsError = false;
+    forkJoin({
+      registrations: this.sportsService.getRegistrationsByUser(userId).pipe(
+        catchError(() => {
+          this.userEventsError = true;
+          return of([] as Registration[]);
+        })
+      ),
+      events: this.sportsService.getEvents().pipe(catchError(() => of([] as EventItem[])))
+    }).subscribe({
+      next: ({ registrations, events }) => {
+        const byId = new Map((events || []).map((event) => [String(event.id), event]));
+        this.userEventRows = (registrations || []).map((registration) => ({
+          registration,
+          event: byId.get(String(registration.eventId)) || null
+        }));
+        this.userEventsLoading = false;
+      },
+      error: () => {
+        this.userEventRows = [];
+        this.userEventsLoading = false;
+        this.userEventsError = true;
+      }
+    });
+  }
+
+  eventDateLabel(row: AdminUserEventRow): string {
+    const registration = row.registration;
+    const event = row.event;
+    const date = event?.eventDate || registration.eventDate;
+    const time = (event?.eventTime || registration.eventTime || '').toString().substring(0, 5);
+    if (date) {
+      return time ? `${date} · ${time}` : String(date);
+    }
+    return registration.registrationDate ? this.formatDate(registration.registrationDate) : '—';
+  }
+
+  eventLocation(row: AdminUserEventRow): string {
+    return row.event?.location || '—';
+  }
+
+  eventSport(row: AdminUserEventRow): string {
+    return row.event?.sportName || '—';
+  }
+
+  registrationStatusKey(row: AdminUserEventRow): string {
+    const registration = row.registration;
+    const status = (row.event?.status || registration.eventStatus || '').toString().toLowerCase();
+    if (registration.waitlistPosition != null) {
+      return 'ADMIN_USERS.REG_STATUS_WAITLIST';
+    }
+    if (status === 'cancelled') {
+      return 'ADMIN_USERS.REG_STATUS_CANCELLED';
+    }
+    if (registration.attended) {
+      return 'ADMIN_USERS.REG_STATUS_ATTENDED';
+    }
+    if (status === 'finished') {
+      return 'ADMIN_USERS.REG_STATUS_ABSENT';
+    }
+    return 'ADMIN_USERS.REG_STATUS_REGISTERED';
+  }
+
+  registrationStatusClass(row: AdminUserEventRow): string {
+    const registration = row.registration;
+    const status = (row.event?.status || registration.eventStatus || '').toString().toLowerCase();
+    if (registration.waitlistPosition != null || status === 'cancelled') {
+      return 'status-pill--bad';
+    }
+    if (registration.attended) {
+      return 'status-pill--ok';
+    }
+    return 'status-pill--warn';
   }
 
   formatActivityAction(action?: string): string {

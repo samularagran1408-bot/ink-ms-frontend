@@ -160,6 +160,16 @@
   object-fit: cover;
 }
 
+.event-link {
+  color: #A30D11;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.event-link:hover {
+  text-decoration: underline;
+}
+
 .activity-feed {
   list-style: none;
   margin: 0;
