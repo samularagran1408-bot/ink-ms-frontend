@@ -1,7 +1,8 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { TranslateService } from '@ngx-translate/core';
-import { Subscription } from 'rxjs';
+import { Subscription, of } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
 
 import { SessionService } from '../../../../core/services/session.service';
 import { UsersService } from '../../../../core/services/users.service';
@@ -23,6 +24,9 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
   profilePicturePreview: string | null = null;
   isSaving = false;
   isProcessingPhoto = false;
+  private pendingPhotoFile: File | null = null;
+  private photoRemoved = false;
+  private previewObjectUrl: string | null = null;
 
   readonly disabilityOptions = [
     { value: 'VISUAL', labelKey: 'PROFILE.DISABILITY_VISUAL' },
@@ -89,6 +93,7 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.disabilitySub?.unsubscribe();
+    this.revokePreviewUrl();
   }
 
   get fixedSidebar(): boolean {
@@ -126,60 +131,33 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
     }
 
     this.isProcessingPhoto = true;
-    this.readAndResizeImage(file)
-      .then((dataUrl) => {
-        this.profilePicturePreview = dataUrl;
-        this.form.patchValue({ profilePicture: dataUrl });
-        this.message = this.translate.instant('PROFILE.PHOTO_READY');
-        this.errorMessage = null;
-      })
-      .catch(() => {
-        this.errorMessage = this.translate.instant('PROFILE.PHOTO_PROCESS_ERROR');
-      })
-      .finally(() => {
-        this.isProcessingPhoto = false;
-        input.value = '';
-      });
+    this.revokePreviewUrl();
+    this.pendingPhotoFile = file;
+    this.photoRemoved = false;
+    this.previewObjectUrl = URL.createObjectURL(file);
+    this.profilePicturePreview = this.previewObjectUrl;
+    this.form.patchValue({ profilePicture: '' });
+    this.message = this.translate.instant('PROFILE.PHOTO_READY');
+    this.errorMessage = null;
+    this.isProcessingPhoto = false;
+    input.value = '';
   }
 
   removePhoto(): void {
+    this.revokePreviewUrl();
+    this.pendingPhotoFile = null;
+    this.photoRemoved = true;
     this.profilePicturePreview = null;
     this.form.patchValue({ profilePicture: '' });
     this.message = this.translate.instant('PROFILE.PHOTO_REMOVED');
     this.errorMessage = null;
   }
 
-  private readAndResizeImage(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onerror = () => reject(new Error('read failed'));
-      reader.onload = () => {
-        const img = new Image();
-        img.onerror = () => reject(new Error('image failed'));
-        img.onload = () => {
-          const maxSize = 400;
-          let { width, height } = img;
-          if (width > maxSize || height > maxSize) {
-            const ratio = Math.min(maxSize / width, maxSize / height);
-            width = Math.round(width * ratio);
-            height = Math.round(height * ratio);
-          }
-
-          const canvas = document.createElement('canvas');
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          if (!ctx) {
-            reject(new Error('canvas failed'));
-            return;
-          }
-          ctx.drawImage(img, 0, 0, width, height);
-          resolve(canvas.toDataURL('image/jpeg', 0.85));
-        };
-        img.src = String(reader.result);
-      };
-      reader.readAsDataURL(file);
-    });
+  private revokePreviewUrl(): void {
+    if (this.previewObjectUrl) {
+      URL.revokeObjectURL(this.previewObjectUrl);
+      this.previewObjectUrl = null;
+    }
   }
 
   private normalizeDisability(value?: string | null): string {
@@ -261,8 +239,7 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
       companionRelationship: raw.companionRelationship || '',
       companionEmail: raw.companionEmail || '',
       supportPreference: raw.supportPreference || '',
-      supportPreferenceNotes: raw.supportPreferenceNotes || '',
-      profilePicture: raw.profilePicture || ''
+      supportPreferenceNotes: raw.supportPreferenceNotes || ''
     };
 
     if (phone) {
@@ -270,11 +247,24 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
     }
 
     this.isSaving = true;
-    this.usersService.updateProfile(payload).subscribe({
+    this.usersService.updateProfile(payload).pipe(
+      switchMap((profile) => {
+        if (this.photoRemoved) {
+          return this.usersService.deleteProfilePhoto();
+        }
+        if (this.pendingPhotoFile) {
+          return this.usersService.uploadProfilePhoto(this.pendingPhotoFile);
+        }
+        return of(profile);
+      })
+    ).subscribe({
       next: (profile) => {
         this.isSaving = false;
+        this.pendingPhotoFile = null;
+        this.photoRemoved = false;
         this.message = this.translate.instant('PROFILE.UPDATED');
         this.errorMessage = null;
+        this.revokePreviewUrl();
         this.profilePicturePreview = profile.profilePicture || null;
         this.rolesLabel = profile.roles?.join(', ') || this.rolesLabel;
         this.session.loadProfile().subscribe();

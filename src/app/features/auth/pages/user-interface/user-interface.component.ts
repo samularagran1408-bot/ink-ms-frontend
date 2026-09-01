@@ -7,7 +7,6 @@ import { TranslateService } from '@ngx-translate/core';
 import { EventItem, Registration, Routine, RoutineRegistration, Sport, Disability, SportDisability, CalendarEvent } from '../../../../core/models/sports';
 import { SessionService } from '../../../../core/services/session.service';
 import { SportsService } from '../../../../core/services/sports.service';
-import { PreferencesApiService } from '../../../../core/services/preferences-api.service';
 import { NotificationAnnounceService } from '../../../../core/services/notification-announce.service';
 import { LanguageService } from '../../../../core/services/language.service';
 import { UnreadNotificationsService } from '../../../../core/services/unread-notifications.service';
@@ -58,11 +57,11 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
 
   private langSub: Subscription | null = null;
   private competitionSub: Subscription | null = null;
+  private unreadSub: Subscription | null = null;
 
   constructor(
     private session: SessionService,
     private sportsService: SportsService,
-    private preferencesApi: PreferencesApiService,
     private router: Router,
     private notificationAnnounce: NotificationAnnounceService,
     private translate: TranslateService,
@@ -75,6 +74,10 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.notificationAnnounce.start();
+    this.unreadNotifications.start();
+    this.unreadSub = this.unreadNotifications.count$.subscribe((count) => {
+      this.unreadCount = count;
+    });
     this.competitionSub = this.competitionProgress.state$.subscribe((state) => {
       this.competition = state;
     });
@@ -101,22 +104,18 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
         routineRegistrations: userId
           ? this.sportsService.getRoutineRegistrationsByUser(userId).pipe(catchError(() => of([] as RoutineRegistration[])))
           : of([] as RoutineRegistration[]),
-        unread: this.preferencesApi.getUnreadCount().pipe(catchError(() => of(0))),
-        prefs: this.notificationAnnounce.refreshPreferences(),
         sports: this.sportsService.getActiveSports().pipe(catchError(() => of([] as Sport[]))),
         disabilities: this.sportsService.getActiveDisabilities().pipe(catchError(() => of([] as Disability[]))),
         associations: this.sportsService.getAssociations().pipe(catchError(() => of([] as SportDisability[]))),
         calendar: this.sportsService.getEventCalendar().pipe(catchError(() => of([] as CalendarEvent[])))
       }).subscribe({
-        next: ({ events, registrations, routines, routineRegistrations, unread, sports, disabilities, associations, calendar }) => {
+        next: ({ events, registrations, routines, routineRegistrations, sports, disabilities, associations, calendar }) => {
           this.allEvents = this.sortEvents(events);
           this.events = this.allEvents.slice(0, 6);
           this.registrations = this.sortRegistrations(registrations);
           this.routines = routines;
           this.routineRegistrations = routineRegistrations;
           this.nextEvent = this.resolveNextEvent(events, registrations);
-          this.unreadCount = typeof unread === 'number' ? unread : (unread?.count ?? 0);
-          this.unreadNotifications.setCount(this.unreadCount);
           this.sports = sports;
           this.disabilities = disabilities;
           this.associations = associations;
@@ -136,6 +135,7 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.langSub?.unsubscribe();
     this.competitionSub?.unsubscribe();
+    this.unreadSub?.unsubscribe();
   }
 
   get confirmedCount(): number {
@@ -240,26 +240,39 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
     void this.confirmJoinRoutine(routine);
   }
 
-  onLogRoutineSession(item: { registration: RoutineRegistration; routine: Routine | null }): void {
-    void this.confirmLogRoutineSession(item);
+  onLogJoinedRoutine(routine: Routine): void {
+    void this.confirmLogRoutineSession(routine.id, routine.name, false);
   }
 
-  private async confirmLogRoutineSession(item: {
-    registration: RoutineRegistration;
-    routine: Routine | null;
-  }): Promise<void> {
+  onLogRoutineSession(item: { registration: RoutineRegistration; routine: Routine | null }): void {
     const name = item.routine?.name || this.routineName(item.registration.routineId);
+    void this.confirmLogRoutineSession(item.registration.routineId, name, false);
+  }
+
+  private async confirmLogRoutineSession(
+    routineId: string,
+    name: string,
+    afterJoin: boolean
+  ): Promise<void> {
+    if (!routineId) {
+      return;
+    }
+    if (!this.competitionActive) {
+      this.errorMessage = this.translate.instant('HOME.SESSION_NEEDS_COMPETE');
+      this.successMessage = null;
+      this.openCompetition();
+      return;
+    }
     const ok = await this.confirm.ask({
       title: this.translate.instant('HOME.LOG_SESSION'),
-      message: this.translate.instant('HOME.CONFIRM_LOG_SESSION', { name }),
+      message: this.translate.instant(
+        afterJoin ? 'HOME.CONFIRM_FIRST_SESSION' : 'HOME.CONFIRM_LOG_SESSION',
+        { name }
+      ),
       confirmLabel: this.translate.instant('COMMON.CONFIRM'),
       cancelLabel: this.translate.instant('COMMON.CANCEL')
     });
     if (!ok) {
-      return;
-    }
-    const routineId = item.registration.routineId;
-    if (!routineId) {
       return;
     }
     this.loggingSessionRoutineId = routineId;
@@ -303,13 +316,37 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
         next: () => {
           this.registeringRoutineId = null;
           this.errorMessage = null;
-          this.loadHomeData();
+          this.successMessage = this.translate.instant('HOME.JOINED_ROUTINE_OK', { name: routine.name });
+          this.refreshRoutineMembership();
+          if (this.competitionActive) {
+            void this.confirmLogRoutineSession(routine.id, routine.name, true);
+          }
         },
         error: (error) => {
           this.registeringRoutineId = null;
           this.errorMessage = error?.error?.message || this.translate.instant('HOME.JOIN_ERROR');
         }
       });
+    });
+  }
+
+  private refreshRoutineMembership(): void {
+    const userId = this.session.getProfile()?.id;
+    if (!userId) {
+      this.loadHomeData();
+      return;
+    }
+    forkJoin({
+      routines: this.sportsService.getRoutines().pipe(catchError(() => of(this.routines))),
+      routineRegistrations: this.sportsService
+        .getRoutineRegistrationsByUser(userId)
+        .pipe(catchError(() => of(this.routineRegistrations)))
+    }).subscribe({
+      next: ({ routines, routineRegistrations }) => {
+        this.routines = routines;
+        this.routineRegistrations = routineRegistrations;
+      },
+      error: () => this.loadHomeData()
     });
   }
 

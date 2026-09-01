@@ -3,7 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { catchError, switchMap } from 'rxjs/operators';
 
-import { AttendanceCheckInMethod, normalizeAttendanceCheckInMethod, Preference } from '../../../../core/models/accessibility-api';
+import { AttendanceCheckInMethod, normalizeAttendanceCheckInMethod } from '../../../../core/models/accessibility-api';
 import { EventItem, QrAttendanceInfo, Registration } from '../../../../core/models/sports';
 import { PreferencesApiService } from '../../../../core/services/preferences-api.service';
 import { SessionService } from '../../../../core/services/session.service';
@@ -112,14 +112,15 @@ export class AttendanceCheckinPageComponent implements OnInit, OnDestroy {
           events: this.sportsService.getEvents().pipe(catchError(() => of([] as EventItem[]))),
           registrations: userId
             ? this.sportsService.getRegistrationsByUser(userId).pipe(catchError(() => of([] as Registration[])))
-            : of([] as Registration[]),
-          preferences: this.preferencesApi.getPreferences().pipe(catchError(() => of(null as Preference | null)))
+            : of([] as Registration[])
         });
       })
     ).subscribe({
-      next: ({ info, events, registrations, preferences }) => {
+      next: ({ info, events, registrations }) => {
         this.info = info;
-        this.attendanceCheckInMethod = normalizeAttendanceCheckInMethod(preferences?.attendanceCheckInMethod);
+        this.attendanceCheckInMethod = normalizeAttendanceCheckInMethod(
+          this.preferencesApi.cached?.attendanceCheckInMethod
+        );
         const eventId = info?.eventId || this.route.snapshot.queryParamMap.get('eventId');
         this.event = events.find((item) => item.id === eventId) || null;
         this.registration = registrations.find((reg) => {

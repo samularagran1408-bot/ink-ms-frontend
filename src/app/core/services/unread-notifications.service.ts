@@ -1,6 +1,6 @@
 import { Injectable, OnDestroy } from '@angular/core';
-import { BehaviorSubject, Subscription, interval, of } from 'rxjs';
-import { catchError, switchMap } from 'rxjs/operators';
+import { BehaviorSubject, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 
 import { PreferencesApiService } from './preferences-api.service';
 import { SessionService } from './session.service';
@@ -12,8 +12,7 @@ export class UnreadNotificationsService implements OnDestroy {
   private readonly countSubject = new BehaviorSubject<number>(0);
   readonly count$ = this.countSubject.asObservable();
 
-  private pollSub: Subscription | null = null;
-  private readonly pollMs = 30000;
+  private started = false;
 
   constructor(
     private preferencesApi: PreferencesApiService,
@@ -21,20 +20,16 @@ export class UnreadNotificationsService implements OnDestroy {
   ) {}
 
   start(): void {
-    if (this.pollSub || !this.session.isAuthenticated()) {
+    if (this.started || !this.session.isAuthenticated()) {
       return;
     }
+    this.started = true;
     this.refresh();
-    this.pollSub = interval(this.pollMs).pipe(
-      switchMap(() => {
-        if (!this.session.isAuthenticated()) {
-          return of(0);
-        }
-        return this.preferencesApi.getUnreadCount().pipe(
-          catchError(() => of(0))
-        );
-      })
-    ).subscribe((value) => this.countSubject.next(this.normalize(value)));
+  }
+
+  stop(): void {
+    this.started = false;
+    this.countSubject.next(0);
   }
 
   refresh(): void {
@@ -51,8 +46,12 @@ export class UnreadNotificationsService implements OnDestroy {
     this.countSubject.next(Math.max(0, count));
   }
 
+  get count(): number {
+    return this.countSubject.value;
+  }
+
   ngOnDestroy(): void {
-    this.pollSub?.unsubscribe();
+    this.stop();
   }
 
   private normalize(value: { count: number } | number): number {

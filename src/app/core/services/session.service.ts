@@ -8,6 +8,9 @@ import { UserProfile } from '../models/user-profile';
 import { decodeJwtPayload, isTokenExpired } from '../utils/jwt.util';
 import { UsersService } from './users.service';
 import { AccessibilityService } from './accessibility.service';
+import { NotificationAnnounceService } from './notification-announce.service';
+import { PreferencesApiService } from './preferences-api.service';
+import { UnreadNotificationsService } from './unread-notifications.service';
 
 const TOKEN_KEY = 'auth_token';
 
@@ -106,6 +109,9 @@ export class SessionService {
   }
 
   logout(): void {
+    this.injector.get(UnreadNotificationsService).stop();
+    this.injector.get(NotificationAnnounceService).stop();
+    this.injector.get(PreferencesApiService).clearCache();
     this.clearSession();
     this.router.navigate(['/']);
   }

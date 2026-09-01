@@ -839,31 +839,65 @@
   box-shadow: 0 0 0 1px rgba(163, 13, 17, 0.12);
 }
 
+.ai-checklist {
+  padding: 0;
+}
+
 .ai-check-item {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   align-items: flex-start;
   width: 100%;
-  border: 0;
-  background: transparent;
-  padding: 0;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  border-radius: 10px;
+  padding: 10px 12px;
   text-align: left;
   font: inherit;
   color: inherit;
   cursor: pointer;
 }
 
+.ai-check-item:hover:not(:disabled) {
+  border-color: #a30d11;
+  background: #fef2f2;
+}
+
 .ai-check-item:disabled {
   cursor: wait;
+  opacity: 0.7;
+}
+
+.ai-check-box {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
+  border: 2px solid #94a3b8;
+  border-radius: 5px;
+  background: #fff;
 }
 
 .ai-check-item--done {
   color: #0f766e;
-  text-decoration: line-through;
+  border-color: #99f6e4;
+  background: #f0fdfa;
 }
 
-.ai-check-item--done app-icon {
-  color: #0f766e;
+.ai-check-item--done .ai-check-box {
+  border-color: #0f766e;
+  background: #0f766e;
+}
+
+.ai-check-item--done .ai-check-box::after {
+  content: '';
+  display: block;
+  width: 5px;
+  height: 9px;
+  margin: 1px 0 0 6px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
 }
 
 .ai-fases span {

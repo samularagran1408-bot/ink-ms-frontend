@@ -70,11 +70,8 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
     this.subs.add(
       this.router.events
         .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
-        .subscribe((event) => {
+        .subscribe(() => {
           this.sidebarOpen = false;
-          if (event.urlAfterRedirects.includes('/notifications')) {
-            this.unreadNotifications.refresh();
-          }
         })
     );
 
@@ -148,10 +145,6 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
     this.preferredLayout = this.role === 'USUARIO' ? 'drawer' : 'fixed';
     this.brandTitle = this.role === 'ADMIN' ? 'INKLUSPORT ADMIN' : 'INKLUSPORT';
     this.applyMenuByRole();
-    if (this.session.isAuthenticated()) {
-      this.unreadNotifications.start();
-      this.unreadNotifications.refresh();
-    }
   }
 
   get sessionHome(): string {

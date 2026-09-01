@@ -55,20 +55,17 @@ export class NotificationsPageComponent implements OnInit, OnDestroy {
 
   reload(): void {
     this.loading = true;
-    this.notificationAnnounce.refreshPreferences().subscribe(() => {
-      this.audioMode = this.tts.isAudioNotificationsActive;
-      this.preferencesApi.getNotifications().subscribe({
-        next: (notifications) => {
-          this.notifications = notifications;
-          this.loading = false;
-          this.unreadNotifications.refresh();
-        },
-        error: (error) => {
-          this.errorMessage =
-            error?.error?.message || this.translate.instant('NOTIFICATIONS.LOAD_ERROR');
-          this.loading = false;
-        }
-      });
+    this.audioMode = this.tts.isAudioNotificationsActive;
+    this.preferencesApi.getNotifications().subscribe({
+      next: (notifications) => {
+        this.notifications = notifications;
+        this.loading = false;
+      },
+      error: (error) => {
+        this.errorMessage =
+          error?.error?.message || this.translate.instant('NOTIFICATIONS.LOAD_ERROR');
+        this.loading = false;
+      }
     });
   }
 
@@ -108,7 +105,7 @@ export class NotificationsPageComponent implements OnInit, OnDestroy {
     this.preferencesApi.markAsRead(note.id).subscribe({
       next: () => {
         note.read = true;
-        this.unreadNotifications.refresh();
+        this.unreadNotifications.setCount(this.unreadNotifications.count - 1);
       }
     });
   }

@@ -143,16 +143,28 @@
                 <span *ngIf="routine.durationMinutes"> · {{ routine.durationMinutes }} min</span>
               </div>
             </div>
-            <button
-              *ngIf="!isRoutineJoined(routine.id)"
-              class="register-event-btn"
-              type="button"
-              [disabled]="registeringRoutineId === routine.id || (routine.availableCapacity ?? 1) <= 0"
-              (click)="onRegisterRoutine(routine)"
-            >
-              {{ registeringRoutineId === routine.id ? '...' : ('HOME.JOIN_ROUTINE' | translate) }}
-            </button>
-            <span *ngIf="isRoutineJoined(routine.id)" class="status-pill status-pill--ok">{{ 'HOME.JOINED' | translate }}</span>
+            <div class="activity-row-actions">
+              <button
+                *ngIf="!isRoutineJoined(routine.id)"
+                class="register-event-btn"
+                type="button"
+                [disabled]="registeringRoutineId === routine.id || (routine.availableCapacity ?? 1) <= 0"
+                (click)="onRegisterRoutine(routine)"
+              >
+                {{ registeringRoutineId === routine.id ? '...' : ('HOME.JOIN_ROUTINE' | translate) }}
+              </button>
+              <ng-container *ngIf="isRoutineJoined(routine.id)">
+                <span class="status-pill status-pill--ok">{{ 'HOME.JOINED' | translate }}</span>
+                <button
+                  class="register-event-btn"
+                  type="button"
+                  [disabled]="loggingSessionRoutineId === routine.id"
+                  (click)="onLogJoinedRoutine(routine)"
+                >
+                  {{ loggingSessionRoutineId === routine.id ? '...' : ('HOME.LOG_SESSION' | translate) }}
+                </button>
+              </ng-container>
+            </div>
           </div>
           <p *ngIf="!filteredRoutines.length" class="empty-text">{{ 'HOME.NO_ROUTINES_MATCH' | translate }}</p>
         </article>
@@ -216,7 +228,6 @@
               <div class="activity-row-actions">
                 <span class="status-pill status-pill--ok">{{ 'HOME.JOINED' | translate }}</span>
                 <button
-                  *ngIf="competitionActive"
                   class="register-event-btn"
                   type="button"
                   [disabled]="loggingSessionRoutineId === item.registration.routineId"

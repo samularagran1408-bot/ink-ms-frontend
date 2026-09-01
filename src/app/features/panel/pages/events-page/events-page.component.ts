@@ -194,18 +194,17 @@ export class EventsPageComponent implements OnInit, OnDestroy {
             : of([] as Registration[]),
           sports: this.canManage
             ? this.sportsService.getActiveSports().pipe(catchError(() => of([] as Sport[])))
-            : of([] as Sport[]),
-          preferences: this.mode === 'user'
-            ? this.preferencesApi.getPreferences().pipe(catchError(() => of(null)))
-            : of(null)
+            : of([] as Sport[])
         });
       })
     ).subscribe({
-      next: ({ events, registrations, sports, preferences }) => {
+      next: ({ events, registrations, sports }) => {
         this.events = events;
         this.registrations = registrations;
         this.sports = sports;
-        this.attendanceCheckInMethod = normalizeAttendanceCheckInMethod(preferences?.attendanceCheckInMethod);
+        this.attendanceCheckInMethod = normalizeAttendanceCheckInMethod(
+          this.preferencesApi.cached?.attendanceCheckInMethod
+        );
         if (sports.length && !this.form.value.sportId) {
           this.form.patchValue({ sportId: sports[0].id });
         }

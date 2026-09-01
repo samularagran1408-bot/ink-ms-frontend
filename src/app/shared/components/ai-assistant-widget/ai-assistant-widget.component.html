@@ -336,16 +336,18 @@
           </div>
           <h4 *ngIf="checklistItems().length">{{ 'AI_WIDGET.CHECKLIST' | translate }}</h4>
           <p class="ai-lead" *ngIf="competenciaModoActivo() && checklistItems().length">{{ 'AI_WIDGET.CHECKLIST_HINT' | translate }}</p>
-          <ul class="ai-list" *ngIf="checklistItems().length">
+          <ul class="ai-list ai-checklist" *ngIf="checklistItems().length">
             <li *ngFor="let item of checklistItems()">
               <button
                 type="button"
                 class="ai-check-item"
                 [class.ai-check-item--done]="item.hecho"
                 [disabled]="!competenciaModoActivo() || loggingChecklistId === item.id"
+                [attr.aria-pressed]="item.hecho"
+                [attr.aria-label]="(item.hecho ? 'AI_WIDGET.CHECKLIST_UNMARK' : 'AI_WIDGET.CHECKLIST_MARK') | translate"
                 (click)="toggleChecklist(item)"
               >
-                <app-icon [name]="item.hecho ? 'shield-check' : 'clipboard-document-list'" [size]="14"></app-icon>
+                <span class="ai-check-box" aria-hidden="true"></span>
                 <div>{{ item.texto }}</div>
               </button>
             </li>

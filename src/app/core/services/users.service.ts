@@ -30,6 +30,16 @@ export class UsersService {
     return this.http.put<UserProfile>(`${this.baseUrl}/perfil`, payload);
   }
 
+  uploadProfilePhoto(file: File): Observable<UserProfile> {
+    const body = new FormData();
+    body.append('file', file);
+    return this.http.post<UserProfile>(`${this.baseUrl}/perfil/foto`, body);
+  }
+
+  deleteProfilePhoto(): Observable<UserProfile> {
+    return this.http.delete<UserProfile>(`${this.baseUrl}/perfil/foto`);
+  }
+
   createProfile(payload: UpdateProfileRequest): Observable<UserProfile> {
     return this.http.post<UserProfile>(`${this.baseUrl}/perfil`, payload);
   }
@@ -48,6 +58,16 @@ export class UsersService {
 
   adminUpdateProfile(email: string, payload: UpdateProfileRequest): Observable<UserProfile> {
     return this.http.put<UserProfile>(`${this.adminUrl}/${encodeURIComponent(email)}`, payload);
+  }
+
+  adminUploadProfilePhoto(email: string, file: File): Observable<UserProfile> {
+    const body = new FormData();
+    body.append('file', file);
+    return this.http.post<UserProfile>(`${this.adminUrl}/${encodeURIComponent(email)}/foto`, body);
+  }
+
+  adminDeleteProfilePhoto(email: string): Observable<UserProfile> {
+    return this.http.delete<UserProfile>(`${this.adminUrl}/${encodeURIComponent(email)}/foto`);
   }
 
   getActiveUsers(): Observable<UserProfile[]> {

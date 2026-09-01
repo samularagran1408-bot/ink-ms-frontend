@@ -1,20 +1,21 @@
 import { Injectable, OnDestroy } from '@angular/core';
-import { BehaviorSubject, Observable, Subscription, interval, of } from 'rxjs';
-import { catchError, map, switchMap, tap } from 'rxjs/operators';
+import { BehaviorSubject, Observable, Subscription, of } from 'rxjs';
+import { catchError, tap } from 'rxjs/operators';
 
 import { AppNotification, Preference } from '../models/accessibility-api';
 import { PreferencesApiService } from './preferences-api.service';
 import { SessionService } from './session.service';
 import { TtsService } from './tts.service';
+import { UnreadNotificationsService } from './unread-notifications.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class NotificationAnnounceService implements OnDestroy {
-  private pollSub: Subscription | null = null;
+  private countSub: Subscription | null = null;
   private unlockListener: (() => void) | null = null;
   private started = false;
-  private readonly pollMs = 45000;
+  private lastSeenCount = -1;
   private toastTimer: ReturnType<typeof setTimeout> | undefined;
   private readonly shownIds = new Set<string>();
   private readonly visualAlertSubject = new BehaviorSubject<string | null>(null);
@@ -24,27 +25,40 @@ export class NotificationAnnounceService implements OnDestroy {
   constructor(
     private preferencesApi: PreferencesApiService,
     private session: SessionService,
-    private tts: TtsService
+    private tts: TtsService,
+    private unreadNotifications: UnreadNotificationsService
   ) {}
 
-  /** Arranca sync de preferencias, desbloqueo por gesto y polling de no leídas. */
+  /** Arranca sync de preferencias, desbloqueo por gesto y avisos de no leídas. */
   start(): void {
     if (this.started) {
-      this.refreshPreferences().subscribe();
       return;
     }
     this.started = true;
     this.bindUnlockGesture();
-    this.refreshPreferences().subscribe();
-    this.startPolling();
+    const cached = this.preferencesApi.cached;
+    if (cached) {
+      this.tts.applyPreferences(cached);
+    } else {
+      this.refreshPreferences().subscribe();
+    }
+    this.bindUnreadAnnouncements();
   }
 
-  ngOnDestroy(): void {
-    this.pollSub?.unsubscribe();
+  stop(): void {
+    this.countSub?.unsubscribe();
+    this.countSub = null;
+    this.started = false;
+    this.lastSeenCount = -1;
+    this.shownIds.clear();
     this.removeUnlockGesture();
     if (this.toastTimer) {
       clearTimeout(this.toastTimer);
     }
+  }
+
+  ngOnDestroy(): void {
+    this.stop();
   }
 
   refreshPreferences(): Observable<Preference | null> {
@@ -74,26 +88,29 @@ export class NotificationAnnounceService implements OnDestroy {
     });
   }
 
-  private startPolling(): void {
-    this.pollSub?.unsubscribe();
-    this.pollSub = interval(this.pollMs).pipe(
-      switchMap(() => {
-        if (!this.session.isAuthenticated()) {
-          return of([] as AppNotification[]);
-        }
-        return this.refreshPreferences().pipe(
-          switchMap(() => {
-            if (!this.tts.isVisualNotificationsActive && !this.tts.isAudioNotificationsActive) {
-              return of([] as AppNotification[]);
-            }
-            return this.preferencesApi.getUnreadNotifications().pipe(
-              catchError(() => of([] as AppNotification[]))
-            );
-          })
-        );
-      }),
-      map((unread) => unread.filter((n) => n.id && !this.shownIds.has(n.id)))
-    ).subscribe((fresh) => {
+  private bindUnreadAnnouncements(): void {
+    this.countSub?.unsubscribe();
+    this.countSub = this.unreadNotifications.count$.subscribe((count) => {
+      const previous = this.lastSeenCount;
+      this.lastSeenCount = count;
+      if (previous < 0 || count <= previous) {
+        return;
+      }
+      this.announceFreshUnread();
+    });
+  }
+
+  private announceFreshUnread(): void {
+    if (!this.session.isAuthenticated()) {
+      return;
+    }
+    if (!this.tts.isVisualNotificationsActive && !this.tts.isAudioNotificationsActive) {
+      return;
+    }
+    this.preferencesApi.getUnreadNotifications().pipe(
+      catchError(() => of([] as AppNotification[]))
+    ).subscribe((unread) => {
+      const fresh = unread.filter((note) => note.id && !this.shownIds.has(note.id));
       if (!fresh.length) {
         return;
       }
