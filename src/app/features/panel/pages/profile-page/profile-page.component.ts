@@ -267,7 +267,7 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
         this.revokePreviewUrl();
         this.profilePicturePreview = profile.profilePicture || null;
         this.rolesLabel = profile.roles?.join(', ') || this.rolesLabel;
-        this.session.loadProfile().subscribe();
+        this.session.loadProfile(true).subscribe();
       },
       error: (error) => {
         this.isSaving = false;

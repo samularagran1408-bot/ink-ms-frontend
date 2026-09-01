@@ -76,6 +76,7 @@
           type="search"
           name="catalogQuery"
           [(ngModel)]="catalogQuery"
+          (ngModelChange)="onCatalogQueryChange()"
           [placeholder]="'HOME.CATALOG_PLACEHOLDER' | translate"
           [attr.aria-label]="'HOME.CATALOG_PLACEHOLDER' | translate"
         />

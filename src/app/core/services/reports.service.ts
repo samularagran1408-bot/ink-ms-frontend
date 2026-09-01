@@ -6,7 +6,8 @@ import { API_BASE_URL } from '../config/api.config';
 import {
   AuditExportRequest,
   DashboardFilters,
-  DashboardResponse
+  DashboardResponse,
+  PanelDashboardResponse
 } from '../models/reports';
 
 @Injectable({
@@ -21,6 +22,80 @@ export class ReportsService {
     return this.http.get<DashboardResponse>(this.dashboardUrl, {
       params: this.toParams(filters)
     });
+  }
+
+  getHomePanel(userId?: string): Observable<PanelDashboardResponse> {
+    return this.http.get<PanelDashboardResponse>(`${this.dashboardUrl}/home`, {
+      params: userId ? { userId } : undefined
+    });
+  }
+
+  getTrainerPanel(trainerId?: string): Observable<PanelDashboardResponse> {
+    return this.http.get<PanelDashboardResponse>(`${this.dashboardUrl}/trainer`, {
+      params: trainerId ? { trainerId } : undefined
+    });
+  }
+
+  getOrganizerPanel(organizerId?: string): Observable<PanelDashboardResponse> {
+    return this.http.get<PanelDashboardResponse>(`${this.dashboardUrl}/organizer`, {
+      params: organizerId ? { organizerId } : undefined
+    });
+  }
+
+  getEventsPanel(userId?: string, mode: 'user' | 'manage' = 'user'): Observable<PanelDashboardResponse> {
+    const params: Record<string, string> = { mode };
+    if (userId) {
+      params['userId'] = userId;
+    }
+    return this.http.get<PanelDashboardResponse>(`${this.dashboardUrl}/events`, { params });
+  }
+
+  getAssociationsPanel(): Observable<PanelDashboardResponse> {
+    return this.http.get<PanelDashboardResponse>(`${this.dashboardUrl}/associations`);
+  }
+
+  getSessionsPanel(trainerId?: string): Observable<PanelDashboardResponse> {
+    return this.http.get<PanelDashboardResponse>(`${this.dashboardUrl}/sessions`, {
+      params: trainerId ? { trainerId } : undefined
+    });
+  }
+
+  getAthletesPanel(organizerId?: string, allEvents = false): Observable<PanelDashboardResponse> {
+    const params: Record<string, string> = { allEvents: String(allEvents) };
+    if (organizerId) {
+      params['organizerId'] = organizerId;
+    }
+    return this.http.get<PanelDashboardResponse>(`${this.dashboardUrl}/athletes`, { params });
+  }
+
+  getSportsPanel(): Observable<PanelDashboardResponse> {
+    return this.http.get<PanelDashboardResponse>(`${this.dashboardUrl}/sports`);
+  }
+
+  getDisabilitiesPanel(): Observable<PanelDashboardResponse> {
+    return this.http.get<PanelDashboardResponse>(`${this.dashboardUrl}/disabilities`);
+  }
+
+  getUsersPanel(filter: 'active' | 'all' | 'inactive' = 'active'): Observable<PanelDashboardResponse> {
+    return this.http.get<PanelDashboardResponse>(`${this.dashboardUrl}/users`, {
+      params: { filter }
+    });
+  }
+
+  getRolesPanel(): Observable<PanelDashboardResponse> {
+    return this.http.get<PanelDashboardResponse>(`${this.dashboardUrl}/roles`);
+  }
+
+  getAuditPanel(): Observable<PanelDashboardResponse> {
+    return this.http.get<PanelDashboardResponse>(`${this.dashboardUrl}/audit`);
+  }
+
+  getQuizPanel(role: 'trainer' | 'organizer', userId?: string): Observable<PanelDashboardResponse> {
+    const params: Record<string, string> = { role };
+    if (userId) {
+      params['userId'] = userId;
+    }
+    return this.http.get<PanelDashboardResponse>(`${this.dashboardUrl}/quiz`, { params });
   }
 
   exportDashboardPdf(filters?: DashboardFilters): Observable<Blob> {

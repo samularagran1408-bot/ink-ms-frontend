@@ -1,10 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { forkJoin, of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
 
 import { Disability, Sport, SportDisability } from '../../../../core/models/sports';
 import { SportsService } from '../../../../core/services/sports.service';
+import { ReportsService } from '../../../../core/services/reports.service';
 import { ConfirmDialogService } from '../../../../core/services/confirm-dialog.service';
 
 @Component({
@@ -15,7 +14,7 @@ import { ConfirmDialogService } from '../../../../core/services/confirm-dialog.s
 export class AssociationsPageComponent implements OnInit {
   sports: Sport[] = [];
   disabilities: Disability[] = [];
-  associations: SportDisability[] = [];
+  allAssociations: SportDisability[] = [];
   form: FormGroup;
   selectedSportId: number | null = null;
   searchQuery = '';
@@ -25,6 +24,7 @@ export class AssociationsPageComponent implements OnInit {
 
   constructor(
     private sportsService: SportsService,
+    private reportsService: ReportsService,
     private fb: FormBuilder,
     private confirm: ConfirmDialogService
   ) {
@@ -36,32 +36,19 @@ export class AssociationsPageComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    forkJoin({
-      sports: this.sportsService.getSports().pipe(catchError(() => of([] as Sport[]))),
-      disabilities: this.sportsService.getActiveDisabilities().pipe(catchError(() => of([] as Disability[])))
-    }).subscribe({
-      next: ({ sports, disabilities }) => {
-        this.sports = sports;
-        this.disabilities = disabilities;
-        if (sports.length) {
-          this.selectedSportId = sports[0].id;
-          this.form.patchValue({ sportId: sports[0].id, disabilityId: disabilities[0]?.id ?? null });
-          this.loadAssociations(sports[0].id);
-        }
-        this.loading = false;
-      },
-      error: () => {
-        this.errorMessage = 'No se pudieron cargar deportes o discapacidades.';
-        this.loading = false;
-      }
-    });
-
+    this.reload();
     this.form.get('sportId')!.valueChanges.subscribe((sportId) => {
       if (sportId != null) {
         this.selectedSportId = Number(sportId);
-        this.loadAssociations(Number(sportId));
       }
     });
+  }
+
+  get associations(): SportDisability[] {
+    if (this.selectedSportId == null) {
+      return this.allAssociations;
+    }
+    return this.allAssociations.filter((item) => item.sportId === this.selectedSportId);
   }
 
   get filteredAssociations(): SportDisability[] {
@@ -107,7 +94,7 @@ export class AssociationsPageComponent implements OnInit {
         this.successMessage = 'Asociación creada.';
         this.errorMessage = null;
         this.form.patchValue({ adaptations: '' });
-        this.loadAssociations(payload.sportId);
+        this.reload();
       },
       error: (error) => {
         this.successMessage = null;
@@ -134,7 +121,7 @@ export class AssociationsPageComponent implements OnInit {
     this.sportsService.removeSportDisability(item.sportId, item.disabilityId).subscribe({
       next: () => {
         this.successMessage = 'Asociación eliminada.';
-        this.loadAssociations(item.sportId);
+        this.reload();
       },
       error: (error) => {
         this.errorMessage = error?.error?.message || 'No se pudo eliminar la asociación.';
@@ -142,14 +129,25 @@ export class AssociationsPageComponent implements OnInit {
     });
   }
 
-  private loadAssociations(sportId: number): void {
-    this.sportsService.getSportDisabilities(sportId).subscribe({
-      next: (items) => {
-        this.associations = items;
+  private reload(): void {
+    this.loading = true;
+    this.reportsService.getAssociationsPanel().subscribe({
+      next: (panel) => {
+        this.sports = panel.sports || [];
+        this.disabilities = panel.disabilities || [];
+        this.allAssociations = panel.associations || [];
+        if (this.sports.length && this.selectedSportId == null) {
+          this.selectedSportId = this.sports[0].id;
+          this.form.patchValue({
+            sportId: this.sports[0].id,
+            disabilityId: this.disabilities[0]?.id ?? null
+          });
+        }
+        this.loading = false;
       },
-      error: (error) => {
-        this.errorMessage = error?.error?.message || 'No se pudieron cargar asociaciones.';
-        this.associations = [];
+      error: () => {
+        this.errorMessage = 'No se pudieron cargar deportes o discapacidades.';
+        this.loading = false;
       }
     });
   }

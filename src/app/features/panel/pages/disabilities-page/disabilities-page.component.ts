@@ -3,6 +3,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 
 import { Disability } from '../../../../core/models/sports';
 import { SportsService } from '../../../../core/services/sports.service';
+import { ReportsService } from '../../../../core/services/reports.service';
 import { ConfirmDialogService } from '../../../../core/services/confirm-dialog.service';
 
 @Component({
@@ -23,6 +24,7 @@ export class DisabilitiesPageComponent implements OnInit {
 
   constructor(
     private sportsService: SportsService,
+    private reportsService: ReportsService,
     private fb: FormBuilder,
     private confirm: ConfirmDialogService
   ) {
@@ -60,9 +62,9 @@ export class DisabilitiesPageComponent implements OnInit {
   }
 
   reload(): void {
-    this.sportsService.getDisabilities().subscribe({
-      next: (items) => {
-        this.items = items;
+    this.reportsService.getDisabilitiesPanel().subscribe({
+      next: (panel) => {
+        this.items = panel.disabilities || [];
         this.errorMessage = null;
       },
       error: (error) => this.errorMessage = error?.error?.message || 'No se pudieron cargar discapacidades.'

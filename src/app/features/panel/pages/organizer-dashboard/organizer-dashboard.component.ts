@@ -1,12 +1,12 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { forkJoin, of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { of } from 'rxjs';
 
 import { EventItem, Sport } from '../../../../core/models/sports';
 import { SessionService } from '../../../../core/services/session.service';
 import { SportsService } from '../../../../core/services/sports.service';
+import { ReportsService } from '../../../../core/services/reports.service';
 import { ConfirmDialogService } from '../../../../core/services/confirm-dialog.service';
 import { resolveEventImage } from '../../../../core/utils/event-image.util';
 import { EventPlaceLocation } from '../../../../core/utils/maps.util';
@@ -32,6 +32,7 @@ export class OrganizerDashboardComponent implements OnInit {
   constructor(
     private session: SessionService,
     private sportsService: SportsService,
+    private reportsService: ReportsService,
     private fb: FormBuilder,
     private router: Router,
     private confirm: ConfirmDialogService
@@ -61,24 +62,17 @@ export class OrganizerDashboardComponent implements OnInit {
 
     profile$.subscribe((profile) => {
       this.quizPassed = !!profile?.organizerQuizPassed;
-      forkJoin({
-        events: this.sportsService.getEvents().pipe(catchError(() => of([] as EventItem[]))),
-        activeEvents: this.sportsService.countActiveEvents().pipe(catchError(() => of(0))),
-        sports: this.sportsService.getActiveSports().pipe(catchError(() => of([] as Sport[])))
-      }).subscribe({
-        next: ({ events, activeEvents, sports }) => {
-          const profileId = this.session.getProfile()?.id;
-          const own = profileId
-            ? events.filter((event) => event.createdBy === profileId)
-            : [];
-          this.events = own.length ? own : events;
-          this.activeEvents = activeEvents;
-          this.sports = sports;
-          if (sports.length && !this.form.value.sportId) {
-            this.form.patchValue({ sportId: sports[0].id });
+      this.reportsService.getOrganizerPanel(profile?.id).subscribe({
+        next: (panel) => {
+          this.events = panel.events || [];
+          this.activeEvents = panel.metrics?.['active_events'] ?? 0;
+          this.sports = panel.sports || [];
+          this.athleteCount = panel.athleteCount ?? panel.metrics?.['athletes'] ?? 0;
+          this.attendanceRatePercent = panel.attendanceRatePercent ?? null;
+          this.attendanceSampledEvents = panel.attendanceSampledEvents ?? 0;
+          if (this.sports.length && !this.form.value.sportId) {
+            this.form.patchValue({ sportId: this.sports[0].id });
           }
-          this.loadAthleteCount(this.events);
-          this.loadAttendanceRate(this.events);
           this.loading = false;
         },
         error: () => {
@@ -175,46 +169,5 @@ export class OrganizerDashboardComponent implements OnInit {
   occupied(event: EventItem): number {
     const max = event.maxCapacity || 0;
     return Math.max(max - (event.availableCapacity ?? max), 0);
-  }
-
-  private loadAthleteCount(events: EventItem[]): void {
-    if (!events.length) {
-      this.athleteCount = 0;
-      return;
-    }
-
-    this.athleteCount = events.reduce((acc, event) => {
-      const taken = (event.maxCapacity || 0) - (event.availableCapacity ?? (event.maxCapacity || 0));
-      return acc + Math.max(taken, 0);
-    }, 0);
-  }
-
-  private loadAttendanceRate(events: EventItem[]): void {
-    const sample = events.slice(0, 8);
-    this.attendanceSampledEvents = sample.length;
-    if (!sample.length) {
-      this.attendanceRatePercent = null;
-      return;
-    }
-
-    forkJoin(
-      sample.map((event) =>
-        this.sportsService.getAttendanceReport(event.id).pipe(
-          catchError(() => of({ totalRegistered: 0, totalAttended: 0 }))
-        )
-      )
-    ).subscribe((reports) => {
-      const totals = reports.reduce(
-        (acc, report) => {
-          acc.registered += Number(report.totalRegistered || 0);
-          acc.attended += Number(report.totalAttended || 0);
-          return acc;
-        },
-        { registered: 0, attended: 0 }
-      );
-      this.attendanceRatePercent = totals.registered
-        ? Math.round((totals.attended * 10000) / totals.registered) / 100
-        : 0;
-    });
   }
 }

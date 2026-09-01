@@ -1,6 +1,6 @@
 import { Injectable, Injector } from '@angular/core';
 import { BehaviorSubject, Observable, of } from 'rxjs';
-import { catchError, map, switchMap, tap } from 'rxjs/operators';
+import { catchError, finalize, map, shareReplay, switchMap, tap } from 'rxjs/operators';
 import { Router } from '@angular/router';
 
 import { AppRole, ROLE_HOME, ROLE_LABELS, normalizeRoles, resolvePrimaryRole } from '../models/app-role';
@@ -13,6 +13,7 @@ import { PreferencesApiService } from './preferences-api.service';
 import { UnreadNotificationsService } from './unread-notifications.service';
 
 const TOKEN_KEY = 'auth_token';
+const PUBLIC_PATHS = new Set(['/', '', '/login', '/register', '/guest', '/forgot-password']);
 
 /**
  * sessionStorage: cada pestaña tiene su propio JWT.
@@ -27,6 +28,7 @@ const tokenStore: Storage = sessionStorage;
 export class SessionService {
   private readonly profileSubject = new BehaviorSubject<UserProfile | null>(null);
   private readonly rolesSubject = new BehaviorSubject<AppRole[]>([]);
+  private profileInFlight: Observable<UserProfile | null> | null = null;
 
   readonly profile$ = this.profileSubject.asObservable();
   readonly roles$ = this.rolesSubject.asObservable();
@@ -52,6 +54,11 @@ export class SessionService {
   isAuthenticated(): boolean {
     const token = this.getToken();
     return !!token && !isTokenExpired(token);
+  }
+
+  isPublicRoute(url = this.router.url): boolean {
+    const path = (url || '').split('?')[0];
+    return PUBLIC_PATHS.has(path);
   }
 
   getRoles(): AppRole[] {
@@ -91,6 +98,7 @@ export class SessionService {
   clearSession(): void {
     tokenStore.removeItem(TOKEN_KEY);
     localStorage.removeItem(TOKEN_KEY);
+    this.profileInFlight = null;
     this.profileSubject.next(null);
     this.rolesSubject.next([]);
   }
@@ -120,12 +128,18 @@ export class SessionService {
     return ROLE_HOME[this.getPrimaryRole()];
   }
 
-  loadProfile(): Observable<UserProfile | null> {
+  loadProfile(force = false): Observable<UserProfile | null> {
     if (!this.isAuthenticated()) {
       return of(null);
     }
+    if (!force && this.profileSubject.value) {
+      return of(this.profileSubject.value);
+    }
+    if (this.profileInFlight) {
+      return this.profileInFlight;
+    }
 
-    return this.usersService.getProfile().pipe(
+    const request$ = this.usersService.getProfile().pipe(
       tap((profile) => {
         this.profileSubject.next(profile);
         if (profile.roles?.length) {
@@ -138,8 +152,14 @@ export class SessionService {
           this.hydrateRolesFromToken(token);
         }
         return of(null);
-      })
+      }),
+      finalize(() => {
+        this.profileInFlight = null;
+      }),
+      shareReplay(1)
     );
+    this.profileInFlight = request$;
+    return request$;
   }
 
   bootstrapAfterLogin(token: string): Observable<string> {

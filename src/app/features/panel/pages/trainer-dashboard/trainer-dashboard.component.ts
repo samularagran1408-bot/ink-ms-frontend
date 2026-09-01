@@ -1,11 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { forkJoin, of } from 'rxjs';
-import { catchError, switchMap } from 'rxjs/operators';
+import { of } from 'rxjs';
 
-import { Disability, Routine, RoutineRegistration } from '../../../../core/models/sports';
+import { Disability, Routine } from '../../../../core/models/sports';
 import { SessionService } from '../../../../core/services/session.service';
-import { SportsService } from '../../../../core/services/sports.service';
+import { ReportsService } from '../../../../core/services/reports.service';
 
 @Component({
   selector: 'app-trainer-dashboard',
@@ -16,13 +15,13 @@ export class TrainerDashboardComponent implements OnInit {
   loading = true;
   routines: Routine[] = [];
   disabilities: Disability[] = [];
-  athleteIds = new Set<string>();
+  athleteCount = 0;
   errorMessage: string | null = null;
   quizPassed = false;
 
   constructor(
     private session: SessionService,
-    private sportsService: SportsService,
+    private reportsService: ReportsService,
     private router: Router
   ) {}
 
@@ -36,28 +35,20 @@ export class TrainerDashboardComponent implements OnInit {
       ? of(this.session.getProfile())
       : this.session.loadProfile();
 
-    bootstrap$.pipe(
-      switchMap((profile) => {
-        this.quizPassed = !!profile?.trainerQuizPassed;
-        const trainerId = profile?.id || '';
-        return forkJoin({
-          routines: trainerId
-            ? this.sportsService.getRoutinesByTrainer(trainerId).pipe(catchError(() => of([] as Routine[])))
-            : of([] as Routine[]),
-          disabilities: this.sportsService.getActiveDisabilities().pipe(catchError(() => of([] as Disability[])))
-        });
-      })
-    ).subscribe({
-      next: ({ routines, disabilities }) => {
-        this.routines = routines;
-        this.disabilities = disabilities;
-        this.loadAthleteIds(routines);
-        this.loading = false;
-      },
-      error: () => {
-        this.errorMessage = 'No se pudo cargar el panel del entrenador.';
-        this.loading = false;
-      }
+    bootstrap$.subscribe((profile) => {
+      this.quizPassed = !!profile?.trainerQuizPassed;
+      this.reportsService.getTrainerPanel(profile?.id).subscribe({
+        next: (panel) => {
+          this.routines = panel.routines || [];
+          this.disabilities = panel.disabilities || [];
+          this.athleteCount = panel.athleteCount ?? panel.metrics?.['athletes'] ?? 0;
+          this.loading = false;
+        },
+        error: () => {
+          this.errorMessage = 'No se pudo cargar el panel del entrenador.';
+          this.loading = false;
+        }
+      });
     });
   }
 
@@ -65,9 +56,6 @@ export class TrainerDashboardComponent implements OnInit {
     return this.routines.filter((routine) => routine.status === 'published').length;
   }
 
-  /**
-   * Navega a la pantalla de quiz de aptitud del entrenador.
-   */
   goQuiz(): void {
     this.router.navigate(['/trainer/quiz']);
   }
@@ -86,22 +74,5 @@ export class TrainerDashboardComponent implements OnInit {
 
   goAssociations(): void {
     this.router.navigate(['/trainer/associations']);
-  }
-
-  private loadAthleteIds(routines: Routine[]): void {
-    if (!routines.length) {
-      this.athleteIds = new Set();
-      return;
-    }
-
-    forkJoin(
-      routines.map((routine) =>
-        this.sportsService.getRoutineRegistrations(routine.id).pipe(catchError(() => of([] as RoutineRegistration[])))
-      )
-    ).subscribe((groups) => {
-      const ids = new Set<string>();
-      groups.flat().forEach((reg) => ids.add(reg.userId));
-      this.athleteIds = ids;
-    });
   }
 }

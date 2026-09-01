@@ -1,13 +1,12 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { Subscription, forkJoin, of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { Subscription, of } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 
 import { EventItem, Registration, Routine, RoutineRegistration, Sport, Disability, SportDisability, CalendarEvent } from '../../../../core/models/sports';
 import { SessionService } from '../../../../core/services/session.service';
 import { SportsService } from '../../../../core/services/sports.service';
-import { NotificationAnnounceService } from '../../../../core/services/notification-announce.service';
+import { ReportsService } from '../../../../core/services/reports.service';
 import { LanguageService } from '../../../../core/services/language.service';
 import { UnreadNotificationsService } from '../../../../core/services/unread-notifications.service';
 import { ConfirmDialogService } from '../../../../core/services/confirm-dialog.service';
@@ -54,6 +53,10 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
   selectedCalendarDate: string | null = null;
   private calendarYear = 0;
   private calendarMonth = 0;
+  private sportsLoaded = false;
+  private disabilitiesLoaded = false;
+  private associationsLoaded = false;
+  private routinesLoaded = false;
 
   private langSub: Subscription | null = null;
   private competitionSub: Subscription | null = null;
@@ -62,8 +65,8 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
   constructor(
     private session: SessionService,
     private sportsService: SportsService,
+    private reportsService: ReportsService,
     private router: Router,
-    private notificationAnnounce: NotificationAnnounceService,
     private translate: TranslateService,
     private languageService: LanguageService,
     private unreadNotifications: UnreadNotificationsService,
@@ -73,15 +76,12 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    this.notificationAnnounce.start();
-    this.unreadNotifications.start();
     this.unreadSub = this.unreadNotifications.count$.subscribe((count) => {
       this.unreadCount = count;
     });
     this.competitionSub = this.competitionProgress.state$.subscribe((state) => {
       this.competition = state;
     });
-    this.competitionProgress.refresh().subscribe();
     this.buildCalendar(new Date());
     this.langSub = this.translate.onLangChange.subscribe(() => this.buildCalendar(new Date()));
     this.loadHomeData();
@@ -94,34 +94,24 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
       : this.session.loadProfile();
 
     profile$.subscribe((profile) => {
-      const userId = profile?.id;
-      forkJoin({
-        events: this.sportsService.getEvents().pipe(catchError(() => of([] as EventItem[]))),
-        registrations: userId
-          ? this.sportsService.getRegistrationsByUser(userId).pipe(catchError(() => of([] as Registration[])))
-          : of([] as Registration[]),
-        routines: this.sportsService.getRoutines().pipe(catchError(() => of([] as Routine[]))),
-        routineRegistrations: userId
-          ? this.sportsService.getRoutineRegistrationsByUser(userId).pipe(catchError(() => of([] as RoutineRegistration[])))
-          : of([] as RoutineRegistration[]),
-        sports: this.sportsService.getActiveSports().pipe(catchError(() => of([] as Sport[]))),
-        disabilities: this.sportsService.getActiveDisabilities().pipe(catchError(() => of([] as Disability[]))),
-        associations: this.sportsService.getAssociations().pipe(catchError(() => of([] as SportDisability[]))),
-        calendar: this.sportsService.getEventCalendar().pipe(catchError(() => of([] as CalendarEvent[])))
-      }).subscribe({
-        next: ({ events, registrations, routines, routineRegistrations, sports, disabilities, associations, calendar }) => {
+      this.reportsService.getHomePanel(profile?.id).subscribe({
+        next: (panel) => {
+          const events = panel.events || [];
+          const registrations = panel.registrations || [];
           this.allEvents = this.sortEvents(events);
           this.events = this.allEvents.slice(0, 6);
           this.registrations = this.sortRegistrations(registrations);
-          this.routines = routines;
-          this.routineRegistrations = routineRegistrations;
           this.nextEvent = this.resolveNextEvent(events, registrations);
-          this.sports = sports;
-          this.disabilities = disabilities;
-          this.associations = associations;
-          this.calendarItems = calendar;
-          this.calendarLoaded = true;
-          this.markEventDays(this.allEvents);
+          this.applyEventsToCalendar(this.allEvents);
+          this.sports = panel.sports || [];
+          this.disabilities = panel.disabilities || [];
+          this.associations = panel.associations || [];
+          this.routines = panel.routines || [];
+          this.routineRegistrations = panel.routineRegistrations || [];
+          this.sportsLoaded = true;
+          this.disabilitiesLoaded = true;
+          this.associationsLoaded = true;
+          this.routinesLoaded = true;
           this.loading = false;
         },
         error: () => {
@@ -207,7 +197,9 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
   }
 
   openCompetition(): void {
-    this.assistantUi.open('competencia');
+    this.competitionProgress.refresh().subscribe(() => {
+      this.assistantUi.open('competencia');
+    });
   }
 
   get myRoutines(): { registration: RoutineRegistration; routine: Routine | null }[] {
@@ -336,15 +328,11 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
       this.loadHomeData();
       return;
     }
-    forkJoin({
-      routines: this.sportsService.getRoutines().pipe(catchError(() => of(this.routines))),
-      routineRegistrations: this.sportsService
-        .getRoutineRegistrationsByUser(userId)
-        .pipe(catchError(() => of(this.routineRegistrations)))
-    }).subscribe({
-      next: ({ routines, routineRegistrations }) => {
-        this.routines = routines;
-        this.routineRegistrations = routineRegistrations;
+    this.reportsService.getHomePanel(userId).subscribe({
+      next: (panel) => {
+        this.routines = panel.routines || [];
+        this.routineRegistrations = panel.routineRegistrations || [];
+        this.routinesLoaded = true;
       },
       error: () => this.loadHomeData()
     });
@@ -548,6 +536,10 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
     this.catalogFilter = filter;
   }
 
+  onCatalogQueryChange(): void {
+    return;
+  }
+
   get showSports(): boolean {
     return this.catalogFilter === 'all' || this.catalogFilter === 'sports';
   }
@@ -592,6 +584,10 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
   }
 
   applyCalendarFilter(): void {
+    if (!this.calendarFrom && !this.calendarTo) {
+      this.applyEventsToCalendar(this.allEvents);
+      return;
+    }
     this.sportsService.getEventCalendar(this.calendarFrom || undefined, this.calendarTo || undefined).subscribe({
       next: (items) => {
         this.calendarItems = items;
@@ -610,7 +606,7 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
     this.calendarFrom = '';
     this.calendarTo = '';
     this.selectedCalendarDate = null;
-    this.applyCalendarFilter();
+    this.applyEventsToCalendar(this.allEvents);
   }
 
   onCalendarDayClick(cell: { day: number | null; muted: boolean }): void {
@@ -635,6 +631,21 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
   formatTime(value?: string): string {
     if (!value) return '';
     return value.length >= 5 ? value.slice(0, 5) : value;
+  }
+
+  private applyEventsToCalendar(events: EventItem[]): void {
+    this.calendarItems = events.map((event) => ({
+      id: event.id,
+      title: event.name,
+      startDate: event.eventDate,
+      startTime: event.eventTime,
+      location: event.location,
+      sportName: event.sportName,
+      availableCapacity: event.availableCapacity,
+      maxCapacity: event.maxCapacity
+    }));
+    this.calendarLoaded = true;
+    this.markEventDays(events);
   }
 
   private sortEvents(events: EventItem[]): EventItem[] {

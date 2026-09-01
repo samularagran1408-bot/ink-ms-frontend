@@ -63,10 +63,7 @@ export class AccessibilityService implements OnDestroy {
     this.applySnapshot(restored, { persistLocal: true, persistRemote: false });
     this.bindSystemListeners();
 
-    if (!this.session.isAuthenticated()) {
-      return of(restored);
-    }
-    return this.syncFromServer();
+    return of(restored);
   }
 
   syncFromServer(): Observable<Preference | null> {

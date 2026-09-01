@@ -8,8 +8,6 @@ import { AuthService } from '../../services/auth.service';
 import { LoginRequest } from '../../models/login-request';
 import { AccessibilityService } from '../../../../core/services/accessibility.service';
 import { SessionService } from '../../../../core/services/session.service';
-import { NotificationAnnounceService } from '../../../../core/services/notification-announce.service';
-import { UnreadNotificationsService } from '../../../../core/services/unread-notifications.service';
 import { TranslateService } from '@ngx-translate/core';
 
 @Component({
@@ -35,8 +33,6 @@ export class LoginComponent {
     private route: ActivatedRoute,
     private router: Router,
     public accessibilityService: AccessibilityService,
-    private notificationAnnounce: NotificationAnnounceService,
-    private unreadNotifications: UnreadNotificationsService,
     private translate: TranslateService
   ) {
     this.loginForm = this.fb.group({
@@ -76,15 +72,11 @@ export class LoginComponent {
           next: (home) => {
             this.isSubmitting = false;
             this.loginSuccess = true;
-            this.notificationAnnounce.start();
-            this.unreadNotifications.start();
             this.navigateAfterLogin(home);
           },
           error: () => {
             this.isSubmitting = false;
             this.loginSuccess = true;
-            this.notificationAnnounce.start();
-            this.unreadNotifications.start();
             this.navigateAfterLogin(this.session.homeForCurrentUser());
           }
         });

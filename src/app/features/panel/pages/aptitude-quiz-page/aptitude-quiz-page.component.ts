@@ -3,7 +3,6 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
 
 import { Sport } from '../../../../core/models/sports';
 import {
@@ -14,7 +13,7 @@ import {
   QuizService
 } from '../../../../core/services/quiz.service';
 import { SessionService } from '../../../../core/services/session.service';
-import { SportsService } from '../../../../core/services/sports.service';
+import { ReportsService } from '../../../../core/services/reports.service';
 
 /**
  * Pasos del flujo de quiz en la UI.
@@ -51,7 +50,7 @@ export class AptitudeQuizPageComponent implements OnInit {
     private fb: FormBuilder,
     private quizService: QuizService,
     private session: SessionService,
-    private sportsService: SportsService
+    private reportsService: ReportsService
   ) {
     this.prepForm = this.fb.group({
       experienceYears: [3, [Validators.required, Validators.min(0), Validators.max(80)]]
@@ -209,7 +208,7 @@ export class AptitudeQuizPageComponent implements OnInit {
         this.result = result;
         this.step = 'result';
         this.busy = false;
-        this.session.loadProfile().subscribe();
+        this.session.loadProfile(true).subscribe();
       },
       error: (err: HttpErrorResponse) => {
         this.busy = false;
@@ -274,12 +273,11 @@ export class AptitudeQuizPageComponent implements OnInit {
         return;
       }
 
-      this.sportsService.getActiveSports().pipe(catchError(() => of([] as Sport[]))).subscribe((sports) => {
-        this.sports = sports;
-        this.quizService.getPrepStatus(this.rolePath, profile.id).pipe(
-          catchError(() => of(null))
-        ).subscribe((prep) => {
-          this.prep = prep;
+      this.reportsService.getQuizPanel(this.rolePath, profile.id).subscribe({
+        next: (panel) => {
+          this.sports = panel.sports || [];
+          const prep = (panel.quizPrep || null) as unknown as QuizPrepResponse | null;
+          this.prep = prep && Object.keys(prep).length ? prep : null;
           if (prep?.disciplineSportIds?.length) {
             this.selectedSports = new Set(prep.disciplineSportIds);
           }
@@ -290,7 +288,12 @@ export class AptitudeQuizPageComponent implements OnInit {
             this.errorMessage = 'Has agotado los intentos de verificación.';
           }
           this.loading = false;
-        });
+        },
+        error: () => {
+          this.sports = [];
+          this.prep = null;
+          this.loading = false;
+        }
       });
     });
   }

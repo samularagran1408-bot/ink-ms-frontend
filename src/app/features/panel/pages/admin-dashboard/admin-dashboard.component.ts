@@ -1,13 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { forkJoin, of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
 
 import { EventItem } from '../../../../core/models/sports';
 import { UserProfile } from '../../../../core/models/user-profile';
 import { DashboardResponse } from '../../../../core/models/reports';
-import { UsersService } from '../../../../core/services/users.service';
-import { SportsService } from '../../../../core/services/sports.service';
 import { ReportsService } from '../../../../core/services/reports.service';
 
 @Component({
@@ -30,36 +26,14 @@ export class AdminDashboardComponent implements OnInit {
   errorMessage: string | null = null;
 
   constructor(
-    private usersService: UsersService,
-    private sportsService: SportsService,
     private reportsService: ReportsService,
     private router: Router
   ) {}
 
   ngOnInit(): void {
-    forkJoin({
-      dashboard: this.reportsService.getDashboard().pipe(catchError(() => of(null as DashboardResponse | null))),
-      totalUsers: this.usersService.countUsers().pipe(catchError(() => of(0))),
-      activeUsers: this.usersService.countActiveUsers().pipe(catchError(() => of(0))),
-      activeEvents: this.sportsService.countActiveEvents().pipe(catchError(() => of(0))),
-      sportsCount: this.sportsService.countSports().pipe(catchError(() => of(0))),
-      users: this.usersService.getAllUsers().pipe(catchError(() => of([] as UserProfile[]))),
-      events: this.sportsService.getEvents().pipe(catchError(() => of([] as EventItem[]))),
-      disabilities: this.sportsService.getDisabilities().pipe(catchError(() => of([])))
-    }).subscribe({
-      next: (data) => {
-        if (data.dashboard) {
-          this.applyDashboard(data.dashboard);
-        } else {
-          this.totalUsers = data.totalUsers;
-          this.activeUsers = data.activeUsers;
-          this.activeEvents = data.activeEvents;
-          this.sportsCount = data.sportsCount;
-          this.errorMessage = 'No se pudo cargar /api/dashboard. Mostrando datos parciales.';
-        }
-        this.recentUsers = data.users.slice(0, 6);
-        this.events = data.events.slice(0, 4);
-        this.disabilitiesCount = data.disabilities.length;
+    this.reportsService.getDashboard().subscribe({
+      next: (dashboard) => {
+        this.applyDashboard(dashboard);
         this.loading = false;
       },
       error: () => {
@@ -108,6 +82,9 @@ export class AdminDashboardComponent implements OnInit {
     this.activeUsers = dashboard.metrics?.active_users ?? 0;
     this.activeEvents = dashboard.metrics?.active_events ?? 0;
     this.sportsCount = dashboard.metrics?.total_sports ?? 0;
+    this.disabilitiesCount = dashboard.metrics?.total_disabilities ?? 0;
+    this.recentUsers = dashboard.recentUsers || [];
+    this.events = dashboard.recentEvents || [];
     this.weeklyTrend = Object.entries(dashboard.weeklyTrend || {})
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([date, count]) => ({ date, count: Number(count) || 0 }));

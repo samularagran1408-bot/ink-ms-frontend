@@ -3,8 +3,8 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import QRCode from 'qrcode';
 import { Html5Qrcode } from 'html5-qrcode';
-import { forkJoin, of } from 'rxjs';
-import { catchError, switchMap } from 'rxjs/operators';
+import { of } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
 
 import {
   AttendanceReport,
@@ -130,7 +130,6 @@ export class EventsPageComponent implements OnInit, OnDestroy {
       }
     }, 30_000);
     this.reload();
-    this.loadCalendar();
   }
 
   ngOnDestroy(): void {
@@ -182,23 +181,12 @@ export class EventsPageComponent implements OnInit, OnDestroy {
       : this.session.loadProfile();
 
     profile$.pipe(
-      switchMap((profile) => {
-        const userId = profile?.id;
-        const events$ = this.mode === 'user'
-          ? this.sportsService.getAvailableEvents().pipe(catchError(() => of([] as EventItem[])))
-          : this.sportsService.getEvents().pipe(catchError(() => of([] as EventItem[])));
-        return forkJoin({
-          events: events$,
-          registrations: userId && this.mode === 'user'
-            ? this.sportsService.getRegistrationsByUser(userId).pipe(catchError(() => of([] as Registration[])))
-            : of([] as Registration[]),
-          sports: this.canManage
-            ? this.sportsService.getActiveSports().pipe(catchError(() => of([] as Sport[])))
-            : of([] as Sport[])
-        });
-      })
+      switchMap((profile) => this.reportsService.getEventsPanel(profile?.id, this.mode === 'manage' ? 'manage' : 'user'))
     ).subscribe({
-      next: ({ events, registrations, sports }) => {
+      next: (panel) => {
+        const events = panel.events || [];
+        const registrations = panel.registrations || [];
+        const sports = panel.sports || [];
         this.events = events;
         this.registrations = registrations;
         this.sports = sports;
@@ -212,8 +200,9 @@ export class EventsPageComponent implements OnInit, OnDestroy {
           this.buildMyPasses();
           void this.refreshPassQrImages();
         }
+        this.applyEventsToCalendar(events);
         if (this.canManage && this.mode === 'manage') {
-          this.loadWaitlists(events);
+          this.applyWaitlists(events, panel.waitlists || {});
         } else {
           this.loading = false;
         }
@@ -1014,40 +1003,32 @@ export class EventsPageComponent implements OnInit, OnDestroy {
     });
   }
 
-  private loadWaitlists(events: EventItem[]): void {
-    if (!events.length) {
-      this.manageRows = [];
-      this.loading = false;
+  private applyEventsToCalendar(events: EventItem[]): void {
+    if (this.calendarFrom || this.calendarTo) {
       return;
     }
+    this.calendarItems = events.map((event) => ({
+      id: event.id,
+      title: event.name,
+      startDate: event.eventDate,
+      startTime: event.eventTime,
+      location: event.location,
+      sportName: event.sportName,
+      availableCapacity: event.availableCapacity,
+      maxCapacity: event.maxCapacity
+    }));
+    this.calendarLoaded = true;
+  }
 
-    forkJoin(
-      events.map((event) =>
-        this.sportsService.getEventWaitlist(event.id).pipe(catchError(() => of([] as Registration[])))
-      )
-    ).subscribe({
-      next: (waitlists) => {
-        this.manageRows = events.map((event, index) => ({
-          event,
-          waitlist: waitlists[index] || [],
-          showWaitlist: false,
-          editing: false,
-          editForm: this.buildEditForm(event),
-          saving: false
-        }));
-        this.loading = false;
-      },
-      error: () => {
-        this.manageRows = events.map((event) => ({
-          event,
-          waitlist: [],
-          showWaitlist: false,
-          editing: false,
-          editForm: this.buildEditForm(event),
-          saving: false
-        }));
-        this.loading = false;
-      }
-    });
+  private applyWaitlists(events: EventItem[], waitlists: Record<string, Registration[]>): void {
+    this.manageRows = events.map((event) => ({
+      event,
+      waitlist: waitlists[event.id] || [],
+      showWaitlist: false,
+      editing: false,
+      editForm: this.buildEditForm(event),
+      saving: false
+    }));
+    this.loading = false;
   }
 }

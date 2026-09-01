@@ -299,7 +299,7 @@ export class AdminUserDetailComponent implements OnInit, OnDestroy {
         this.revokePreviewUrl();
         this.applyUser(profile);
         if (this.isSelf) {
-          this.session.loadProfile().subscribe();
+          this.session.loadProfile(true).subscribe();
         }
       },
       error: (error) => {

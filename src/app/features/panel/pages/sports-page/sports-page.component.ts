@@ -3,6 +3,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 
 import { Disability, Sport } from '../../../../core/models/sports';
 import { SportsService } from '../../../../core/services/sports.service';
+import { ReportsService } from '../../../../core/services/reports.service';
 import { ConfirmDialogService } from '../../../../core/services/confirm-dialog.service';
 
 @Component({
@@ -19,6 +20,7 @@ export class SportsPageComponent implements OnInit {
 
   constructor(
     private sportsService: SportsService,
+    private reportsService: ReportsService,
     private fb: FormBuilder,
     private confirm: ConfirmDialogService
   ) {
@@ -57,8 +59,8 @@ export class SportsPageComponent implements OnInit {
   }
 
   reload(): void {
-    this.sportsService.getSports().subscribe({
-      next: (sports) => this.sports = sports,
+    this.reportsService.getSportsPanel().subscribe({
+      next: (panel) => this.sports = panel.sports || [],
       error: (error) => this.errorMessage = error?.error?.message || 'No se pudieron cargar deportes.'
     });
   }

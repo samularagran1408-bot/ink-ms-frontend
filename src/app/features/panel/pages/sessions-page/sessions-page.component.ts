@@ -5,6 +5,7 @@ import { of } from 'rxjs';
 import { Routine, Sport } from '../../../../core/models/sports';
 import { SessionService } from '../../../../core/services/session.service';
 import { SportsService } from '../../../../core/services/sports.service';
+import { ReportsService } from '../../../../core/services/reports.service';
 import { ConfirmDialogService } from '../../../../core/services/confirm-dialog.service';
 
 @Component({
@@ -24,6 +25,7 @@ export class SessionsPageComponent implements OnInit {
     private fb: FormBuilder,
     private session: SessionService,
     private sportsService: SportsService,
+    private reportsService: ReportsService,
     private confirm: ConfirmDialogService
   ) {
     this.form = this.fb.group({
@@ -40,20 +42,25 @@ export class SessionsPageComponent implements OnInit {
 
   ngOnInit(): void {
     this.reload();
-    this.sportsService.getActiveSports().subscribe({
-      next: (sports) => {
-        this.sports = sports;
-        if (sports.length) {
-          this.form.patchValue({ sportId: sports[0].id });
-        }
-      }
-    });
   }
 
   reload(): void {
     this.loading = true;
     this.withTrainerId((trainerId) => {
-      this.fetchRoutines(trainerId);
+      this.reportsService.getSessionsPanel(trainerId).subscribe({
+        next: (panel) => {
+          this.routines = panel.routines || [];
+          this.sports = panel.sports || [];
+          if (this.sports.length && !this.form.value.sportId) {
+            this.form.patchValue({ sportId: this.sports[0].id });
+          }
+          this.loading = false;
+        },
+        error: (error) => {
+          this.errorMessage = error?.error?.message || 'No se pudieron cargar sesiones.';
+          this.loading = false;
+        }
+      });
     });
   }
 
@@ -139,19 +146,6 @@ export class SessionsPageComponent implements OnInit {
         return;
       }
       action(trainerId);
-    });
-  }
-
-  private fetchRoutines(trainerId: string): void {
-    this.sportsService.getRoutinesByTrainer(trainerId).subscribe({
-      next: (routines) => {
-        this.routines = routines;
-        this.loading = false;
-      },
-      error: (error) => {
-        this.errorMessage = error?.error?.message || 'No se pudieron cargar sesiones.';
-        this.loading = false;
-      }
     });
   }
 }

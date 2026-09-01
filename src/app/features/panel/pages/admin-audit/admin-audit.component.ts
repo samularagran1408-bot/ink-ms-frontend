@@ -1,11 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
-import { forkJoin, of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
 
 import { AdminAuditLog, UserProfile } from '../../../../core/models/user-profile';
 import { DashboardResponse } from '../../../../core/models/reports';
-import { UsersService } from '../../../../core/services/users.service';
 import { ReportsService } from '../../../../core/services/reports.service';
 
 interface ChartBar {
@@ -73,18 +70,22 @@ export class AdminAuditComponent implements OnInit {
   private readonly sliceColors = ['#A30D11', '#1D4ED8', '#0F766E', '#B45309', '#7C3AED', '#0369A1'];
 
   constructor(
-    private usersService: UsersService,
     private reportsService: ReportsService,
     private translate: TranslateService
   ) {}
 
   ngOnInit(): void {
-    forkJoin({
-      logs: this.usersService.getAuditLogs().pipe(catchError(() => of([] as AdminAuditLog[]))),
-      dashboard: this.reportsService.getDashboard().pipe(catchError(() => of(null))),
-      users: this.usersService.getAllUsers().pipe(catchError(() => of([] as UserProfile[])))
-    }).subscribe({
-      next: ({ logs, dashboard, users }) => {
+    this.reportsService.getAuditPanel().subscribe({
+      next: (panel) => {
+        const logs = panel.auditLogs || [];
+        const users = panel.users || [];
+        const dashboard: DashboardResponse = {
+          metrics: panel.metrics || {},
+          eventCounts: panel.eventCounts || {},
+          weeklyTrend: panel.weeklyTrend || {},
+          recentUsers: users,
+          recentEvents: []
+        };
         this.logs = logs;
         this.availableActions = [...new Set(logs.map((l) => l.action).filter(Boolean) as string[])].sort();
         this.dashboard = dashboard;
@@ -92,7 +93,7 @@ export class AdminAuditComponent implements OnInit {
         this.buildDisabilitySlices(users, dashboard);
         this.applyFilters();
         this.loading = false;
-        if (!logs.length && !dashboard) {
+        if (!logs.length && !dashboard.metrics) {
           this.errorMessage = this.translate.instant('ADMIN_AUDIT.LOAD_ERROR');
         }
       },

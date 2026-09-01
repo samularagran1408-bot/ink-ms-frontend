@@ -1,10 +1,9 @@
 import { Component, OnInit } from '@angular/core';
-import { forkJoin, of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { of } from 'rxjs';
 
 import { AttendanceReport, EventItem, Registration } from '../../../../core/models/sports';
 import { SessionService } from '../../../../core/services/session.service';
-import { SportsService } from '../../../../core/services/sports.service';
+import { ReportsService } from '../../../../core/services/reports.service';
 
 type AttendanceFilter = 'all' | 'attended' | 'absent';
 
@@ -37,7 +36,7 @@ export class AthletesPageComponent implements OnInit {
 
   constructor(
     private session: SessionService,
-    private sportsService: SportsService
+    private reportsService: ReportsService
   ) {}
 
   ngOnInit(): void {
@@ -51,10 +50,12 @@ export class AthletesPageComponent implements OnInit {
       ? of(this.session.getProfile())
       : this.session.loadProfile();
 
-    start.subscribe(() => {
-      this.sportsService.getEvents().subscribe({
-        next: (events) => {
-          this.loadSummaries(this.scopeEvents(events));
+    start.subscribe((profile) => {
+      const allEvents = this.session.hasRole('ADMIN', 'ENTRENADOR');
+      this.reportsService.getAthletesPanel(profile?.id, allEvents).subscribe({
+        next: (panel) => {
+          this.summaries = (panel.athleteSummaries || []).map((row) => this.toSummary(row));
+          this.loading = false;
         },
         error: (error) => {
           this.errorMessage = error?.error?.message || 'No se pudieron cargar eventos.';
@@ -86,80 +87,39 @@ export class AthletesPageComponent implements OnInit {
     return summary.enrolled.filter((row) => !row.attended).length;
   }
 
-  private scopeEvents(events: EventItem[]): EventItem[] {
-    if (this.session.hasRole('ADMIN', 'ENTRENADOR')) {
-      return events;
-    }
-
-    const profileId = this.session.getProfile()?.id;
-    if (!profileId) {
-      return events;
-    }
-
-    const own = events.filter((event) => event.createdBy === profileId);
-    return own.length ? own : events;
-  }
-
-  private loadSummaries(events: EventItem[]): void {
-    if (!events.length) {
-      this.summaries = [];
-      this.loading = false;
-      return;
-    }
-
-    forkJoin(
-      events.map((event) =>
-        forkJoin({
-          waitlist: this.sportsService.getEventWaitlist(event.id).pipe(catchError(() => of([] as Registration[]))),
-          report: this.sportsService.getAttendanceReport(event.id).pipe(
-            catchError(() => of({
-              eventId: event.id,
-              totalRegistered: 0,
-              totalAttended: 0,
-              attendees: [],
-              absentees: []
-            } as AttendanceReport))
-          )
-        })
-      )
-    ).subscribe({
-      next: (results) => {
-        this.summaries = events.map((event, index) => {
-          const report = results[index].report;
-          const enrolled: EnrolledUserRow[] = [
-            ...(report.attendees || []).map((row) => ({
-              registrationId: row.registrationId,
-              userId: row.userId,
-              fullName: row.fullName,
-              email: row.email,
-              attended: true,
-              checkInTime: row.checkInTime
-            })),
-            ...(report.absentees || []).map((row) => ({
-              registrationId: row.registrationId,
-              userId: row.userId,
-              fullName: row.fullName,
-              email: row.email,
-              attended: false
-            }))
-          ];
-          return {
-            event,
-            occupied: enrolled.length || Math.max(
-              (event.maxCapacity || 0) - (event.availableCapacity ?? (event.maxCapacity || 0)),
-              0
-            ),
-            waitlist: results[index].waitlist || [],
-            enrolled,
-            filter: 'all' as AttendanceFilter
-          };
-        });
-        this.loading = false;
-      },
-      error: () => {
-        this.errorMessage = 'No se pudo cargar el detalle de atletas.';
-        this.loading = false;
-      }
-    });
+  private toSummary(row: {
+    event: EventItem;
+    waitlist?: Registration[];
+    attendanceReport?: AttendanceReport;
+  }): EventAthleteSummary {
+    const event = row.event;
+    const report = row.attendanceReport;
+    const enrolled: EnrolledUserRow[] = [
+      ...(report?.attendees || []).map((item) => ({
+        registrationId: item.registrationId,
+        userId: item.userId,
+        fullName: item.fullName,
+        email: item.email,
+        attended: true,
+        checkInTime: item.checkInTime
+      })),
+      ...(report?.absentees || []).map((item) => ({
+        registrationId: item.registrationId,
+        userId: item.userId,
+        fullName: item.fullName,
+        email: item.email,
+        attended: false
+      }))
+    ];
+    return {
+      event,
+      occupied: enrolled.length || Math.max(
+        (event.maxCapacity || 0) - (event.availableCapacity ?? (event.maxCapacity || 0)),
+        0
+      ),
+      waitlist: row.waitlist || [],
+      enrolled,
+      filter: 'all'
+    };
   }
 }

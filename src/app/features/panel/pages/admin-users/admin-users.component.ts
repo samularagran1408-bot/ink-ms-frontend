@@ -7,6 +7,7 @@ import { catchError } from 'rxjs/operators';
 import { AdminUserActivityItem, UserProfile } from '../../../../core/models/user-profile';
 import { UsersService } from '../../../../core/services/users.service';
 import { SessionService } from '../../../../core/services/session.service';
+import { ReportsService } from '../../../../core/services/reports.service';
 import { ConfirmDialogService } from '../../../../core/services/confirm-dialog.service';
 
 @Component({
@@ -42,6 +43,7 @@ export class AdminUsersComponent implements OnInit {
 
   constructor(
     private usersService: UsersService,
+    private reportsService: ReportsService,
     private session: SessionService,
     private confirm: ConfirmDialogService,
     private router: Router,
@@ -76,16 +78,9 @@ export class AdminUsersComponent implements OnInit {
   reload(): void {
     this.loading = true;
     this.errorMessage = null;
-    const request$ =
-      this.filter === 'active'
-        ? this.usersService.getActiveUsers()
-        : this.filter === 'inactive'
-          ? this.usersService.getInactiveUsers()
-          : this.usersService.getAllUsers();
-
-    request$.subscribe({
-      next: (users) => {
-        this.users = users;
+    this.reportsService.getUsersPanel(this.filter).subscribe({
+      next: (panel) => {
+        this.users = panel.users || [];
         this.selected.clear();
         this.loading = false;
       },

@@ -78,7 +78,7 @@ export class AccessibilityPageComponent implements OnInit {
       this.tts.applyPreferences(value);
     });
 
-    this.preferencesApi.getPreferences(true).subscribe({
+    this.preferencesApi.getPreferences(false).subscribe({
       next: (prefs) => {
         const followSystem = prefs.followSystemLanguage === true;
         const language = followSystem

@@ -3,6 +3,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 
 import { RoleInfo, UserProfile } from '../../../../core/models/user-profile';
 import { UsersService } from '../../../../core/services/users.service';
+import { ReportsService } from '../../../../core/services/reports.service';
 
 @Component({
   selector: 'app-admin-roles',
@@ -18,6 +19,7 @@ export class AdminRolesComponent implements OnInit {
 
   constructor(
     private usersService: UsersService,
+    private reportsService: ReportsService,
     private fb: FormBuilder
   ) {
     this.form = this.fb.group({
@@ -27,20 +29,7 @@ export class AdminRolesComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.usersService.getRoles().subscribe({
-      next: (roles) => {
-        this.roles = roles;
-        if (roles.length) {
-          this.form.patchValue({ roleName: roles[0].name });
-        }
-      },
-      error: (error) => this.errorMessage = error?.error?.message || 'No se pudieron cargar roles.'
-    });
-
-    this.usersService.getAllUsers().subscribe({
-      next: (users) => this.users = users,
-      error: () => undefined
-    });
+    this.reload();
   }
 
   assign(): void {
@@ -54,12 +43,25 @@ export class AdminRolesComponent implements OnInit {
       next: () => {
         this.message = `Rol ${roleName} asignado a ${email}`;
         this.errorMessage = null;
-        this.usersService.getAllUsers().subscribe((users) => this.users = users);
+        this.reload();
       },
       error: (error) => {
         this.message = null;
         this.errorMessage = error?.error?.message || 'No se pudo asignar el rol.';
       }
+    });
+  }
+
+  private reload(): void {
+    this.reportsService.getRolesPanel().subscribe({
+      next: (panel) => {
+        this.roles = panel.roles || [];
+        this.users = panel.users || [];
+        if (this.roles.length && !this.form.value.roleName) {
+          this.form.patchValue({ roleName: this.roles[0].name });
+        }
+      },
+      error: (error) => this.errorMessage = error?.error?.message || 'No se pudieron cargar roles.'
     });
   }
 }
