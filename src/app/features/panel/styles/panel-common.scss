@@ -16,7 +16,7 @@
 
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 16px;
   margin-bottom: 24px;
 }
@@ -108,6 +108,11 @@
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
 }
 
 .btn-primary {
@@ -323,6 +328,136 @@
 .event-list-body {
   flex: 1;
   min-width: 0;
+}
+
+.user-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.table-avatar,
+.avatar-fallback {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid #E2E8F0;
+  flex-shrink: 0;
+}
+
+.avatar-fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #FEE2E2;
+  color: #A30D11;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+}
+
+.next-event-card {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 0;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 24px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+  animation: inkRise 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.next-event-cover {
+  min-height: 220px;
+  background-size: cover;
+  background-position: center;
+  background-color: #FEE2E2;
+}
+
+.next-event-body {
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.next-event-kicker {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+  color: #A30D11;
+}
+
+.next-event-title {
+  margin: 0;
+  font-size: 26px;
+  line-height: 1.15;
+  color: #0F172A;
+}
+
+.next-event-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.next-event-qr {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.next-event-qr img {
+  width: 132px;
+  height: 132px;
+  border-radius: 12px;
+  border: 1px solid #E2E8F0;
+  background: #fff;
+}
+
+.fill-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 6px 0;
+}
+
+.fill-copy {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  color: #475569;
+}
+
+.progress-track {
+  height: 8px;
+  border-radius: 999px;
+  background: #F1F5F9;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #A30D11, #E11D48);
+}
+
+@media (max-width: 900px) {
+  .next-event-card {
+    grid-template-columns: 1fr;
+  }
+
+  .next-event-cover {
+    min-height: 160px;
+  }
 }
 
 @media (max-width: 1000px) {

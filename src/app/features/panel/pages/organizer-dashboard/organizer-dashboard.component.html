@@ -9,16 +9,28 @@
     <button class="btn-primary" type="button" (click)="goQuiz()" style="margin-left: 8px;">{{ 'ORGANIZER.GO_QUIZ' | translate }}</button>
   </p>
 
+  <div class="actions-row">
+    <button class="btn-primary" type="button" (click)="goAttendanceReports()" [disabled]="!quizPassed">
+      {{ 'ORGANIZER.MANAGE_ALL' | translate }}
+    </button>
+    <button class="btn-secondary" type="button" (click)="goAthletes()" [disabled]="!quizPassed">
+      {{ 'ORGANIZER.SEE_ATHLETES' | translate }}
+    </button>
+    <button class="btn-secondary" type="button" (click)="goQuiz()" *ngIf="!quizPassed">
+      {{ 'ORGANIZER.GO_QUIZ' | translate }}
+    </button>
+  </div>
+
   <div class="kpi-grid">
     <div class="kpi-card">
       <div class="kpi-label">{{ 'ORGANIZER.EVENTS' | translate }}</div>
       <div class="kpi-value">{{ events.length }}</div>
-      <div class="kpi-sub">{{ 'ORGANIZER.IN_MANAGEMENT' | translate }}</div>
+      <div class="kpi-sub">{{ upcomingCount }} {{ 'ORGANIZER.UPCOMING' | translate | lowercase }} · {{ finishedCount }} {{ 'ORGANIZER.FINISHED' | translate | lowercase }}</div>
     </div>
     <div class="kpi-card">
-      <div class="kpi-label">{{ 'ORGANIZER.ACTIVE' | translate }}</div>
-      <div class="kpi-value">{{ activeEvents }}</div>
-      <div class="kpi-sub">{{ 'ORGANIZER.STATUS_ACTIVE' | translate }}</div>
+      <div class="kpi-label">{{ 'ORGANIZER.UPCOMING' | translate }}</div>
+      <div class="kpi-value">{{ upcomingCount }}</div>
+      <div class="kpi-sub">{{ 'ORGANIZER.UPCOMING_SUB' | translate }}</div>
     </div>
     <div class="kpi-card">
       <div class="kpi-label">{{ 'ORGANIZER.OCCUPIED' | translate }}</div>
@@ -26,33 +38,128 @@
       <div class="kpi-sub">{{ 'ORGANIZER.CAPACITY_EST' | translate }}</div>
     </div>
     <div class="kpi-card">
+      <div class="kpi-label">{{ 'ORGANIZER.OCCUPANCY' | translate }}</div>
+      <div class="kpi-value">{{ occupancyPercent }}%</div>
+      <div class="kpi-sub">{{ athleteCount }}/{{ totalCapacity || 0 }} {{ 'ORGANIZER.SPOTS_WORD' | translate }}</div>
+    </div>
+    <div class="kpi-card">
       <div class="kpi-label">{{ 'ORGANIZER.ATTENDANCE' | translate }}</div>
       <div class="kpi-value">{{ attendanceRatePercent == null ? '—' : (attendanceRatePercent + '%') }}</div>
       <div class="kpi-sub">
         {{ attendanceSampledEvents ? ('ORGANIZER.SAMPLE' | translate:{ count: attendanceSampledEvents }) : ('ORGANIZER.NO_EVENTS' | translate) }}
-        · <button class="linkish" type="button" (click)="goAttendanceReports()">{{ 'ORGANIZER.SEE_REPORTS' | translate }}</button>
       </div>
     </div>
     <div class="kpi-card">
-      <div class="kpi-label">{{ 'ORGANIZER.SPORTS' | translate }}</div>
-      <div class="kpi-value">{{ sports.length }}</div>
-      <div class="kpi-sub">{{ 'ORGANIZER.AVAILABLE' | translate }}</div>
+      <div class="kpi-label">{{ 'ORGANIZER.WAITLIST_COUNT' | translate }}</div>
+      <div class="kpi-value">{{ nextWaitlist.length }}</div>
+      <div class="kpi-sub">{{ 'ORGANIZER.WAITLIST_NEXT' | translate }}</div>
     </div>
+  </div>
+
+  <div class="next-event-card" *ngIf="nextEvent as event">
+    <div
+      class="next-event-cover"
+      [style.background-image]="'url(' + eventImage(event) + ')'"
+    ></div>
+    <div class="next-event-body">
+      <div class="next-event-kicker">{{ 'ORGANIZER.NEXT_EVENT' | translate }}</div>
+      <h2 class="next-event-title">{{ event.name }}</h2>
+      <p class="kpi-sub">
+        {{ event.sportName || ('COMMON.SPORT' | translate) }} · {{ eventWhen(event) }}
+        <span *ngIf="countdownLabel(event)"> · {{ countdownLabel(event) }}</span>
+      </p>
+      <p class="kpi-sub" *ngIf="event.location">{{ event.location }}</p>
+
+      <div class="fill-row">
+        <div class="fill-copy">
+          <strong>{{ occupied(event) }}/{{ event.maxCapacity }}</strong>
+          <span>{{ 'ORGANIZER.FILL_RATE' | translate }} · {{ nextOccupancyPercent }}%</span>
+        </div>
+        <div class="progress-track" role="progressbar" [attr.aria-valuenow]="nextOccupancyPercent" aria-valuemin="0" aria-valuemax="100">
+          <div class="progress-fill" [style.width.%]="nextOccupancyPercent"></div>
+        </div>
+        <p class="kpi-sub">{{ 'ORGANIZER.SPOTS_LEFT' | translate:{ count: nextSpotsLeft } }}</p>
+      </div>
+
+      <div class="next-event-actions">
+        <button class="btn-primary" type="button" (click)="goManageNext()">{{ 'ORGANIZER.MANAGE_EVENT' | translate }}</button>
+        <button class="btn-secondary" type="button" (click)="goAthletes()">{{ 'ORGANIZER.SEE_ATHLETES' | translate }}</button>
+        <span
+          class="status-pill"
+          [class.status-pill--ok]="event.status === 'active' || event.status === 'draft'"
+          [class.status-pill--bad]="event.status === 'cancelled'"
+          [class.status-pill--warn]="event.status === 'finished'"
+        >{{ event.status || 'active' }}</span>
+      </div>
+
+      <app-event-location-map
+        *ngIf="event.location || (event.latitude != null && event.longitude != null)"
+        [location]="event.location"
+        [latitude]="event.latitude"
+        [longitude]="event.longitude"
+        [compact]="true"
+      ></app-event-location-map>
+    </div>
+  </div>
+  <div class="card" *ngIf="!loading && !nextEvent">
+    <h3 class="section-title">{{ 'ORGANIZER.NEXT_EVENT' | translate }}</h3>
+    <p class="empty-text">{{ 'ORGANIZER.NO_NEXT' | translate }}</p>
   </div>
 
   <div class="grid-2">
     <div class="card">
-      <h3 class="section-title">Crear evento</h3>
+      <h3 class="section-title">{{ 'ORGANIZER.ENROLLED_NEXT' | translate }}</h3>
+      <p class="kpi-sub" style="margin-bottom: 12px;" *ngIf="nextEvent">{{ nextEvent.name }}</p>
+      <p class="kpi-sub" *ngIf="nextReport">
+        {{ 'ORGANIZER.ATTENDANCE' | translate }}:
+        {{ nextReport.attendanceRatePercent }}%
+        ({{ nextReport.totalAttended }}/{{ nextReport.totalRegistered }})
+      </p>
+      <p *ngIf="loadingNextDetails" class="empty-text">{{ 'COMMON.LOADING' | translate }}</p>
+      <div class="enrolled-list" *ngIf="!loadingNextDetails && nextEnrolled.length">
+        <div class="enrolled-row" *ngFor="let person of nextEnrolled">
+          <span class="user-cell">
+            <img *ngIf="person.profilePicture" class="table-avatar" [src]="person.profilePicture" alt="" />
+            <span *ngIf="!person.profilePicture" class="avatar-fallback">{{ initials(person.fullName) }}</span>
+            <span>
+              <strong>{{ person.fullName || ('ROLES.USER_FALLBACK' | translate) }}</strong>
+              <div class="kpi-sub">{{ person.email || ('COMMON.NONE' | translate) }}</div>
+            </span>
+          </span>
+          <span class="status-pill" [class.status-pill--ok]="person.attended" [class.status-pill--warn]="!person.attended">
+            {{ (person.attended ? 'CATALOG.ATTENDED' : 'CATALOG.NO_CHECKIN') | translate }}
+          </span>
+        </div>
+      </div>
+      <p *ngIf="!loadingNextDetails && !nextEnrolled.length" class="empty-text">{{ 'ORGANIZER.EMPTY_ENROLLED' | translate }}</p>
+
+      <div *ngIf="nextWaitlist.length" class="waitlist-preview">
+        <h4 class="section-title">{{ 'ATHLETES.WAITLIST' | translate }}</h4>
+        <div class="enrolled-row" *ngFor="let item of nextWaitlist">
+          <span class="user-cell">
+            <img *ngIf="item.userProfilePicture" class="table-avatar" [src]="item.userProfilePicture" alt="" />
+            <span *ngIf="!item.userProfilePicture" class="avatar-fallback">{{ initials(item.userFullName || item.userEmail) }}</span>
+            <span>
+              <strong>{{ item.userFullName || item.userEmail || ('User ' + item.userId) }}</strong>
+              <div class="kpi-sub">{{ 'ATHLETES.POSITION' | translate:{ position: (item.waitlistPosition ?? '—') } }}</div>
+            </span>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 class="section-title">{{ 'ORGANIZER.CREATE_EVENT' | translate }}</h3>
       <form class="form-grid" [formGroup]="form" (ngSubmit)="createEvent()" [class.disabled-form]="!quizPassed">
-        <label>Deporte
+        <label>{{ 'SESSIONS_PAGE.SPORT' | translate }}
           <select formControlName="sportId">
             <option *ngFor="let sport of sports" [ngValue]="sport.id">{{ sport.name }}</option>
           </select>
         </label>
-        <label>Nombre <input formControlName="name" /></label>
-        <label>Fecha <input type="date" formControlName="eventDate" /></label>
-        <label>Hora <input type="time" formControlName="eventTime" /></label>
-        <label>Cupo <input type="number" formControlName="maxCapacity" /></label>
+        <label>{{ 'COMMON.NAME' | translate }} <input formControlName="name" /></label>
+        <label>{{ 'ADMIN_DASHBOARD.DATE' | translate }} <input type="date" formControlName="eventDate" /></label>
+        <label>{{ 'ORGANIZER.TIME' | translate }} <input type="time" formControlName="eventTime" /></label>
+        <label>{{ 'ORGANIZER.CAPACITY' | translate }} <input type="number" formControlName="maxCapacity" /></label>
         <div style="grid-column: 1 / -1;">
           <app-place-location-picker
             [address]="form.value.location || ''"
@@ -61,34 +168,9 @@
             (placeChange)="onPlaceChange($event)"
           ></app-place-location-picker>
         </div>
-        <label style="grid-column: 1 / -1;">Descripción <textarea rows="2" formControlName="description"></textarea></label>
-        <div><button class="btn-primary" type="submit">Crear evento</button></div>
+        <label style="grid-column: 1 / -1;">{{ 'COMMON.DESCRIPTION' | translate }} <textarea rows="2" formControlName="description"></textarea></label>
+        <div><button class="btn-primary" type="submit">{{ 'ORGANIZER.CREATE_EVENT' | translate }}</button></div>
       </form>
-    </div>
-
-    <div class="card">
-      <h3 class="section-title">Eventos</h3>
-      <div class="org-event-row" *ngFor="let event of events">
-        <div class="list-item event-list-item" style="border-bottom: none;">
-          <div class="event-thumb" [style.background-image]="'url(' + eventImage(event) + ')'"></div>
-          <div class="event-list-body">
-            <strong>{{ event.name }}</strong>
-            <div class="kpi-sub">
-              {{ event.eventDate }} {{ event.eventTime }} ·
-              {{ occupied(event) }}/{{ event.maxCapacity }} cupos
-            </div>
-          </div>
-          <span class="status-pill status-pill--ok">{{ event.status || 'active' }}</span>
-        </div>
-        <app-event-location-map
-          *ngIf="event.location || (event.latitude != null && event.longitude != null)"
-          [location]="event.location"
-          [latitude]="event.latitude"
-          [longitude]="event.longitude"
-          [compact]="true"
-        ></app-event-location-map>
-      </div>
-      <p *ngIf="!events.length" class="empty-text">Sin eventos todavía.</p>
     </div>
   </div>
 </app-panel-shell>

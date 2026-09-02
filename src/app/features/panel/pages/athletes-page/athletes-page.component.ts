@@ -4,6 +4,7 @@ import { of } from 'rxjs';
 import { AttendanceReport, EventItem, Registration } from '../../../../core/models/sports';
 import { SessionService } from '../../../../core/services/session.service';
 import { ReportsService } from '../../../../core/services/reports.service';
+import { userInitials } from '../../../../core/utils/avatar.util';
 
 type AttendanceFilter = 'all' | 'attended' | 'absent';
 
@@ -12,6 +13,7 @@ interface EnrolledUserRow {
   userId?: string;
   fullName?: string;
   email?: string;
+  profilePicture?: string;
   attended: boolean;
   checkInTime?: string;
 }
@@ -87,6 +89,10 @@ export class AthletesPageComponent implements OnInit {
     return summary.enrolled.filter((row) => !row.attended).length;
   }
 
+  initials(name?: string | null): string {
+    return userInitials(name);
+  }
+
   private toSummary(row: {
     event: EventItem;
     waitlist?: Registration[];
@@ -100,6 +106,7 @@ export class AthletesPageComponent implements OnInit {
         userId: item.userId,
         fullName: item.fullName,
         email: item.email,
+        profilePicture: item.profilePicture,
         attended: true,
         checkInTime: item.checkInTime
       })),
@@ -108,6 +115,7 @@ export class AthletesPageComponent implements OnInit {
         userId: item.userId,
         fullName: item.fullName,
         email: item.email,
+        profilePicture: item.profilePicture,
         attended: false
       }))
     ];

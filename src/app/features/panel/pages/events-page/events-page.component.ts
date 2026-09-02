@@ -3,7 +3,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import QRCode from 'qrcode';
 import { Html5Qrcode } from 'html5-qrcode';
-import { of } from 'rxjs';
+import { Subscription, of } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 
 import {
@@ -22,6 +22,7 @@ import { AttendanceCheckInMethod, normalizeAttendanceCheckInMethod } from '../..
 import { resolveEventImage } from '../../../../core/utils/event-image.util';
 import { EventPlaceLocation } from '../../../../core/utils/maps.util';
 import { buildAttendanceCheckinUrl, extractQrCode, eventDateTimeMs } from '../../../../core/utils/qr-attendance.util';
+import { userInitials } from '../../../../core/utils/avatar.util';
 
 interface EventManageRow {
   event: EventItem;
@@ -46,6 +47,7 @@ interface MyPassRow {
 })
 export class EventsPageComponent implements OnInit, OnDestroy {
   mode: 'user' | 'manage' = 'user';
+  userView: 'catalog' | 'history' = 'catalog';
   events: EventItem[] = [];
   registrations: Registration[] = [];
   myPasses: MyPassRow[] = [];
@@ -95,6 +97,7 @@ export class EventsPageComponent implements OnInit, OnDestroy {
 
   private clockTimer: ReturnType<typeof setInterval> | null = null;
   private html5Qr: Html5Qrcode | null = null;
+  private querySub: Subscription | null = null;
   private readonly scannerElementId = 'attendance-qr-reader';
 
   constructor(
@@ -122,7 +125,11 @@ export class EventsPageComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.mode = (this.route.snapshot.data['mode'] as 'user' | 'manage') || 'user';
-    this.highlightedEventId = this.route.snapshot.queryParamMap.get('eventoId');
+    this.querySub = this.route.queryParamMap.subscribe((params) => {
+      this.highlightedEventId = params.get('eventoId');
+      this.userView = params.get('vista') === 'historial' ? 'history' : 'catalog';
+      this.scrollToHighlighted();
+    });
     this.clockTimer = setInterval(() => {
       this.nowMs = Date.now();
       if (this.mode === 'user') {
@@ -136,6 +143,7 @@ export class EventsPageComponent implements OnInit, OnDestroy {
     if (this.clockTimer) {
       clearInterval(this.clockTimer);
     }
+    this.querySub?.unsubscribe();
     void this.stopScanner();
   }
 
@@ -527,6 +535,106 @@ export class EventsPageComponent implements OnInit, OnDestroy {
     });
   }
 
+  get nextRegisteredEvent(): EventItem | null {
+    const registeredIds = new Set(
+      this.registrations
+        .filter((reg) => reg.waitlistPosition == null)
+        .map((reg) => reg.eventId)
+    );
+    const upcoming = [...this.events]
+      .filter((event) => {
+        const status = (event.status || '').toLowerCase();
+        if (status === 'cancelled' || status === 'finished') {
+          return false;
+        }
+        const when = eventDateTimeMs(event.eventDate, event.eventTime);
+        return when == null || when >= this.nowMs;
+      })
+      .sort((a, b) => {
+        const aMs = eventDateTimeMs(a.eventDate, a.eventTime) ?? Number.MAX_SAFE_INTEGER;
+        const bMs = eventDateTimeMs(b.eventDate, b.eventTime) ?? Number.MAX_SAFE_INTEGER;
+        return aMs - bMs;
+      });
+    return upcoming.find((event) => registeredIds.has(event.id)) || null;
+  }
+
+  get nextPass(): MyPassRow | null {
+    const nextId = this.nextRegisteredEvent?.id;
+    if (!nextId) {
+      return null;
+    }
+    return this.myPasses.find((pass) => pass.registration.eventId === nextId) || null;
+  }
+
+  get otherHistoryRegistrations(): Registration[] {
+    const nextId = this.nextRegisteredEvent?.id;
+    return this.historyRegistrations.filter((reg) => reg.eventId !== nextId);
+  }
+
+  get recentHistoryPreview(): Registration[] {
+    return this.otherHistoryRegistrations.slice(0, 3);
+  }
+
+  get upcomingPassList(): MyPassRow[] {
+    const nextId = this.nextRegisteredEvent?.id;
+    return this.myPasses.filter((pass) => !pass.registration.attended && pass.registration.eventId !== nextId);
+  }
+
+  get confirmedHistoryCount(): number {
+    return this.registrations.filter((reg) => reg.waitlistPosition == null).length;
+  }
+
+  get attendedHistoryCount(): number {
+    return this.registrations.filter((reg) => reg.waitlistPosition == null && reg.attended).length;
+  }
+
+  get waitlistHistoryCount(): number {
+    return this.registrations.filter((reg) => reg.waitlistPosition != null).length;
+  }
+
+  get attendanceHistoryProgress(): number {
+    if (!this.confirmedHistoryCount) {
+      return 0;
+    }
+    return Math.round((this.attendedHistoryCount * 100) / this.confirmedHistoryCount);
+  }
+
+  get upcomingRegisteredCount(): number {
+    const ids = new Set(
+      this.registrations
+        .filter((reg) => reg.waitlistPosition == null && !reg.attended)
+        .map((reg) => reg.eventId)
+    );
+    return this.events.filter((event) => {
+      if (!ids.has(event.id)) {
+        return false;
+      }
+      const status = (event.status || '').toLowerCase();
+      if (status === 'cancelled' || status === 'finished') {
+        return false;
+      }
+      const when = eventDateTimeMs(event.eventDate, event.eventTime);
+      return when == null || when >= this.nowMs;
+    }).length;
+  }
+
+  get nextOccupancyPercent(): number {
+    const event = this.nextRegisteredEvent;
+    if (!event?.maxCapacity) {
+      return 0;
+    }
+    return Math.round((this.occupied(event) * 100) / event.maxCapacity);
+  }
+
+  eventForRegistration(reg: Registration): EventItem | null {
+    return this.events.find((item) => item.id === reg.eventId) || null;
+  }
+
+  historyEventImage(reg: Registration): string {
+    const event = this.eventForRegistration(reg);
+    return event ? this.eventImage(event) : resolveEventImage({});
+  }
+
   historyDateLabel(reg: Registration): string {
     if (reg.eventDate) {
       return `${reg.eventDate} ${((reg.eventTime || '').substring(0, 5))}`;
@@ -711,6 +819,10 @@ export class EventsPageComponent implements OnInit, OnDestroy {
 
   eventImage(event: EventItem): string {
     return resolveEventImage(event);
+  }
+
+  initials(name?: string | null): string {
+    return userInitials(name);
   }
 
   toggleWaitlist(row: EventManageRow): void {

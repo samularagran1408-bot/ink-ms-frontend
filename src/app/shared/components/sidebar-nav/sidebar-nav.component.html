@@ -60,8 +60,8 @@
       <a
         *ngFor="let item of navItems"
         [routerLink]="item.route"
-        routerLinkActive="sidebar-nav-item--active"
-        [routerLinkActiveOptions]="{ exact: !!item.exact }"
+        [queryParams]="item.queryParams || {}"
+        [class.sidebar-nav-item--active]="isNavActive(item)"
         class="sidebar-nav-item"
         (click)="closeSidebar()"
       >
@@ -77,8 +77,8 @@
         <a
           *ngFor="let item of secondaryItems"
           [routerLink]="item.route"
-          routerLinkActive="sidebar-nav-item--active"
-          [routerLinkActiveOptions]="{ exact: !!item.exact }"
+          [queryParams]="item.queryParams || {}"
+          [class.sidebar-nav-item--active]="isNavActive(item)"
           class="sidebar-nav-item"
           (click)="closeSidebar()"
         >
@@ -122,8 +122,8 @@
     <a
       *ngFor="let item of navItems"
       [routerLink]="item.route"
-      routerLinkActive="role-nav-item--active"
-      [routerLinkActiveOptions]="{ exact: !!item.exact }"
+      [queryParams]="item.queryParams || {}"
+      [class.role-nav-item--active]="isNavActive(item)"
       class="role-nav-item"
     >
       <span class="nav-item-main">
@@ -138,8 +138,8 @@
       <a
         *ngFor="let item of secondaryItems"
         [routerLink]="item.route"
-        routerLinkActive="role-nav-item--active"
-        [routerLinkActiveOptions]="{ exact: !!item.exact }"
+        [queryParams]="item.queryParams || {}"
+        [class.role-nav-item--active]="isNavActive(item)"
         class="role-nav-item"
       >
         <span class="nav-item-main">

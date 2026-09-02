@@ -13,6 +13,7 @@ import { HeroIconName } from '../../icons/heroicons-outline';
 export interface SidebarNavItem {
   labelKey: string;
   route?: string;
+  queryParams?: Record<string, string>;
   exact?: boolean;
   showBadge?: boolean;
   icon: HeroIconName;
@@ -155,6 +156,30 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
     return `${this.sessionHome}/notifications`;
   }
 
+  isNavActive(item: SidebarNavItem): boolean {
+    if (!item.route) {
+      return false;
+    }
+    const pathActive = this.router.isActive(
+      this.router.createUrlTree([item.route]),
+      {
+        paths: item.exact ? 'exact' : 'subset',
+        queryParams: 'ignored',
+        fragment: 'ignored',
+        matrixParams: 'ignored'
+      }
+    );
+    if (!pathActive) {
+      return false;
+    }
+    const currentVista = this.router.parseUrl(this.router.url).queryParams['vista'];
+    const wantedVista = item.queryParams?.['vista'];
+    if (wantedVista) {
+      return currentVista === wantedVista;
+    }
+    return !currentVista;
+  }
+
   private commonAccountItems(base: string): SidebarNavItem[] {
     return [
       { labelKey: 'NAV.PROFILE', route: `${base}/profile`, icon: 'user-circle' },
@@ -203,7 +228,7 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
         this.navItems = [
           { labelKey: 'NAV.HOME', route: '/home', exact: true, icon: 'home' },
           { labelKey: 'NAV.EVENTS', route: '/home/events', icon: 'calendar-days' },
-          { labelKey: 'NAV.HISTORY', route: '/home/events', icon: 'clipboard-document-list' },
+          { labelKey: 'NAV.HISTORY', route: '/home/events', queryParams: { vista: 'historial' }, icon: 'clipboard-document-list' },
           ...this.commonAccountItems('/home')
         ];
         this.secondaryItems = [];

@@ -69,7 +69,7 @@
 /* 4 TARJETAS DE MÉTRICAS */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 20px;
 }
 
@@ -91,6 +91,7 @@
 .stats-grid > .stat-box:nth-child(2) { animation-delay: 0.1s; }
 .stats-grid > .stat-box:nth-child(3) { animation-delay: 0.15s; }
 .stats-grid > .stat-box:nth-child(4) { animation-delay: 0.2s; }
+.stats-grid > .stat-box:nth-child(5) { animation-delay: 0.25s; }
 
 .stat-box:hover {
   transform: translateY(-4px);
@@ -818,6 +819,39 @@ a.register-event-btn:hover {
   gap: 10px;
   padding-bottom: 8px;
   border-bottom: 1px solid #F1F5F9;
+}
+
+.activity-row-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.activity-next {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border: 1px solid #FECACA;
+  background: #FFF7F7;
+  border-radius: 12px;
+}
+
+.activity-next-thumb,
+.activity-thumb {
+  width: 64px;
+  height: 48px;
+  border-radius: 10px;
+  background-size: cover;
+  background-position: center;
+  background-color: #FEE2E2;
+  flex-shrink: 0;
+}
+
+.activity-thumb {
+  width: 44px;
+  height: 34px;
 }
 
 .activity-row-actions {

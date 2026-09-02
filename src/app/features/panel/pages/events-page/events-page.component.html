@@ -1,8 +1,12 @@
 <app-panel-shell [fixedSidebar]="mode !== 'user'">
-  <h1 class="page-title">{{ mode === 'user' ? ('EVENTS_PAGE.TITLE_USER' | translate) : ('EVENTS_PAGE.TITLE_MANAGE' | translate) }}</h1>
+  <h1 class="page-title">
+    {{ mode === 'user'
+      ? ((userView === 'history' ? 'EVENTS_PAGE.TITLE_HISTORY' : 'EVENTS_PAGE.TITLE_USER') | translate)
+      : ('EVENTS_PAGE.TITLE_MANAGE' | translate) }}
+  </h1>
   <p class="page-subtitle">
     {{ mode === 'user'
-      ? ('EVENTS_PAGE.SUBTITLE_USER' | translate)
+      ? ((userView === 'history' ? 'EVENTS_PAGE.SUBTITLE_HISTORY' : 'EVENTS_PAGE.SUBTITLE_USER') | translate)
       : ('EVENTS_PAGE.SUBTITLE_MANAGE' | translate) }}
   </p>
 
@@ -10,7 +14,118 @@
   <p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
   <p *ngIf="loading" class="empty-text">{{ 'EVENTS_PAGE.LOADING' | translate }}</p>
 
-  <div class="card" style="margin-bottom: 16px;">
+  <div class="actions-row" *ngIf="mode === 'user'">
+    <a *ngIf="userView === 'history'" class="btn-secondary" routerLink="/home/events">
+      {{ 'EVENTS_PAGE.SEE_CATALOG' | translate }}
+    </a>
+    <a *ngIf="userView === 'catalog'" class="btn-secondary" routerLink="/home/events" [queryParams]="{ vista: 'historial' }">
+      {{ 'EVENTS_PAGE.SEE_HISTORY' | translate }}
+    </a>
+  </div>
+
+  <div class="kpi-grid" *ngIf="mode === 'user'">
+    <div class="kpi-card">
+      <div class="kpi-label">{{ 'EVENTS_PAGE.STATS_REGISTERED' | translate }}</div>
+      <div class="kpi-value">{{ confirmedHistoryCount }}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">{{ 'EVENTS_PAGE.STATS_ATTENDANCE' | translate }}</div>
+      <div class="kpi-value">{{ attendanceHistoryProgress }}%</div>
+      <div class="kpi-sub">{{ attendedHistoryCount }}/{{ confirmedHistoryCount }}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">{{ 'EVENTS_PAGE.STATS_WAITLIST' | translate }}</div>
+      <div class="kpi-value">{{ waitlistHistoryCount }}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">{{ 'EVENTS_PAGE.STATS_UPCOMING' | translate }}</div>
+      <div class="kpi-value">{{ upcomingRegisteredCount }}</div>
+    </div>
+  </div>
+
+  <div class="next-event-card" *ngIf="mode === 'user' && nextRegisteredEvent as event">
+    <div
+      class="next-event-cover"
+      [style.background-image]="'url(' + eventImage(event) + ')'"
+    ></div>
+    <div class="next-event-body">
+      <div class="next-event-kicker">{{ 'EVENTS_PAGE.NEXT_EVENT' | translate }}</div>
+      <h2 class="next-event-title">{{ event.name }}</h2>
+      <p class="kpi-sub">
+        {{ event.sportName || ('COMMON.SPORT' | translate) }} · {{ eventStartLabel(event) }}
+      </p>
+      <p class="kpi-sub" *ngIf="event.location">{{ event.location }}</p>
+
+      <div class="fill-row">
+        <div class="fill-copy">
+          <strong>{{ occupied(event) }}/{{ event.maxCapacity }}</strong>
+          <span>{{ 'EVENTS_PAGE.FILL_RATE' | translate }} · {{ nextOccupancyPercent }}%</span>
+        </div>
+        <div class="progress-track" role="progressbar" [attr.aria-valuenow]="nextOccupancyPercent" aria-valuemin="0" aria-valuemax="100">
+          <div class="progress-fill" [style.width.%]="nextOccupancyPercent"></div>
+        </div>
+      </div>
+
+      <div class="next-event-actions">
+        <span
+          class="status-pill"
+          [class.status-pill--ok]="hasAttended(event.id)"
+          [class.status-pill--warn]="isRegistered(event.id) && !hasAttended(event.id)"
+        >
+          <ng-container *ngIf="hasAttended(event.id)">Asistió</ng-container>
+          <ng-container *ngIf="!hasAttended(event.id) && isRegistered(event.id)">Inscrito</ng-container>
+        </span>
+        <button
+          *ngIf="canFillAttendance(event)"
+          class="btn-primary"
+          type="button"
+          (click)="openMyAttendance(event)"
+        >
+          Llenar asistencia
+        </button>
+        <button
+          *ngIf="canFillAttendanceSoon(event)"
+          class="btn-primary"
+          type="button"
+          disabled
+        >
+          Llenar asistencia
+        </button>
+        <button
+          *ngIf="canCancelEventRegistration(event)"
+          class="btn-danger"
+          type="button"
+          [disabled]="cancellingRegistrationId === anyRegistrationFor(event.id)?.id"
+          (click)="cancelMyRegistration(event)"
+        >
+          {{ cancellingRegistrationId === anyRegistrationFor(event.id)?.id
+            ? 'Cancelando...'
+            : (isOnWaitlist(event.id) ? 'Salir de espera' : 'Cancelar inscripción') }}
+        </button>
+      </div>
+
+      <div class="next-event-qr" *ngIf="nextPass && !nextPass.registration.attended">
+        <img *ngIf="nextPass.qrDataUrl" [src]="nextPass.qrDataUrl" alt="Código QR de asistencia" />
+        <p *ngIf="nextPass.loadingQr" class="empty-text">Generando QR...</p>
+        <p class="kpi-sub">{{ 'EVENTS_PAGE.QR_HINT' | translate }}</p>
+      </div>
+
+      <app-event-location-map
+        *ngIf="event.location || (event.latitude != null && event.longitude != null)"
+        [location]="event.location"
+        [latitude]="event.latitude"
+        [longitude]="event.longitude"
+        [compact]="true"
+      ></app-event-location-map>
+    </div>
+  </div>
+  <div class="card" *ngIf="mode === 'user' && userView === 'history' && !loading && !nextRegisteredEvent" style="margin-bottom: 16px;">
+    <h3 class="section-title">{{ 'EVENTS_PAGE.NEXT_EVENT' | translate }}</h3>
+    <p class="empty-text">{{ 'EVENTS_PAGE.NO_NEXT' | translate }}</p>
+    <a class="btn-secondary" routerLink="/home/events">{{ 'EVENTS_PAGE.SEE_CATALOG' | translate }}</a>
+  </div>
+
+  <div class="card" *ngIf="mode !== 'user' || userView === 'catalog'" style="margin-bottom: 16px;">
     <h3 class="section-title">{{ 'EVENTS_PAGE.SEARCH' | translate }}</h3>
     <form class="form-grid" (ngSubmit)="searchEvent()">
       <label>
@@ -43,7 +158,7 @@
     </div>
   </div>
 
-  <div class="card" style="margin-bottom: 16px;">
+  <div class="card" *ngIf="mode !== 'user' || userView === 'catalog'" style="margin-bottom: 16px;">
     <h3 class="section-title">Calendario de eventos</h3>
     <form class="form-grid" (ngSubmit)="loadCalendar()">
       <label>
@@ -116,14 +231,17 @@
     </form>
   </div>
 
-  <!-- Usuario: historial de eventos inscritos -->
-  <div class="card" *ngIf="mode === 'user'" style="margin-bottom: 16px;">
-    <h3 class="section-title">Historial de eventos inscritos</h3>
-    <p class="kpi-sub" style="margin-bottom: 12px;">Ordenado por fecha del evento (más reciente primero).</p>
-    <div class="pass-row" *ngFor="let reg of historyRegistrations">
-      <div class="pass-info">
-        <strong>{{ reg.eventName || 'Evento' }}</strong>
-        <div class="kpi-sub">{{ historyDateLabel(reg) }}</div>
+  <!-- Usuario: historial (vista Historial del sidebar) -->
+  <div class="card" *ngIf="mode === 'user' && userView === 'history'" id="historial-eventos" style="margin-bottom: 16px;">
+    <h3 class="section-title">{{ 'EVENTS_PAGE.HISTORY_TITLE' | translate }}</h3>
+    <p class="kpi-sub" style="margin-bottom: 12px;">{{ 'EVENTS_PAGE.HISTORY_SUB' | translate }}</p>
+    <div class="pass-row" *ngFor="let reg of otherHistoryRegistrations">
+      <div class="event-catalog-main">
+        <div class="event-thumb" [style.background-image]="'url(' + historyEventImage(reg) + ')'"></div>
+        <div class="pass-info">
+          <strong>{{ reg.eventName || 'Evento' }}</strong>
+          <div class="kpi-sub">{{ historyDateLabel(reg) }}</div>
+        </div>
       </div>
       <div class="event-actions">
         <span
@@ -137,7 +255,7 @@
           <ng-container *ngIf="reg.waitlistPosition == null && !reg.attended">Inscrito</ng-container>
         </span>
         <button
-          *ngIf="canCancelRegistration(reg)"
+          *ngIf="canCancelRegistration(reg, eventForRegistration(reg))"
           class="btn-danger"
           type="button"
           [disabled]="cancellingRegistrationId === reg.id"
@@ -150,35 +268,29 @@
     <p *ngIf="!loading && !historyRegistrations.length" class="empty-text">
       Aún no tienes historial de actividades.
     </p>
+    <p *ngIf="!loading && historyRegistrations.length && !otherHistoryRegistrations.length && nextRegisteredEvent" class="empty-text">
+      {{ 'EVENTS_PAGE.HISTORY_ONLY_NEXT' | translate }}
+    </p>
   </div>
 
-  <!-- Usuario: pases QR (el celular abre la encuesta de asistencia) -->
-  <div class="card" *ngIf="mode === 'user'" style="margin-bottom: 16px;">
-    <h3 class="section-title">Mi pase de asistencia</h3>
+  <div class="card" *ngIf="mode === 'user' && userView === 'history' && upcomingPassList.length" style="margin-bottom: 16px;">
+    <h3 class="section-title">{{ 'EVENTS_PAGE.OTHER_PASSES' | translate }}</h3>
     <p class="kpi-sub" style="margin-bottom: 12px;">
       {{ attendanceByQr
         ? 'Escanea este QR con el celular: tu asistencia se guarda al instante, sin encuesta.'
         : 'Completa el formulario de asistencia o muestra el QR al organizador.' }}
     </p>
-
-    <div class="pass-row" *ngFor="let pass of myPasses">
-      <div class="pass-info">
-        <strong>{{ pass.event?.name || pass.registration.eventName || 'Evento' }}</strong>
-        <div class="kpi-sub">
-          {{ eventStartLabel(pass.event) }}
-          <span *ngIf="pass.registration.attended"> · Asistencia confirmada</span>
+    <div class="pass-row" *ngFor="let pass of upcomingPassList">
+      <div class="event-catalog-main">
+        <div class="event-thumb" [style.background-image]="'url(' + (pass.event ? eventImage(pass.event) : historyEventImage(pass.registration)) + ')'"></div>
+        <div class="pass-info">
+          <strong>{{ pass.event?.name || pass.registration.eventName || 'Evento' }}</strong>
+          <div class="kpi-sub">{{ eventStartLabel(pass.event) }}</div>
         </div>
       </div>
-
       <div class="pass-qr" *ngIf="!pass.registration.attended">
         <img *ngIf="pass.qrDataUrl" [src]="pass.qrDataUrl" alt="Código QR de asistencia" />
         <p *ngIf="pass.loadingQr" class="empty-text">Generando QR...</p>
-        <p *ngIf="!pass.loadingQr && !pass.qrDataUrl" class="error-text">
-          No hay QR disponible para esta inscripción.
-        </p>
-        <p *ngIf="pass.event && canFillAttendanceSoon(pass.event)" class="kpi-sub">
-          El llenado de asistencia se habilita a partir de {{ eventStartLabel(pass.event) }}.
-        </p>
         <button
           class="btn-primary"
           type="button"
@@ -187,37 +299,38 @@
         >
           Llenar asistencia
         </button>
-        <button
-          class="btn-primary"
-          type="button"
-          *ngIf="pass.event && canFillAttendanceSoon(pass.event)"
-          disabled
-        >
-          Llenar asistencia
-        </button>
-        <button
-          *ngIf="canCancelRegistration(pass.registration, pass.event)"
-          class="btn-danger"
-          type="button"
-          [disabled]="cancellingRegistrationId === pass.registration.id"
-          (click)="cancelRegistrationRecord(pass.registration)"
-        >
-          {{ cancellingRegistrationId === pass.registration.id ? 'Cancelando...' : 'Cancelar inscripción' }}
-        </button>
-      </div>
-
-      <div class="pass-qr" *ngIf="pass.registration.attended">
-        <span class="status-pill status-pill--ok">Asistió</span>
       </div>
     </div>
-
-    <p *ngIf="!loading && !myPasses.length" class="empty-text">
-      Aún no tienes inscripciones confirmadas.
-    </p>
   </div>
 
-  <!-- Vista usuario: inscripción -->
-  <div class="card" *ngIf="mode === 'user'">
+  <div class="card" *ngIf="mode === 'user' && userView === 'catalog' && recentHistoryPreview.length" style="margin-bottom: 16px;">
+    <h3 class="section-title">{{ 'EVENTS_PAGE.HISTORY_RECENT' | translate }}</h3>
+    <div class="pass-row" *ngFor="let reg of recentHistoryPreview">
+      <div class="event-catalog-main">
+        <div class="event-thumb" [style.background-image]="'url(' + historyEventImage(reg) + ')'"></div>
+        <div class="pass-info">
+          <strong>{{ reg.eventName || 'Evento' }}</strong>
+          <div class="kpi-sub">{{ historyDateLabel(reg) }}</div>
+        </div>
+      </div>
+      <span
+        class="status-pill"
+        [class.status-pill--ok]="reg.attended"
+        [class.status-pill--warn]="!reg.attended && reg.waitlistPosition == null"
+        [class.status-pill--bad]="reg.waitlistPosition != null"
+      >
+        <ng-container *ngIf="reg.waitlistPosition != null">Lista de espera · pos. {{ reg.waitlistPosition }}</ng-container>
+        <ng-container *ngIf="reg.waitlistPosition == null && reg.attended">Asistió</ng-container>
+        <ng-container *ngIf="reg.waitlistPosition == null && !reg.attended">Inscrito</ng-container>
+      </span>
+    </div>
+    <a class="btn-secondary" routerLink="/home/events" [queryParams]="{ vista: 'historial' }">
+      {{ 'EVENTS_PAGE.SEE_HISTORY' | translate }}
+    </a>
+  </div>
+
+  <!-- Vista usuario: catálogo -->
+  <div class="card" *ngIf="mode === 'user' && userView === 'catalog'">
     <h3 class="section-title">Catálogo de eventos disponibles</h3>
     <div
       class="event-user-row"
@@ -405,9 +518,13 @@
 
       <div *ngIf="row.showWaitlist" style="padding-left: 8px;">
         <div class="list-item" *ngFor="let item of row.waitlist">
-          <div>
+          <div class="user-cell">
+            <img *ngIf="item.userProfilePicture" class="table-avatar" [src]="item.userProfilePicture" alt="" />
+            <span *ngIf="!item.userProfilePicture" class="avatar-fallback">{{ initials(item.userFullName || item.userEmail) }}</span>
+            <div>
             <strong>{{ item.userFullName || item.userEmail || ('User ' + item.userId) }}</strong>
             <div class="kpi-sub">Posición {{ item.waitlistPosition ?? '—' }} · {{ item.userEmail || item.userId }}</div>
+            </div>
           </div>
         </div>
         <p *ngIf="!row.waitlist.length" class="empty-text">Sin personas en waitlist.</p>
@@ -563,7 +680,13 @@
             </thead>
             <tbody>
               <tr *ngFor="let attendee of report.attendees">
-                <td>{{ attendee.fullName || attendee.userId || 'Usuario' }}</td>
+                <td>
+                  <span class="user-cell">
+                    <img *ngIf="attendee.profilePicture" class="table-avatar" [src]="attendee.profilePicture" alt="" />
+                    <span *ngIf="!attendee.profilePicture" class="avatar-fallback">{{ initials(attendee.fullName || attendee.email) }}</span>
+                    {{ attendee.fullName || attendee.userId || 'Usuario' }}
+                  </span>
+                </td>
                 <td>{{ attendee.email || '—' }}</td>
                 <td>{{ attendee.checkInTime || '—' }}</td>
                 <td>{{ attendee.checkInMethod || '—' }}</td>
@@ -587,7 +710,13 @@
             </thead>
             <tbody>
               <tr *ngFor="let absent of report.absentees">
-                <td>{{ absent.fullName || absent.userId || 'Usuario' }}</td>
+                <td>
+                  <span class="user-cell">
+                    <img *ngIf="absent.profilePicture" class="table-avatar" [src]="absent.profilePicture" alt="" />
+                    <span *ngIf="!absent.profilePicture" class="avatar-fallback">{{ initials(absent.fullName || absent.email) }}</span>
+                    {{ absent.fullName || absent.userId || 'Usuario' }}
+                  </span>
+                </td>
                 <td>{{ absent.email || '—' }}</td>
                 <td>{{ absent.userId || '—' }}</td>
               </tr>

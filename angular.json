@@ -62,7 +62,12 @@
                                                                                                                                               "maximumError":  "32kb"
                                                                                                                                           }
                                                                                                                                       ],
-                                                                                                                          "outputHashing":  "all"
+                                                                                                                          "outputHashing":  "all",
+                                                                                                                          "optimization":  {
+                                                                                                                                               "scripts":  true,
+                                                                                                                                               "styles":  true,
+                                                                                                                                               "fonts":  false
+                                                                                                                                           }
                                                                                                                       },
                                                                                                        "development":  {
                                                                                                                            "optimization":  false,

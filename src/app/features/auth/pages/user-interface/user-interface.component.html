@@ -44,11 +44,22 @@
 
       <div class="stat-box">
         <div class="stat-box-header">
+          <span class="stat-box-title">{{ 'HOME.ATTENDANCE_STAT' | translate }}</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        </div>
+        <div>
+          <div class="stat-box-value">{{ attendanceProgress }}%</div>
+          <div class="stat-box-subtext">{{ attendedCount }}/{{ confirmedCount }}</div>
+        </div>
+      </div>
+
+      <div class="stat-box">
+        <div class="stat-box-header">
           <span class="stat-box-title">{{ 'HOME.AVAILABLE_EVENTS' | translate }}</span>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
         </div>
         <div>
-          <div class="stat-box-value">{{ events.length | number: '2.0-0' }}</div>
+          <div class="stat-box-value">{{ catalogEventCount | number: '2.0-0' }}</div>
           <div class="stat-box-subtext">{{ 'HOME.IN_CATALOG' | translate }}</div>
         </div>
       </div>
@@ -182,11 +193,22 @@
         <article class="activity-card">
           <h3 class="activity-card-title">{{ 'HOME.ACTIVITY_EVENTS' | translate }}</h3>
           <p *ngIf="!registrations.length" class="empty-text">{{ 'HOME.NO_HISTORY' | translate }}</p>
-          <div class="activity-list" *ngIf="registrations.length">
-            <div class="activity-row" *ngFor="let reg of registrations.slice(0, 6)">
-              <div>
-                <strong>{{ reg.eventName || ('HOME.EVENT_FALLBACK' | translate) }}</strong>
-                <div class="kpi-sub">{{ historyDate(reg) }}</div>
+          <div class="activity-next" *ngIf="nextRegisteredEvent as event">
+            <div class="activity-next-thumb" [style.background-image]="'url(' + eventImage(event) + ')'"></div>
+            <div>
+              <div class="kpi-sub">{{ 'HOME.NEXT_EVENT' | translate }}</div>
+              <strong>{{ event.name }}</strong>
+              <div class="kpi-sub">{{ formatDate(event.eventDate) }} {{ formatTime(event.eventTime) }}</div>
+            </div>
+          </div>
+          <div class="activity-list" *ngIf="historyPreview.length">
+            <div class="activity-row" *ngFor="let reg of historyPreview">
+              <div class="activity-row-main">
+                <div class="activity-thumb" [style.background-image]="'url(' + historyEventImage(reg) + ')'"></div>
+                <div>
+                  <strong>{{ reg.eventName || ('HOME.EVENT_FALLBACK' | translate) }}</strong>
+                  <div class="kpi-sub">{{ historyDate(reg) }}</div>
+                </div>
               </div>
               <div class="event-card-actions">
                 <span
@@ -209,8 +231,8 @@
               </div>
             </div>
           </div>
-          <button class="talk-ai-btn" type="button" (click)="onSeeAllEvents()">
-            {{ 'HOME.SEE_EVENTS' | translate }}
+          <button class="talk-ai-btn" type="button" (click)="onSeeHistory()">
+            {{ 'HOME.SEE_HISTORY' | translate }}
           </button>
         </article>
 
@@ -472,8 +494,8 @@
               <span>{{ reg.eventName || ('HOME.EVENT_FALLBACK' | translate) }}</span>
             </div>
           </div>
-          <button class="talk-ai-btn" type="button" (click)="onSeeAllEvents()">
-            {{ 'HOME.SEE_EVENTS' | translate }}
+          <button class="talk-ai-btn" type="button" (click)="onSeeHistory()">
+            {{ 'HOME.SEE_HISTORY' | translate }}
           </button>
         </div>
       </div>

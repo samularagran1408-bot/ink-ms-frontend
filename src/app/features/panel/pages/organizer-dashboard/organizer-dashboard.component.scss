@@ -1,29 +1,31 @@
 @import '../../styles/panel-common.scss';
 
-.org-event-row {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 10px 0;
-  border-bottom: 1px solid #F1F5F9;
-}
-
-.org-event-row:last-child {
-  border-bottom: none;
-}
-
 .disabled-form {
   opacity: 0.55;
   pointer-events: none;
 }
 
-.linkish {
-  border: none;
-  background: none;
-  color: #A30D11;
-  font: inherit;
-  font-weight: 700;
-  cursor: pointer;
-  padding: 0;
-  text-decoration: underline;
+.enrolled-list,
+.waitlist-preview {
+  display: flex;
+  flex-direction: column;
+}
+
+.waitlist-preview {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #F1F5F9;
+}
+
+.enrolled-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #F8FAFC;
+}
+
+.enrolled-row:last-child {
+  border-bottom: none;
 }
