@@ -5,6 +5,7 @@ import { Disability } from '../../../../core/models/sports';
 import { SportsService } from '../../../../core/services/sports.service';
 import { ReportsService } from '../../../../core/services/reports.service';
 import { ConfirmDialogService } from '../../../../core/services/confirm-dialog.service';
+import { matchesQuery } from '../../../../core/utils/search.util';
 
 @Component({
   selector: 'app-disabilities-page',
@@ -15,9 +16,9 @@ export class DisabilitiesPageComponent implements OnInit {
   items: Disability[] = [];
   form: FormGroup;
   editForm: FormGroup;
-  searchId = '';
   searchQuery = '';
-  lookup: Disability | null = null;
+  statusFilter: 'all' | 'active' | 'inactive' = 'all';
+  categoryFilter = '';
   editingId: number | null = null;
   errorMessage: string | null = null;
   successMessage: string | null = null;
@@ -46,19 +47,24 @@ export class DisabilitiesPageComponent implements OnInit {
   }
 
   get filteredItems(): Disability[] {
-    const q = this.searchQuery.trim().toLowerCase();
-    if (!q) {
-      return this.items;
-    }
     return this.items.filter((item) => {
-      if (!item.isActive) {
+      if (this.statusFilter === 'active' && item.isActive === false) {
         return false;
       }
-      return item.name.toLowerCase().includes(q)
-        || (item.category || '').toLowerCase().includes(q)
-        || (item.description || '').toLowerCase().includes(q)
-        || String(item.id).includes(q);
+      if (this.statusFilter === 'inactive' && item.isActive !== false) {
+        return false;
+      }
+      if (this.categoryFilter && (item.category || '').toLowerCase() !== this.categoryFilter) {
+        return false;
+      }
+      return matchesQuery(this.searchQuery, item.id, item.name, item.category, item.description);
     });
+  }
+
+  clearSearch(): void {
+    this.searchQuery = '';
+    this.statusFilter = 'all';
+    this.categoryFilter = '';
   }
 
   reload(): void {
@@ -99,36 +105,6 @@ export class DisabilitiesPageComponent implements OnInit {
       error: (error) => {
         this.successMessage = null;
         this.errorMessage = error?.error?.message || 'No se pudo crear.';
-      }
-    });
-  }
-
-  searchById(): void {
-    const raw = String(this.searchId || '').trim();
-    const id = Number(raw);
-    if (!Number.isInteger(id) || id <= 0) {
-      this.errorMessage = 'Indica un ID numérico válido.';
-      this.lookup = null;
-      return;
-    }
-
-    this.sportsService.searchDisabilities(raw).subscribe({
-      next: (items) => {
-        const item = items[0];
-        if (!item) {
-          this.lookup = null;
-          this.successMessage = null;
-          this.errorMessage = `Discapacidad no encontrada con ID: ${id}`;
-          return;
-        }
-        this.lookup = item;
-        this.errorMessage = null;
-        this.successMessage = `Discapacidad #${item.id} encontrada.`;
-      },
-      error: (error) => {
-        this.lookup = null;
-        this.successMessage = null;
-        this.errorMessage = error?.error?.message || `Discapacidad no encontrada con ID: ${id}`;
       }
     });
   }

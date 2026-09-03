@@ -1,9 +1,28 @@
-/* You can add global styles to this file, and also import other style files */
+/* Inklusport — tokens y base visual. No altera lógica de negocio. */
 
-html {
+:root {
+  --ink-red: #A30D11;
+  --ink-red-hover: #890A0D;
+  --ink-red-soft: #FEF2F2;
+  --ink-navy: #0B1220;
+  --ink-ink: #0F172A;
+  --ink-muted: #64748B;
+  --ink-subtle: #94A3B8;
+  --ink-line: #E8EEF5;
+  --ink-surface: #FFFFFF;
+  --ink-canvas: #F3F5F8;
+  --ink-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --ink-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  --ink-shadow-lg: 0 24px 48px rgba(15, 23, 42, 0.12);
+  --ink-radius: 16px;
+  --ink-radius-sm: 10px;
   --font-offset: 0px;
   --a11y-font-scale: 1;
+}
+
+html {
   font-size: 16px;
+  -webkit-text-size-adjust: 100%;
 }
 
 html[data-font-size='small'] {
@@ -30,6 +49,53 @@ html[data-font-size='xlarge'] {
   font-size: 20px;
 }
 
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100%;
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color: var(--ink-ink);
+  background: var(--ink-canvas);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ink-red);
+  outline-offset: 2px;
+}
+
+.brand-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: linear-gradient(160deg, #d3181e 0%, #8b0b0e 100%);
+  color: #fff;
+  font-family: 'Oswald', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1;
+  flex-shrink: 0;
+  box-shadow: 0 6px 14px rgba(163, 13, 17, 0.28);
+}
+
 body.reader-mode {
   letter-spacing: 0.02em;
   word-spacing: 0.04em;
@@ -42,13 +108,13 @@ body.reader-mode {
 }
 
 @keyframes inkRise {
-  from { opacity: 0; transform: translateY(16px); }
+  from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes inkSoftGlow {
-  0%, 100% { box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02); }
-  50% { box-shadow: 0 8px 22px rgba(163, 13, 17, 0.08); }
+  0%, 100% { box-shadow: var(--ink-shadow-sm); }
+  50% { box-shadow: 0 10px 24px rgba(163, 13, 17, 0.08); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -79,13 +145,18 @@ body.high-contrast-mode .card,
 body.high-contrast-mode .kpi-card,
 body.high-contrast-mode .panel-main,
 body.high-contrast-mode .sidebar-panel,
+body.high-contrast-mode .role-sidebar,
 body.high-contrast-mode .top-nav,
 body.high-contrast-mode .auth-card,
 body.high-contrast-mode .form-panel,
-body.high-contrast-mode .accessibility-menu {
+body.high-contrast-mode .accessibility-menu,
+body.high-contrast-mode .stat-box,
+body.high-contrast-mode .widget-card,
+body.high-contrast-mode .event-card {
   background: #000 !important;
   color: #fff !important;
   border-color: #fff !important;
+  box-shadow: none !important;
 }
 
 body.high-contrast-mode a,
@@ -94,16 +165,52 @@ body.high-contrast-mode .page-subtitle,
 body.high-contrast-mode label,
 body.high-contrast-mode .kpi-label,
 body.high-contrast-mode .kpi-value,
-body.high-contrast-mode .section-title {
+body.high-contrast-mode .section-title,
+body.high-contrast-mode .brand-logo,
+body.high-contrast-mode .role-sidebar-brand,
+body.high-contrast-mode .role-profile-name {
   color: #fff !important;
+}
+
+body.high-contrast-mode .brand-mark {
+  background: #fff !important;
+  color: #000 !important;
+  box-shadow: none !important;
 }
 
 body.high-contrast-mode .btn-primary,
 body.high-contrast-mode .submit-btn,
-body.high-contrast-mode .accessibility-toggle-btn {
+body.high-contrast-mode .accessibility-toggle-btn,
+body.high-contrast-mode .login-button,
+body.high-contrast-mode .register-event-btn,
+body.high-contrast-mode a.btn-primary,
+body.high-contrast-mode a.register-event-btn {
   background: #fff !important;
   color: #000 !important;
   border: 2px solid #fff !important;
+  box-shadow: none !important;
+}
+
+body.high-contrast-mode .btn-secondary,
+body.high-contrast-mode a.btn-secondary,
+body.high-contrast-mode .btn-danger,
+body.high-contrast-mode .register-event-btn--cancel,
+body.high-contrast-mode a.register-event-btn--cancel,
+body.high-contrast-mode .confirm-btn,
+body.high-contrast-mode .talk-ai-btn,
+body.high-contrast-mode .filter-chip {
+  background: #000 !important;
+  color: #fff !important;
+  border: 2px solid #fff !important;
+  box-shadow: none !important;
+}
+
+body.high-contrast-mode .filter-chip--active,
+body.high-contrast-mode .sidebar-nav-item--active,
+body.high-contrast-mode .role-nav-item--active {
+  background: #fff !important;
+  color: #000 !important;
+  border-color: #fff !important;
 }
 
 body.high-contrast-mode input,

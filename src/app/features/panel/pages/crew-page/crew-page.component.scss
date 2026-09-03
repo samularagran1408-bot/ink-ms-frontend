@@ -1,0 +1,60 @@
+@import '../../styles/panel-common.scss';
+
+.sandbox-banner {
+  background: #FEF3C7;
+  border: 1px solid #F59E0B;
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 13px;
+  color: #92400E;
+  margin: 0 0 16px;
+  line-height: 1.45;
+}
+
+.crew-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.crew-form select,
+.crew-form textarea {
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font: inherit;
+}
+
+.crew-form textarea {
+  resize: vertical;
+  min-height: 72px;
+}
+
+.crew-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+
+.actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.crew-resumen,
+.crew-hallazgos {
+  margin: 0 0 12px;
+  white-space: pre-wrap;
+  color: #0F172A;
+  line-height: 1.45;
+}
+
+.error-text {
+  color: #B91C1C;
+  font-weight: 600;
+  margin: 0 0 12px;
+}

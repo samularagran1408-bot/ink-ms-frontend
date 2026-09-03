@@ -25,6 +25,7 @@ import { UserInterfaceComponent } from '../auth/pages/user-interface/user-interf
 import { AptitudeQuizPageComponent } from './pages/aptitude-quiz-page/aptitude-quiz-page.component';
 import { AttendanceCheckinPageComponent } from './pages/attendance-checkin-page/attendance-checkin-page.component';
 import { AssistantPageComponent } from './pages/assistant-page/assistant-page.component';
+import { CrewPageComponent } from './pages/crew-page/crew-page.component';
 
 @NgModule({
   declarations: [
@@ -48,7 +49,8 @@ import { AssistantPageComponent } from './pages/assistant-page/assistant-page.co
     AthletesPageComponent,
     AptitudeQuizPageComponent,
     AttendanceCheckinPageComponent,
-    AssistantPageComponent
+    AssistantPageComponent,
+    CrewPageComponent
   ],
   imports: [
     CommonModule,

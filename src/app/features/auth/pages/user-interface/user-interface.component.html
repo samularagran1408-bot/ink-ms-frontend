@@ -375,6 +375,18 @@
             <div class="event-card-footer">
               <span class="spots-available">{{ 'HOME.SPOTS' | translate:{ occupied: occupied(event), total: event.maxCapacity || 0 } }}</span>
               <div class="event-card-actions">
+                <span
+                  *ngIf="isRegistered(event.id)"
+                  class="status-pill status-pill--ok"
+                >
+                  {{ 'HOME.REGISTERED' | translate }}
+                </span>
+                <span
+                  *ngIf="isOnWaitlist(event.id)"
+                  class="status-pill status-pill--warn"
+                >
+                  {{ 'HOME.WAITLIST' | translate }} · {{ waitlistPositionFor(event.id) }}
+                </span>
                 <button
                   *ngIf="canJoinEvent(event.id)"
                   class="register-event-btn"
@@ -383,37 +395,6 @@
                   (click)="onRegisterEvent(event)"
                 >
                   {{ joinLabel(event) }}
-                </button>
-                <button
-                  *ngIf="isOnWaitlist(event.id)"
-                  class="register-event-btn"
-                  type="button"
-                  disabled
-                >
-                  {{ 'HOME.WAITLIST' | translate }} · {{ waitlistPositionFor(event.id) }}
-                </button>
-                <button
-                  *ngIf="isRegistered(event.id) && !canFillAttendance(event) && !hasAttended(event.id)"
-                  class="register-event-btn"
-                  type="button"
-                  disabled
-                >
-                  {{ 'HOME.REGISTERED' | translate }}
-                </button>
-                <a
-                  *ngIf="canFillAttendance(event)"
-                  class="register-event-btn"
-                  routerLink="/home/events"
-                >
-                  Llenar asistencia
-                </a>
-                <button
-                  *ngIf="hasAttended(event.id)"
-                  class="register-event-btn"
-                  type="button"
-                  disabled
-                >
-                  Asistió
                 </button>
                 <button
                   *ngIf="canCancelEventRegistration(event)"

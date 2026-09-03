@@ -4,7 +4,22 @@
   <p *ngIf="loading" class="empty-text">{{ 'COMMON.LOADING' | translate }}</p>
   <p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
 
-  <div class="card" *ngFor="let summary of summaries" style="margin-bottom: 12px;">
+  <div class="search-bar" *ngIf="!loading">
+    <input
+      type="search"
+      name="athleteQuery"
+      [(ngModel)]="searchQuery"
+      [placeholder]="'ATHLETES.SEARCH_PH' | translate"
+    />
+    <button class="btn-secondary" type="button" *ngIf="searchQuery.trim()" (click)="clearSearch()">
+      {{ 'COMMON.CLEAR' | translate }}
+    </button>
+  </div>
+  <p class="search-count" *ngIf="searchQuery.trim()">
+    {{ 'COMMON.RESULTS' | translate:{ count: visibleSummaries().length } }}
+  </p>
+
+  <div class="card" *ngFor="let summary of visibleSummaries()" style="margin-bottom: 12px;">
     <h3 class="section-title">{{ summary.event.name }}</h3>
     <div class="kpi-sub" style="margin-bottom: 10px;">
       {{ 'ATHLETES.ENROLLED' | translate:{ occupied: summary.occupied, capacity: summary.event.maxCapacity, waitlist: summary.waitlist.length } }}
@@ -87,4 +102,7 @@
   </div>
 
   <p *ngIf="!loading && !summaries.length" class="empty-text">{{ 'ATHLETES.EMPTY' | translate }}</p>
+  <p *ngIf="!loading && summaries.length && !visibleSummaries().length" class="empty-text">
+    {{ 'ATHLETES.EMPTY_FILTER' | translate }}
+  </p>
 </app-panel-shell>

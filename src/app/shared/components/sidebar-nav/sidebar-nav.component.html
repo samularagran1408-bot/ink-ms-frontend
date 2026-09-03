@@ -5,7 +5,10 @@
       <button class="hamburger-btn" type="button" (click)="openSidebar()" [attr.aria-label]="'COMMON.OPEN_MENU' | translate">
         <app-icon name="bars-3" [size]="22"></app-icon>
       </button>
-      <a [routerLink]="sessionHome" class="brand-logo">{{ brandTitle }}</a>
+      <a [routerLink]="sessionHome" class="brand-logo">
+        <span class="brand-mark" aria-hidden="true">I</span>
+        <span>{{ brandTitle }}</span>
+      </a>
     </div>
     <div class="nav-right">
       <div class="user-info-text">
@@ -105,7 +108,10 @@
 
 <!-- Layout admin / entrenador / organizador: sidebar fijo (desktop) -->
 <aside *ngIf="layout === 'fixed'" class="role-sidebar">
-  <div class="role-sidebar-brand">{{ brandTitle }}</div>
+  <div class="role-sidebar-brand">
+    <span class="brand-mark" aria-hidden="true">I</span>
+    <span>{{ brandTitle }}</span>
+  </div>
 
   <div class="role-profile-card">
     <div class="role-avatar" [class.role-avatar--photo]="!!profilePicture">

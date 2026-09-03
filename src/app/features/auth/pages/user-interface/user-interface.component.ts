@@ -411,7 +411,12 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
   }
 
   canJoinEvent(eventId: string): boolean {
-    return !this.isRegistered(eventId) && !this.isOnWaitlist(eventId);
+    if (this.isRegistered(eventId) || this.isOnWaitlist(eventId)) {
+      return false;
+    }
+    const event = this.allEvents.find((item) => item.id === eventId) || this.events.find((item) => item.id === eventId);
+    const status = (event?.status || '').toLowerCase();
+    return status !== 'cancelled' && status !== 'finished';
   }
 
   anyRegistrationFor(eventId: string): Registration | null {

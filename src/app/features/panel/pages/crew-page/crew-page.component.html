@@ -1,0 +1,106 @@
+<app-panel-shell>
+  <h1 class="page-title">{{ 'CREW.TITLE' | translate }}</h1>
+  <p class="page-subtitle">{{ 'CREW.SUBTITLE' | translate }}</p>
+
+  <p class="sandbox-banner">{{ 'CREW.SANDBOX_NOTE' | translate }}</p>
+
+  <div class="card crew-form">
+    <label class="kpi-label" for="crew-dominio">{{ 'CREW.DOMAIN' | translate }}</label>
+    <select id="crew-dominio" [(ngModel)]="dominio" [disabled]="enviando">
+      <option value="auto">{{ 'CREW.DOMAIN_AUTO' | translate }}</option>
+      <option *ngFor="let d of catalogo" [value]="d.id">
+        {{ d.id }} · {{ etiquetaVia(d.via) }}
+      </option>
+    </select>
+    <p class="kpi-sub" *ngIf="descripcionDominio()">{{ descripcionDominio() }}</p>
+    <p class="kpi-sub" *ngIf="rol">{{ 'CREW.ROLE' | translate }}: {{ rol }}</p>
+
+    <label class="kpi-label" for="crew-mensaje">{{ 'CREW.MESSAGE' | translate }}</label>
+    <textarea
+      id="crew-mensaje"
+      rows="3"
+      [(ngModel)]="mensaje"
+      [disabled]="enviando"
+      [placeholder]="'CREW.PLACEHOLDER' | translate"
+      maxlength="4000"
+    ></textarea>
+
+    <div class="filter-chips">
+      <button
+        *ngFor="let ej of ejemplos"
+        type="button"
+        class="filter-chip"
+        (click)="usarEjemplo(ej)"
+        [disabled]="enviando"
+      >
+        {{ ej }}
+      </button>
+    </div>
+
+    <div class="actions-row">
+      <button
+        class="btn-primary"
+        type="button"
+        (click)="ejecutar()"
+        [disabled]="enviando || !mensaje.trim()"
+      >
+        {{ enviando ? ('CREW.RUNNING' | translate) : ('CREW.RUN' | translate) }}
+      </button>
+      <button
+        *ngIf="pendienteConfirmacion"
+        class="btn-secondary"
+        type="button"
+        (click)="confirmarSandbox()"
+        [disabled]="enviando"
+      >
+        {{ 'CREW.CONFIRM_SANDBOX' | translate }}
+      </button>
+    </div>
+    <p *ngIf="enviando" class="kpi-sub">{{ 'CREW.WAIT' | translate }}</p>
+  </div>
+
+  <p *ngIf="error" class="error-text" role="alert">{{ error }}</p>
+  <button
+    *ngIf="usarChat"
+    class="btn-secondary"
+    type="button"
+    (click)="abrirChat()"
+  >
+    {{ 'CREW.OPEN_CHAT' | translate }}
+  </button>
+
+  <section class="card" *ngIf="resultado">
+    <h2 class="section-title">{{ 'CREW.REPORT' | translate }}</h2>
+    <div class="crew-badges">
+      <span class="status-pill status-pill--ok">{{ resultado.dominio }}</span>
+      <span class="status-pill">{{ resultado.dominio_origen }}</span>
+      <span
+        class="status-pill"
+        [class.status-pill--ok]="resultado.informe.via_mcp"
+        [class.status-pill--warn]="!resultado.informe.via_mcp"
+      >
+        via_mcp {{ resultado.informe.via_mcp }}
+      </span>
+      <span
+        class="status-pill"
+        [class.status-pill--warn]="resultado.informe.via_sandbox"
+      >
+        via_sandbox {{ resultado.informe.via_sandbox }}
+      </span>
+      <span class="status-pill status-pill--ok">
+        {{ resultado.informe.fuente_tools }}
+      </span>
+    </div>
+    <p class="kpi-sub" *ngIf="resultado.intencion">
+      {{ 'CREW.INTENT' | translate }}: {{ resultado.intencion }}
+      <span *ngIf="resultado.confianza != null">
+        ({{ resultado.confianza | number:'1.0-2' }})
+      </span>
+    </p>
+    <p class="crew-resumen">{{ resultado.informe.resumen }}</p>
+    <p class="crew-hallazgos">{{ resultado.informe.hallazgos }}</p>
+    <p class="kpi-sub" *ngIf="resultado.informe.tools_usadas?.length">
+      {{ 'CREW.TOOLS' | translate }}: {{ resultado.informe.tools_usadas.join(', ') }}
+    </p>
+  </section>
+</app-panel-shell>

@@ -24,6 +24,7 @@ import { AssociationsPageComponent } from './pages/associations-page/association
 import { AptitudeQuizPageComponent } from './pages/aptitude-quiz-page/aptitude-quiz-page.component';
 import { AttendanceCheckinPageComponent } from './pages/attendance-checkin-page/attendance-checkin-page.component';
 import { AssistantPageComponent } from './pages/assistant-page/assistant-page.component';
+import { CrewPageComponent } from './pages/crew-page/crew-page.component';
 
 const accountChildren = [
   { path: 'profile', component: ProfilePageComponent },
@@ -45,6 +46,7 @@ const routes: Routes = [
       { path: '', component: UserInterfaceComponent },
       { path: 'events', component: EventsPageComponent, data: { mode: 'user' } },
       { path: 'asistente', component: AssistantPageComponent },
+      { path: 'crew', component: CrewPageComponent },
       ...accountChildren
     ]
   },
@@ -55,6 +57,7 @@ const routes: Routes = [
     children: [
       { path: '', component: AdminDashboardComponent },
       { path: 'asistente', component: AssistantPageComponent },
+      { path: 'crew', component: CrewPageComponent },
       { path: 'users', component: AdminUsersComponent },
       { path: 'users/:email', component: AdminUserDetailComponent },
       { path: 'events', component: EventsPageComponent, data: { mode: 'manage' } },
@@ -74,6 +77,7 @@ const routes: Routes = [
     children: [
       { path: '', component: TrainerDashboardComponent },
       { path: 'asistente', component: AssistantPageComponent },
+      { path: 'crew', component: CrewPageComponent },
       {
         path: 'quiz',
         component: AptitudeQuizPageComponent,
@@ -113,6 +117,7 @@ const routes: Routes = [
     children: [
       { path: '', component: OrganizerDashboardComponent },
       { path: 'asistente', component: AssistantPageComponent },
+      { path: 'crew', component: CrewPageComponent },
       {
         path: 'quiz',
         component: AptitudeQuizPageComponent,

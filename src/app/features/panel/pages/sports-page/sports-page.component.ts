@@ -5,6 +5,7 @@ import { Disability, Sport } from '../../../../core/models/sports';
 import { SportsService } from '../../../../core/services/sports.service';
 import { ReportsService } from '../../../../core/services/reports.service';
 import { ConfirmDialogService } from '../../../../core/services/confirm-dialog.service';
+import { matchesQuery } from '../../../../core/utils/search.util';
 
 @Component({
   selector: 'app-sports-page',
@@ -15,6 +16,7 @@ export class SportsPageComponent implements OnInit {
   sports: Sport[] = [];
   form: FormGroup;
   searchQuery = '';
+  difficultyFilter = '';
   expandedSportId: number | null = null;
   errorMessage: string | null = null;
 
@@ -38,16 +40,24 @@ export class SportsPageComponent implements OnInit {
   }
 
   get filteredSports(): Sport[] {
-    const q = this.searchQuery.trim().toLowerCase();
-    if (!q) {
-      return this.sports;
-    }
-    return this.sports.filter((sport) =>
-      sport.name.toLowerCase().includes(q)
-      || (sport.description || '').toLowerCase().includes(q)
-      || (sport.difficulty || '').toLowerCase().includes(q)
-      || String(sport.id).includes(q)
-    );
+    return this.sports.filter((sport) => {
+      if (this.difficultyFilter && (sport.difficulty || '').toLowerCase() !== this.difficultyFilter) {
+        return false;
+      }
+      return matchesQuery(
+        this.searchQuery,
+        sport.name,
+        sport.description,
+        sport.difficulty,
+        sport.requiredMaterials,
+        sport.id
+      );
+    });
+  }
+
+  clearSearch(): void {
+    this.searchQuery = '';
+    this.difficultyFilter = '';
   }
 
   adaptationsOf(sport: Sport): Disability[] {

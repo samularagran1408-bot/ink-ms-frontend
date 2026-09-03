@@ -26,6 +26,8 @@ export class AdminUsersComponent implements OnInit {
   filter: 'active' | 'all' | 'inactive' = 'active';
   nameQuery = '';
   disabilityQuery = '';
+  readonly pageSize = 6;
+  currentPage = 1;
   activityUser: UserProfile | null = null;
   activityItems: AdminUserActivityItem[] = [];
   activityLastLogin: string | null = null;
@@ -59,7 +61,7 @@ export class AdminUsersComponent implements OnInit {
   }
 
   get allVisibleSelected(): boolean {
-    return this.filteredUsers.length > 0 && this.filteredUsers.every((u) => this.selected.has(u.email));
+    return this.pagedUsers.length > 0 && this.pagedUsers.every((u) => this.selected.has(u.email));
   }
 
   get filteredUsers(): UserProfile[] {
@@ -75,6 +77,31 @@ export class AdminUsersComponent implements OnInit {
     });
   }
 
+  get totalPages(): number {
+    return Math.max(1, Math.ceil(this.filteredUsers.length / this.pageSize));
+  }
+
+  get pageNumbers(): number[] {
+    return Array.from({ length: this.totalPages }, (_, i) => i + 1);
+  }
+
+  get pagedUsers(): UserProfile[] {
+    const page = Math.min(Math.max(1, this.currentPage), this.totalPages);
+    const start = (page - 1) * this.pageSize;
+    return this.filteredUsers.slice(start, start + this.pageSize);
+  }
+
+  get showingFrom(): number {
+    if (!this.filteredUsers.length) {
+      return 0;
+    }
+    return (Math.min(this.currentPage, this.totalPages) - 1) * this.pageSize + 1;
+  }
+
+  get showingTo(): number {
+    return Math.min(this.showingFrom + this.pageSize - 1, this.filteredUsers.length);
+  }
+
   reload(): void {
     this.loading = true;
     this.errorMessage = null;
@@ -82,6 +109,7 @@ export class AdminUsersComponent implements OnInit {
       next: (panel) => {
         this.users = panel.users || [];
         this.selected.clear();
+        this.currentPage = 1;
         this.loading = false;
       },
       error: (error) => {
@@ -96,7 +124,19 @@ export class AdminUsersComponent implements OnInit {
       return;
     }
     this.filter = filter;
+    this.currentPage = 1;
     this.reload();
+  }
+
+  onSearchChange(): void {
+    this.currentPage = 1;
+  }
+
+  goToPage(page: number): void {
+    if (page < 1 || page > this.totalPages) {
+      return;
+    }
+    this.currentPage = page;
   }
 
   toggleOne(email: string, checked: boolean): void {
@@ -109,9 +149,9 @@ export class AdminUsersComponent implements OnInit {
 
   toggleAll(checked: boolean): void {
     if (checked) {
-      this.filteredUsers.forEach((u) => this.selected.add(u.email));
+      this.pagedUsers.forEach((u) => this.selected.add(u.email));
     } else {
-      this.filteredUsers.forEach((u) => this.selected.delete(u.email));
+      this.pagedUsers.forEach((u) => this.selected.delete(u.email));
     }
   }
 

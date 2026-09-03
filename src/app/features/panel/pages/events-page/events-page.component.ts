@@ -23,6 +23,7 @@ import { resolveEventImage } from '../../../../core/utils/event-image.util';
 import { EventPlaceLocation } from '../../../../core/utils/maps.util';
 import { buildAttendanceCheckinUrl, extractQrCode, eventDateTimeMs } from '../../../../core/utils/qr-attendance.util';
 import { userInitials } from '../../../../core/utils/avatar.util';
+import { matchesQuery } from '../../../../core/utils/search.util';
 
 interface EventManageRow {
   event: EventItem;
@@ -128,11 +129,17 @@ export class EventsPageComponent implements OnInit, OnDestroy {
     this.querySub = this.route.queryParamMap.subscribe((params) => {
       this.highlightedEventId = params.get('eventoId');
       this.userView = params.get('vista') === 'historial' ? 'history' : 'catalog';
+      if (this.mode === 'user' && this.userView === 'history') {
+        if (!this.myPasses.length) {
+          this.buildMyPasses();
+        }
+        void this.refreshPassQrImages();
+      }
       this.scrollToHighlighted();
     });
     this.clockTimer = setInterval(() => {
       this.nowMs = Date.now();
-      if (this.mode === 'user') {
+      if (this.mode === 'user' && this.userView === 'history') {
         void this.refreshPassQrImages();
       }
     }, 30_000);
@@ -156,28 +163,54 @@ export class EventsPageComponent implements OnInit, OnDestroy {
     return this.filterEventList(this.events);
   }
 
+  /** Eventos en los que el atleta está inscrito o en lista de espera. */
+  get myRegisteredEvents(): EventItem[] {
+    const ids = new Set(this.registrations.map((reg) => reg.eventId));
+    const items = this.filterEventList(this.events.filter((event) => ids.has(event.id)));
+    return [...items].sort((a, b) => {
+      const aMs = eventDateTimeMs(a.eventDate, a.eventTime) ?? 0;
+      const bMs = eventDateTimeMs(b.eventDate, b.eventTime) ?? 0;
+      const aUpcoming = aMs >= this.nowMs;
+      const bUpcoming = bMs >= this.nowMs;
+      if (aUpcoming !== bUpcoming) {
+        return aUpcoming ? -1 : 1;
+      }
+      return aUpcoming ? aMs - bMs : bMs - aMs;
+    });
+  }
+
   get filteredManageRows(): EventManageRow[] {
-    const q = this.catalogQuery.trim().toLowerCase();
-    if (!q) {
+    const q = this.catalogQuery;
+    if (!q.trim()) {
       return this.manageRows;
     }
     return this.manageRows.filter((row) => this.eventMatchesQuery(row.event, q));
   }
 
   private filterEventList(events: EventItem[]): EventItem[] {
-    const q = this.catalogQuery.trim().toLowerCase();
-    if (!q) {
+    const q = this.catalogQuery;
+    if (!q.trim()) {
       return events;
     }
     return events.filter((event) => this.eventMatchesQuery(event, q));
   }
 
   private eventMatchesQuery(event: EventItem, q: string): boolean {
-    return event.name.toLowerCase().includes(q)
-      || (event.sportName || '').toLowerCase().includes(q)
-      || (event.location || '').toLowerCase().includes(q)
-      || (event.description || '').toLowerCase().includes(q)
-      || event.id.toLowerCase().includes(q);
+    return matchesQuery(
+      q,
+      event.name,
+      event.sportName,
+      event.location,
+      event.description,
+      event.id,
+      event.status
+    );
+  }
+
+  clearCatalogQuery(): void {
+    this.catalogQuery = '';
+    this.lookupEvent = null;
+    this.lookupEventId = '';
   }
 
   reload(): void {
@@ -206,7 +239,9 @@ export class EventsPageComponent implements OnInit, OnDestroy {
         }
         if (this.mode === 'user') {
           this.buildMyPasses();
-          void this.refreshPassQrImages();
+          if (this.userView === 'history') {
+            void this.refreshPassQrImages();
+          }
         }
         this.applyEventsToCalendar(events);
         if (this.canManage && this.mode === 'manage') {
@@ -517,7 +552,12 @@ export class EventsPageComponent implements OnInit, OnDestroy {
   }
 
   canJoinEvent(eventId: string): boolean {
-    return !this.isRegistered(eventId) && !this.isOnWaitlist(eventId);
+    if (this.isRegistered(eventId) || this.isOnWaitlist(eventId)) {
+      return false;
+    }
+    const event = this.events.find((item) => item.id === eventId);
+    const status = (event?.status || '').toLowerCase();
+    return status !== 'cancelled' && status !== 'finished';
   }
 
   catalogJoinLabel(event: EventItem): string {
@@ -577,7 +617,12 @@ export class EventsPageComponent implements OnInit, OnDestroy {
 
   get upcomingPassList(): MyPassRow[] {
     const nextId = this.nextRegisteredEvent?.id;
-    return this.myPasses.filter((pass) => !pass.registration.attended && pass.registration.eventId !== nextId);
+    return this.myPasses.filter((pass) => {
+      if (pass.registration.attended || pass.registration.eventId === nextId) {
+        return false;
+      }
+      return this.canShowPassQr(pass);
+    });
   }
 
   get confirmedHistoryCount(): number {
@@ -751,6 +796,18 @@ export class EventsPageComponent implements OnInit, OnDestroy {
       && this.eventHasStarted(event);
   }
 
+  canFillAttendanceFor(reg: Registration): boolean {
+    const event = this.eventForRegistration(reg);
+    return !!event && this.canFillAttendance(event);
+  }
+
+  openAttendanceFor(reg: Registration): void {
+    const event = this.eventForRegistration(reg);
+    if (event) {
+      this.openMyAttendance(event);
+    }
+  }
+
   /** El formulario existe, pero todavía no llega la hora del evento. */
   canFillAttendanceSoon(event: EventItem | null | undefined): boolean {
     if (!event) {
@@ -842,7 +899,21 @@ export class EventsPageComponent implements OnInit, OnDestroy {
       return false;
     }
     const start = this.eventStartMs(event);
-    return start == null || this.nowMs >= start;
+    return start != null && this.nowMs >= start;
+  }
+
+  canShowEventQr(event: EventItem | null | undefined): boolean {
+    if (!event || this.hasAttended(event.id) || !this.eventHasStarted(event)) {
+      return false;
+    }
+    return this.isRegistered(event.id) && !!this.nextPass;
+  }
+
+  canShowPassQr(pass: MyPassRow): boolean {
+    if (!pass?.event || pass.registration.attended || pass.registration.waitlistPosition != null) {
+      return false;
+    }
+    return this.eventHasStarted(pass.event);
   }
 
   eventStartLabel(event: EventItem | null | undefined): string {
@@ -1076,7 +1147,7 @@ export class EventsPageComponent implements OnInit, OnDestroy {
 
   private async ensurePassQr(pass: MyPassRow): Promise<void> {
     const code = pass.registration.qrCode;
-    const ready = !!code && !pass.registration.attended;
+    const ready = !!code && !pass.registration.attended && this.eventHasStarted(pass.event);
     if (!ready) {
       pass.qrDataUrl = null;
       pass.loadingQr = false;

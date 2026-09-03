@@ -3,29 +3,37 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 48px;
-  background-color: #FFFFFF;
-  border-bottom: 1px solid #E2E8F0;
+  padding: 14px 40px;
+  background-color: rgba(255, 255, 255, 0.92);
+  border-bottom: 1px solid var(--ink-line, #E8EEF5);
   position: sticky;
   top: 0;
   z-index: 100;
+  backdrop-filter: blur(14px);
 }
 
 .nav-left {
   display: flex;
   align-items: center;
-  gap: 32px;
+  gap: 16px;
 }
 
 .hamburger-btn {
-  background: none;
-  border: none;
+  background: #F8FAFC;
+  border: 1px solid var(--ink-line, #E8EEF5);
+  border-radius: 10px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 4px;
+  padding: 8px;
   color: #0F172A;
+  transition: background-color 0.16s ease, border-color 0.16s ease;
+}
+
+.hamburger-btn:hover {
+  background: #fff;
+  border-color: #E8B4B6;
 }
 
 .nav-item-main {
@@ -37,12 +45,15 @@
 
 .brand-logo {
   font-family: 'Oswald', sans-serif;
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 700;
   color: #A30D11;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.4px;
   text-decoration: none;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .nav-right {
@@ -60,7 +71,7 @@
   font-size: 10px;
   font-weight: 700;
   color: #94A3B8;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.6px;
 }
 
 .user-name-text {
@@ -71,17 +82,18 @@
 
 .nav-bell-btn {
   position: relative;
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
   background-color: #FEF2F2;
-  border: 1px solid #FCA5A5;
+  border: 1px solid #FECACA;
   color: #A30D11;
   display: flex;
   align-items: center;
   justify-content: center;
   text-decoration: none;
   flex-shrink: 0;
+  transition: background-color 0.16s ease, transform 0.16s ease;
 }
 
 .nav-bell-btn:hover {
@@ -108,11 +120,11 @@
 }
 
 .user-avatar-btn {
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
   background-color: #FEF2F2;
-  border: 1px solid #FCA5A5;
+  border: 1px solid #FECACA;
   color: #E11D48;
   display: flex;
   align-items: center;
@@ -133,7 +145,7 @@
 .sidebar-backdrop {
   position: fixed;
   inset: 0;
-  background-color: #000000;
+  background-color: #0B1220;
   opacity: 0;
   z-index: 999;
   visibility: hidden;
@@ -142,7 +154,7 @@
 }
 
 .sidebar-backdrop--visible {
-  opacity: 0.5;
+  opacity: 0.52;
   visibility: visible;
   pointer-events: auto;
 }
@@ -156,10 +168,10 @@
   height: 100vh;
   background-color: #FFFFFF;
   z-index: 1000;
-  box-shadow: 10px 0 30px rgba(0, 0, 0, 0.1);
+  box-shadow: 16px 0 40px rgba(11, 18, 32, 0.16);
   display: flex;
   flex-direction: column;
-  padding: 32px 24px;
+  padding: 28px 22px;
   box-sizing: border-box;
   overflow-y: auto;
   transform: translateX(-100%);
@@ -172,12 +184,13 @@
 
 .close-sidebar-btn {
   align-self: flex-end;
-  background: none;
-  border: none;
+  background: #F8FAFC;
+  border: 1px solid var(--ink-line, #E8EEF5);
+  border-radius: 10px;
   line-height: 1;
   cursor: pointer;
   color: #64748B;
-  padding: 4px 8px;
+  padding: 6px 8px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -188,7 +201,7 @@
   flex-direction: column;
   align-items: flex-start;
   margin-top: 10px;
-  margin-bottom: 32px;
+  margin-bottom: 28px;
   padding-bottom: 20px;
   border-bottom: 1px solid #F1F5F9;
 }
@@ -196,14 +209,15 @@
 .sidebar-avatar-box {
   width: 72px;
   height: 72px;
-  border-radius: 16px;
-  background-color: #CCFBF1;
-  color: #0D9488;
+  border-radius: 18px;
+  background: linear-gradient(160deg, #FEE2E2, #F8FAFC);
+  color: #A30D11;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 14px;
   overflow: hidden;
+  border: 1px solid #FECACA;
 }
 
 .sidebar-avatar-box--photo {
@@ -228,7 +242,7 @@
 .sidebar-nav-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   flex: 1;
 }
 
@@ -237,34 +251,36 @@
   align-items: center;
   justify-content: space-between;
   gap: 14px;
-  padding: 12px 16px;
+  padding: 12px 14px;
   border-radius: 12px;
-  font-size: 15px;
+  font-size: 14.5px;
   font-weight: 600;
   color: #475569;
   text-decoration: none;
   cursor: pointer;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition: background-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
 }
 
 .sidebar-nav-item:hover {
   background-color: #F8FAFC;
+  color: #0F172A;
 }
 
 .sidebar-nav-item--active {
-  background-color: #E11D48;
+  background: linear-gradient(180deg, #c41218 0%, #A30D11 100%);
   color: #FFFFFF;
-  box-shadow: 0 4px 12px rgba(225, 29, 72, 0.25);
+  box-shadow: 0 8px 18px rgba(163, 13, 17, 0.28);
 }
 
 .sidebar-nav-item--active:hover {
-  background-color: #E11D48;
+  background: linear-gradient(180deg, #c41218 0%, #A30D11 100%);
+  color: #FFFFFF;
 }
 
 @media (max-width: 600px) {
   .top-nav {
-    padding-left: 20px;
-    padding-right: 20px;
+    padding-left: 16px;
+    padding-right: 16px;
   }
 }
 
@@ -273,42 +289,48 @@
   position: fixed;
   top: 0;
   left: 0;
-  width: 260px;
+  width: 272px;
   height: 100vh;
-  background: #FFFFFF;
-  border-right: 1px solid #E2E8F0;
+  background:
+    radial-gradient(420px 280px at 0% 0%, rgba(163, 13, 17, 0.28), transparent 58%),
+    linear-gradient(180deg, #121a2b 0%, #0B1220 100%);
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
   z-index: 50;
   display: flex;
   flex-direction: column;
-  padding: 28px 20px;
+  padding: 26px 18px;
   box-sizing: border-box;
 }
 
 .role-sidebar-brand {
   font-family: 'Oswald', sans-serif;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
-  color: #A30D11;
-  letter-spacing: 0.4px;
-  margin-bottom: 24px;
+  color: #FFFFFF;
+  letter-spacing: 0.5px;
+  margin-bottom: 22px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .role-profile-card {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: #F8FAFC;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 14px;
   padding: 12px;
-  margin-bottom: 24px;
+  margin-bottom: 22px;
 }
 
 .role-avatar {
   width: 42px;
   height: 42px;
-  border-radius: 50%;
-  background: #E2E8F0;
-  color: #64748B;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #E2E8F0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -323,7 +345,7 @@
 .role-profile-name {
   font-size: 14px;
   font-weight: 700;
-  color: #0F172A;
+  color: #F8FAFC;
 }
 
 .role-profile-sub {
@@ -336,7 +358,7 @@
 .role-nav-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   flex: 1;
   overflow-y: auto;
 }
@@ -346,13 +368,13 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 12px 14px;
+  padding: 11px 12px;
   border-radius: 12px;
-  color: #475569;
+  color: #CBD5E1;
   text-decoration: none;
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 600;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition: background-color 0.16s ease, color 0.16s ease;
 }
 
 .nav-badge {
@@ -377,28 +399,32 @@
 }
 
 .role-nav-item:hover {
-  background: #b42947;
+  background: rgba(255, 255, 255, 0.07);
   color: #FFFFFF;
 }
 
 .role-nav-item--active {
-  background: #E11D48;
+  background: linear-gradient(180deg, #c41218 0%, #A30D11 100%);
   color: #FFFFFF;
-  box-shadow: 0 4px 12px rgba(225, 29, 72, 0.25);
+  box-shadow: 0 8px 18px rgba(163, 13, 17, 0.32);
+}
+
+.role-nav-item--active:hover {
+  color: #FFFFFF;
 }
 
 .role-nav-divider {
   height: 1px;
-  background: #E2E8F0;
+  background: rgba(255, 255, 255, 0.08);
   margin: 10px 0;
 }
 
 .role-logout-btn {
   margin-top: 16px;
   width: 100%;
-  border: none;
-  background: #F1F5F9;
-  color: #0F172A;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.05);
+  color: #E2E8F0;
   border-radius: 12px;
   padding: 12px 14px;
   font-size: 14px;
@@ -411,7 +437,8 @@
 }
 
 .role-logout-btn:hover {
-  background: #E2E8F0;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
 }
 
 .drawer-nav-divider {
@@ -443,6 +470,6 @@
 
 @media (max-width: 900px) {
   .role-sidebar {
-    width: 220px;
+    width: 228px;
   }
 }

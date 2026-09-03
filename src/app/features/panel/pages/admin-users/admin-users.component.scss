@@ -68,7 +68,7 @@
 
 .users-table .actions {
   flex-wrap: nowrap;
-  min-width: 268px;
+  min-width: 84px;
 }
 
 .email-cell {
@@ -84,6 +84,14 @@
   padding: 7px 10px;
   font-size: 11px;
   white-space: nowrap;
+}
+
+.btn-icon {
+  margin: 0;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 999px;
 }
 
 .user-cell {
@@ -153,6 +161,67 @@
 
 .user-cards {
   display: none;
+}
+
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #F1F5F9;
+}
+
+.pagination-meta {
+  margin: 0;
+  color: #64748B;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.pagination-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.page-btn {
+  min-width: 34px;
+  height: 34px;
+  padding: 0 8px;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  background: #FFFFFF;
+  color: #0F172A;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.page-btn:hover:not(:disabled) {
+  border-color: #A30D11;
+  color: #A30D11;
+}
+
+.page-btn--active {
+  background: #A30D11;
+  border-color: #A30D11;
+  color: #FFFFFF;
+}
+
+.page-btn--active:hover:not(:disabled) {
+  color: #FFFFFF;
+}
+
+.page-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .activity-overlay {
@@ -302,7 +371,14 @@
   }
 
   .user-card-actions {
+    display: flex;
     flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .pagination {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .toolbar {

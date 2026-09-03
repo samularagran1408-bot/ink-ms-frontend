@@ -22,41 +22,43 @@
     </form>
   </div>
 
-  <div class="card" style="margin-bottom: 16px;">
-    <h3 class="section-title">Buscar discapacidad</h3>
-    <p class="kpi-sub" style="margin-bottom: 12px;">
-      Solo se pueden buscar discapacidades activas. Las desactivadas no aparecen en la búsqueda.
-    </p>
-    <form class="form-grid" (ngSubmit)="searchById()">
-      <label>
-        ID
-        <input type="number" name="searchId" [(ngModel)]="searchId" placeholder="Ej. 99" />
-      </label>
-      <div style="display: flex; align-items: end;">
-        <button class="btn-secondary" type="submit">Buscar por ID</button>
-      </div>
-    </form>
-    <div class="list-item" *ngIf="lookup">
-      <div>
-        <strong>#{{ lookup.id }} · {{ lookup.name }}</strong>
-        <div class="kpi-sub">{{ lookup.category || '—' }} · {{ lookup.description || 'Sin descripción' }}</div>
-      </div>
-      <span class="status-pill" [class.status-pill--ok]="lookup.isActive" [class.status-pill--bad]="!lookup.isActive">
-        {{ lookup.isActive ? 'Activa' : 'Desactivada' }}
-      </span>
-    </div>
-  </div>
-
   <div class="card">
-    <h3 class="section-title">Todos los tipos de discapacidad</h3>
+    <h3 class="section-title">{{ 'DISABILITIES_PAGE.SEARCH' | translate }}</h3>
+    <p class="kpi-sub" style="margin-bottom: 12px;">
+      {{ 'DISABILITIES_PAGE.SEARCH_HINT' | translate }}
+    </p>
     <div class="search-bar">
       <input
         type="search"
         name="disabilityQuery"
         [(ngModel)]="searchQuery"
-        placeholder="Filtrar por nombre, categoría o descripción (solo activas)"
+        [placeholder]="'DISABILITIES_PAGE.FILTER_PH' | translate"
       />
+      <select name="disabilityStatus" [(ngModel)]="statusFilter">
+        <option value="all">{{ 'DISABILITIES_PAGE.STATUS_ALL' | translate }}</option>
+        <option value="active">{{ 'DISABILITIES_PAGE.STATUS_ACTIVE' | translate }}</option>
+        <option value="inactive">{{ 'DISABILITIES_PAGE.STATUS_INACTIVE' | translate }}</option>
+      </select>
+      <select name="disabilityCategory" [(ngModel)]="categoryFilter">
+        <option value="">{{ 'DISABILITIES_PAGE.CATEGORY_ALL' | translate }}</option>
+        <option value="fisica">{{ 'DISABILITIES_PAGE.PHYSICAL' | translate }}</option>
+        <option value="visual">{{ 'DISABILITIES_PAGE.VISUAL' | translate }}</option>
+        <option value="auditiva">{{ 'DISABILITIES_PAGE.HEARING' | translate }}</option>
+        <option value="intelectual">{{ 'DISABILITIES_PAGE.INTELLECTUAL' | translate }}</option>
+        <option value="multiple">{{ 'DISABILITIES_PAGE.MULTIPLE' | translate }}</option>
+      </select>
+      <button
+        class="btn-secondary"
+        type="button"
+        *ngIf="searchQuery.trim() || statusFilter !== 'all' || categoryFilter"
+        (click)="clearSearch()"
+      >
+        {{ 'COMMON.CLEAR' | translate }}
+      </button>
     </div>
+    <p class="search-count" *ngIf="searchQuery.trim() || statusFilter !== 'all' || categoryFilter">
+      {{ 'COMMON.RESULTS' | translate:{ count: filteredItems.length } }}
+    </p>
     <div *ngFor="let item of filteredItems">
       <div class="list-item">
         <div>
@@ -93,7 +95,9 @@
       </form>
     </div>
     <p *ngIf="!filteredItems.length" class="empty-text">
-      {{ searchQuery.trim() ? 'No hay discapacidades activas que coincidan con la búsqueda.' : 'No hay tipos de discapacidad registrados.' }}
+      {{ (searchQuery.trim() || statusFilter !== 'all' || categoryFilter)
+        ? ('DISABILITIES_PAGE.EMPTY_SEARCH' | translate)
+        : ('DISABILITIES_PAGE.EMPTY' | translate) }}
     </p>
   </div>
 </app-panel-shell>

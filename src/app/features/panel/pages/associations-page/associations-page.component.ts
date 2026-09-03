@@ -5,6 +5,7 @@ import { Disability, Sport, SportDisability } from '../../../../core/models/spor
 import { SportsService } from '../../../../core/services/sports.service';
 import { ReportsService } from '../../../../core/services/reports.service';
 import { ConfirmDialogService } from '../../../../core/services/confirm-dialog.service';
+import { matchesQuery } from '../../../../core/utils/search.util';
 
 @Component({
   selector: 'app-associations-page',
@@ -17,6 +18,7 @@ export class AssociationsPageComponent implements OnInit {
   allAssociations: SportDisability[] = [];
   form: FormGroup;
   selectedSportId: number | null = null;
+  listSportId = '';
   searchQuery = '';
   loading = true;
   errorMessage: string | null = null;
@@ -45,23 +47,29 @@ export class AssociationsPageComponent implements OnInit {
   }
 
   get associations(): SportDisability[] {
-    if (this.selectedSportId == null) {
+    if (!this.listSportId) {
       return this.allAssociations;
     }
-    return this.allAssociations.filter((item) => item.sportId === this.selectedSportId);
+    const sportId = Number(this.listSportId);
+    return this.allAssociations.filter((item) => item.sportId === sportId);
   }
 
   get filteredAssociations(): SportDisability[] {
-    const q = this.searchQuery.trim().toLowerCase();
-    if (!q) {
-      return this.associations;
-    }
     return this.associations.filter((item) =>
-      (item.disabilityName || '').toLowerCase().includes(q)
-      || (item.sportName || '').toLowerCase().includes(q)
-      || (item.adaptations || '').toLowerCase().includes(q)
-      || String(item.disabilityId).includes(q)
+      matchesQuery(
+        this.searchQuery,
+        item.disabilityName,
+        item.sportName,
+        item.adaptations,
+        item.disabilityId,
+        item.sportId
+      )
     );
+  }
+
+  clearSearch(): void {
+    this.searchQuery = '';
+    this.listSportId = '';
   }
 
   create(): void {

@@ -5,6 +5,7 @@ import { AttendanceReport, EventItem, Registration } from '../../../../core/mode
 import { SessionService } from '../../../../core/services/session.service';
 import { ReportsService } from '../../../../core/services/reports.service';
 import { userInitials } from '../../../../core/utils/avatar.util';
+import { matchesQuery } from '../../../../core/utils/search.util';
 
 type AttendanceFilter = 'all' | 'attended' | 'absent';
 
@@ -33,6 +34,7 @@ interface EventAthleteSummary {
 })
 export class AthletesPageComponent implements OnInit {
   summaries: EventAthleteSummary[] = [];
+  searchQuery = '';
   loading = true;
   errorMessage: string | null = null;
 
@@ -72,13 +74,31 @@ export class AthletesPageComponent implements OnInit {
   }
 
   filteredEnrolled(summary: EventAthleteSummary): EnrolledUserRow[] {
+    let rows = summary.enrolled;
     if (summary.filter === 'attended') {
-      return summary.enrolled.filter((row) => row.attended);
+      rows = rows.filter((row) => row.attended);
+    } else if (summary.filter === 'absent') {
+      rows = rows.filter((row) => !row.attended);
     }
-    if (summary.filter === 'absent') {
-      return summary.enrolled.filter((row) => !row.attended);
+    return rows.filter((row) => matchesQuery(this.searchQuery, row.fullName, row.email, row.userId));
+  }
+
+  visibleSummaries(): EventAthleteSummary[] {
+    const q = this.searchQuery.trim();
+    if (!q) {
+      return this.summaries;
     }
-    return summary.enrolled;
+    return this.summaries.filter((summary) =>
+      matchesQuery(q, summary.event.name, summary.event.sportName)
+      || this.filteredEnrolled(summary).length > 0
+      || summary.waitlist.some((item) =>
+        matchesQuery(q, item.userFullName, item.userEmail, item.userId)
+      )
+    );
+  }
+
+  clearSearch(): void {
+    this.searchQuery = '';
   }
 
   attendedCount(summary: EventAthleteSummary): number {

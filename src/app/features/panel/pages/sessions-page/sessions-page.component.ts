@@ -7,6 +7,7 @@ import { SessionService } from '../../../../core/services/session.service';
 import { SportsService } from '../../../../core/services/sports.service';
 import { ReportsService } from '../../../../core/services/reports.service';
 import { ConfirmDialogService } from '../../../../core/services/confirm-dialog.service';
+import { matchesQuery } from '../../../../core/utils/search.util';
 
 @Component({
   selector: 'app-sessions-page',
@@ -17,6 +18,7 @@ export class SessionsPageComponent implements OnInit {
   routines: Routine[] = [];
   sports: Sport[] = [];
   form: FormGroup;
+  searchQuery = '';
   errorMessage: string | null = null;
   successMessage: string | null = null;
   loading = true;
@@ -42,6 +44,16 @@ export class SessionsPageComponent implements OnInit {
 
   ngOnInit(): void {
     this.reload();
+  }
+
+  get filteredRoutines(): Routine[] {
+    return this.routines.filter((routine) =>
+      matchesQuery(this.searchQuery, routine.name, routine.status, routine.disabilityFocus, routine.description)
+    );
+  }
+
+  clearSearch(): void {
+    this.searchQuery = '';
   }
 
   reload(): void {

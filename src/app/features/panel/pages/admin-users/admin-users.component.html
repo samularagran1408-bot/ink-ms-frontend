@@ -11,10 +11,16 @@
         type="search"
         class="search-input"
         [(ngModel)]="nameQuery"
+        (ngModelChange)="onSearchChange()"
         [placeholder]="'ADMIN_USERS.SEARCH_PH' | translate"
         [attr.aria-label]="'ADMIN_USERS.SEARCH_ARIA' | translate"
       />
-      <select class="search-select" [(ngModel)]="disabilityQuery" [attr.aria-label]="'ADMIN_USERS.FILTER_DISABILITY' | translate">
+      <select
+        class="search-select"
+        [(ngModel)]="disabilityQuery"
+        (ngModelChange)="onSearchChange()"
+        [attr.aria-label]="'ADMIN_USERS.FILTER_DISABILITY' | translate"
+      >
         <option *ngFor="let opt of disabilityOptions" [value]="opt.value">{{ opt.labelKey | translate }}</option>
       </select>
     </div>
@@ -42,7 +48,7 @@
   </div>
 
   <div class="card">
-    <div class="table-wrap desktop-table" *ngIf="filteredUsers.length">
+    <div class="table-wrap desktop-table" *ngIf="pagedUsers.length">
       <table class="data-table users-table">
         <thead>
           <tr>
@@ -64,7 +70,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let user of filteredUsers" [class.row-selected]="isSelected(user.email)">
+          <tr *ngFor="let user of pagedUsers" [class.row-selected]="isSelected(user.email)">
             <td class="col-check">
               <input
                 type="checkbox"
@@ -97,29 +103,37 @@
               </button>
             </td>
             <td class="actions">
-              <button class="btn-secondary btn-compact" type="button" [disabled]="actionEmail === user.email || bulkLoading" (click)="openProfile(user)">
-                {{ 'ADMIN_USERS.VIEW_PROFILE' | translate }}
-              </button>
               <button
                 *ngIf="!isInactive(user)"
-                class="btn-danger btn-compact"
+                class="btn-danger btn-icon"
                 type="button"
                 [disabled]="actionEmail === user.email || bulkLoading"
+                [attr.title]="'ADMIN_USERS.BLOCK' | translate"
+                [attr.aria-label]="'ADMIN_USERS.BLOCK' | translate"
                 (click)="block(user)"
               >
-                {{ 'ADMIN_USERS.BLOCK' | translate }}
+                <app-icon name="lock-closed" [size]="16"></app-icon>
               </button>
               <button
                 *ngIf="isInactive(user)"
-                class="btn-secondary btn-compact"
+                class="btn-secondary btn-icon"
                 type="button"
                 [disabled]="actionEmail === user.email || bulkLoading"
+                [attr.title]="'ADMIN_USERS.ACTIVATE' | translate"
+                [attr.aria-label]="'ADMIN_USERS.ACTIVATE' | translate"
                 (click)="activate(user)"
               >
-                {{ 'ADMIN_USERS.ACTIVATE' | translate }}
+                <app-icon name="lock-open" [size]="16"></app-icon>
               </button>
-              <button class="btn-danger btn-compact" type="button" [disabled]="actionEmail === user.email || bulkLoading" (click)="deleteOne(user)">
-                {{ 'ADMIN_USERS.DELETE' | translate }}
+              <button
+                class="btn-danger btn-icon"
+                type="button"
+                [disabled]="actionEmail === user.email || bulkLoading"
+                [attr.title]="'ADMIN_USERS.DELETE' | translate"
+                [attr.aria-label]="'ADMIN_USERS.DELETE' | translate"
+                (click)="deleteOne(user)"
+              >
+                <app-icon name="trash" [size]="16"></app-icon>
               </button>
             </td>
           </tr>
@@ -127,8 +141,8 @@
       </table>
     </div>
 
-    <div class="user-cards" *ngIf="filteredUsers.length">
-      <article class="user-card" *ngFor="let user of filteredUsers" [class.user-card--selected]="isSelected(user.email)">
+    <div class="user-cards" *ngIf="pagedUsers.length">
+      <article class="user-card" *ngFor="let user of pagedUsers" [class.user-card--selected]="isSelected(user.email)">
         <header class="user-card-head">
           <label class="user-card-check">
             <input
@@ -177,32 +191,75 @@
           </div>
         </dl>
         <div class="actions user-card-actions">
-          <button class="btn-secondary btn-compact" type="button" [disabled]="actionEmail === user.email || bulkLoading" (click)="openProfile(user)">
-            {{ 'ADMIN_USERS.VIEW_PROFILE' | translate }}
-          </button>
           <button
             *ngIf="!isInactive(user)"
-            class="btn-danger btn-compact"
+            class="btn-danger btn-icon"
             type="button"
             [disabled]="actionEmail === user.email || bulkLoading"
+            [attr.title]="'ADMIN_USERS.BLOCK' | translate"
+            [attr.aria-label]="'ADMIN_USERS.BLOCK' | translate"
             (click)="block(user)"
           >
-            {{ 'ADMIN_USERS.BLOCK' | translate }}
+            <app-icon name="lock-closed" [size]="16"></app-icon>
           </button>
           <button
             *ngIf="isInactive(user)"
-            class="btn-secondary btn-compact"
+            class="btn-secondary btn-icon"
             type="button"
             [disabled]="actionEmail === user.email || bulkLoading"
+            [attr.title]="'ADMIN_USERS.ACTIVATE' | translate"
+            [attr.aria-label]="'ADMIN_USERS.ACTIVATE' | translate"
             (click)="activate(user)"
           >
-            {{ 'ADMIN_USERS.ACTIVATE' | translate }}
+            <app-icon name="lock-open" [size]="16"></app-icon>
           </button>
-          <button class="btn-danger btn-compact" type="button" [disabled]="actionEmail === user.email || bulkLoading" (click)="deleteOne(user)">
-            {{ 'ADMIN_USERS.DELETE' | translate }}
+          <button
+            class="btn-danger btn-icon"
+            type="button"
+            [disabled]="actionEmail === user.email || bulkLoading"
+            [attr.title]="'ADMIN_USERS.DELETE' | translate"
+            [attr.aria-label]="'ADMIN_USERS.DELETE' | translate"
+            (click)="deleteOne(user)"
+          >
+            <app-icon name="trash" [size]="16"></app-icon>
           </button>
         </div>
       </article>
+    </div>
+
+    <div class="pagination" *ngIf="!loading && filteredUsers.length">
+      <p class="pagination-meta">
+        {{ 'ADMIN_USERS.SHOWING' | translate:{ from: showingFrom, to: showingTo, total: filteredUsers.length } }}
+      </p>
+      <nav class="pagination-nav" *ngIf="totalPages > 1" [attr.aria-label]="'ADMIN_USERS.PAGINATION' | translate">
+        <button
+          type="button"
+          class="page-btn"
+          [disabled]="currentPage <= 1"
+          (click)="goToPage(currentPage - 1)"
+          [attr.aria-label]="'ADMIN_USERS.PREV_PAGE' | translate"
+        >
+          <app-icon name="chevron-left" [size]="16"></app-icon>
+        </button>
+        <button
+          type="button"
+          class="page-btn"
+          *ngFor="let page of pageNumbers"
+          [class.page-btn--active]="page === currentPage"
+          (click)="goToPage(page)"
+        >
+          {{ page }}
+        </button>
+        <button
+          type="button"
+          class="page-btn"
+          [disabled]="currentPage >= totalPages"
+          (click)="goToPage(currentPage + 1)"
+          [attr.aria-label]="'ADMIN_USERS.NEXT_PAGE' | translate"
+        >
+          <app-icon name="chevron-right" [size]="16"></app-icon>
+        </button>
+      </nav>
     </div>
 
     <p *ngIf="!loading && !users.length" class="empty-text">{{ 'ADMIN_USERS.EMPTY_FILTER' | translate }}</p>
