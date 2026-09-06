@@ -45,6 +45,7 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
   readonly tabs: { id: AssistantSection; labelKey: string; icon: HeroIconName }[] = [
     { id: 'chat', labelKey: 'AI_WIDGET.TAB_CHAT', icon: 'chat-bubble-left-right' },
     { id: 'rutinas', labelKey: 'AI_WIDGET.TAB_ROUTINES', icon: 'heart' },
+    { id: 'planes', labelKey: 'AI_WIDGET.TAB_PLANS', icon: 'clipboard-document-list' },
     { id: 'riesgo', labelKey: 'AI_WIDGET.TAB_RISK', icon: 'bolt' },
     { id: 'competencia', labelKey: 'AI_WIDGET.TAB_COMPETE', icon: 'trophy' },
     { id: 'estadisticas', labelKey: 'AI_WIDGET.TAB_STATS', icon: 'chart-bar' }
@@ -74,12 +75,25 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
   errorRutina: string | null = null;
   rutina: Record<string, unknown> | null = null;
 
+  planObjetivo = 'fuerza';
+  planSemanas = 4;
+  planSesiones = 3;
+  planMinutos = 35;
+  planNivel = 'principiante';
+  cargandoPlan = false;
+  errorPlan: string | null = null;
+  plan: Record<string, unknown> | null = null;
+  planes: Array<Record<string, unknown>> = [];
+
   rpe: number | null = 5;
   dolor = false;
   diasSinDescanso = 0;
   cargandoRiesgo = false;
   errorRiesgo: string | null = null;
   riesgo: Record<string, unknown> | null = null;
+  historialRiesgo: Array<Record<string, unknown>> = [];
+  cargandoHistorialRiesgo = false;
+  errorHistorialRiesgo: string | null = null;
 
   cargandoCompetencia = false;
   errorCompetencia: string | null = null;
@@ -133,6 +147,12 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
       }
       if (id === 'estadisticas' && !this.stats && !this.cargandoStats) {
         this.cargarEstadisticas();
+      }
+      if (id === 'planes' && !this.plan && !this.cargandoPlan) {
+        this.cargarPlanes();
+      }
+      if (id === 'riesgo' && !this.cargandoHistorialRiesgo) {
+        this.cargarHistorialRiesgo();
       }
     }));
     this.subs.add(this.competitionProgress.raw$.subscribe((raw) => {
@@ -189,6 +209,12 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     }
     if (id === 'competencia' && !this.cargandoCompetencia) {
       this.cargarEstadoCompetencia();
+    }
+    if (id === 'planes') {
+      this.cargarPlanes();
+    }
+    if (id === 'riesgo') {
+      this.cargarHistorialRiesgo();
     }
   }
 
@@ -364,9 +390,7 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     }
     if (accion === 'ver_estadisticas') {
       this.section = 'estadisticas';
-      if (!this.stats && !this.cargandoStats) {
-        this.cargarEstadisticas();
-      }
+      this.cargarEstadisticas();
       return;
     }
     if (accion === 'ver_competencia') {
@@ -374,6 +398,11 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
       if (!this.competencia && !this.cargandoCompetencia) {
         this.analizarCompetencia();
       }
+      return;
+    }
+    if (accion === 'ver_planes') {
+      this.section = 'planes';
+      this.cargarPlanes();
       return;
     }
     if (!accion) {
@@ -452,6 +481,65 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     });
   }
 
+  generarPlan(): void {
+    this.cargandoPlan = true;
+    this.errorPlan = null;
+    this.ai.generarPlan({
+      objetivo: this.planObjetivo,
+      semanas: this.planSemanas,
+      sesiones_por_semana: this.planSesiones,
+      duracion_minutos: this.planMinutos,
+      nivel: this.planNivel
+    }).subscribe({
+      next: (res) => {
+        this.cargandoPlan = false;
+        this.plan = res;
+        const id = res['plan_id'];
+        this.planes = [res, ...this.planes.filter((p) => p['plan_id'] !== id)];
+      },
+      error: (err) => {
+        this.cargandoPlan = false;
+        this.errorPlan = err?.error?.detail || 'No se pudo generar el plan.';
+      }
+    });
+  }
+
+  cargarPlanes(): void {
+    this.cargandoPlan = true;
+    this.errorPlan = null;
+    this.ai.listarPlanes().subscribe({
+      next: (res) => {
+        this.cargandoPlan = false;
+        const lista = res['planes'];
+        this.planes = Array.isArray(lista) ? lista as Array<Record<string, unknown>> : [];
+        if (!this.plan && this.planes.length) {
+          this.plan = this.planes[0];
+        }
+      },
+      error: (err) => {
+        this.cargandoPlan = false;
+        this.errorPlan = err?.error?.detail || 'No se pudieron cargar los planes.';
+      }
+    });
+  }
+
+  verPlan(item: Record<string, unknown>): void {
+    this.plan = item;
+  }
+
+  sesionesPlan(): Array<Record<string, unknown>> {
+    const lista = this.plan?.['sesiones'];
+    return Array.isArray(lista) ? lista as Array<Record<string, unknown>> : [];
+  }
+
+  semanasPlan(): number[] {
+    return [...new Set(this.sesionesPlan().map((s) => Number(s['semana'] || 0)).filter((n) => n > 0))];
+  }
+
+  sesionesDeSemana(semana: number): Array<Record<string, unknown>> {
+    return this.sesionesPlan().filter((s) => Number(s['semana']) === semana);
+  }
+
   evaluarRiesgo(): void {
     this.cargandoRiesgo = true;
     this.errorRiesgo = null;
@@ -464,6 +552,7 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
       next: (res) => {
         this.cargandoRiesgo = false;
         this.riesgo = res;
+        this.cargarHistorialRiesgo();
       },
       error: (err) => {
         this.cargandoRiesgo = false;
@@ -676,6 +765,20 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     return String(this.vistaStats()['tendencia'] || '');
   }
 
+  sesionesHistorialVista(): Array<{ fecha: string; rpe: string }> {
+    const lista = this.vistaStats()['sesiones_historial'];
+    if (!Array.isArray(lista)) {
+      return [];
+    }
+    return lista.map((item) => {
+      const row = item as Record<string, unknown>;
+      return {
+        fecha: this.fechaCorta(row['fecha']),
+        rpe: String(row['rpe'] ?? '—')
+      };
+    });
+  }
+
   competenciaActiva(): boolean {
     return !!this.vistaStats()['modo_competencia'];
   }
@@ -745,6 +848,81 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
   recomendacionesRiesgo(): string[] {
     const lista = this.riesgo?.['recomendaciones'];
     return Array.isArray(lista) ? lista.map(String) : [];
+  }
+
+  cargarHistorialRiesgo(): void {
+    this.cargandoHistorialRiesgo = true;
+    this.errorHistorialRiesgo = null;
+    this.ai.historialRiesgo().subscribe({
+      next: (res) => {
+        this.cargandoHistorialRiesgo = false;
+        const lista = res['evaluaciones'];
+        this.historialRiesgo = Array.isArray(lista) ? lista as Array<Record<string, unknown>> : [];
+      },
+      error: () => {
+        this.cargandoHistorialRiesgo = false;
+        this.errorHistorialRiesgo = 'No se pudo cargar el historial de riesgo.';
+      }
+    });
+  }
+
+  async borrarEvaluacionRiesgo(item: Record<string, unknown>): Promise<void> {
+    const id = String(item['id'] || '');
+    if (!id) {
+      return;
+    }
+    const ok = await this.confirm.ask({
+      title: this.translate.instant('AI_WIDGET.RISK_DELETE_TITLE'),
+      message: this.translate.instant('AI_WIDGET.RISK_DELETE_ONE'),
+      confirmLabel: this.translate.instant('CHAT.DELETE'),
+      cancelLabel: this.translate.instant('COMMON.CANCEL') || 'Cancelar',
+      tone: 'danger'
+    });
+    if (!ok) {
+      return;
+    }
+    this.ai.borrarEvaluacionRiesgo(id).subscribe({
+      next: () => this.cargarHistorialRiesgo(),
+      error: () => {
+        this.errorHistorialRiesgo = 'No se pudo borrar esa evaluación.';
+      }
+    });
+  }
+
+  async vaciarHistorialRiesgo(): Promise<void> {
+    if (!this.historialRiesgo.length) {
+      return;
+    }
+    const ok = await this.confirm.ask({
+      title: this.translate.instant('AI_WIDGET.RISK_DELETE_TITLE'),
+      message: this.translate.instant('AI_WIDGET.RISK_DELETE_ALL'),
+      confirmLabel: this.translate.instant('CHAT.DELETE'),
+      cancelLabel: this.translate.instant('COMMON.CANCEL') || 'Cancelar',
+      tone: 'danger'
+    });
+    if (!ok) {
+      return;
+    }
+    this.ai.vaciarHistorialRiesgo().subscribe({
+      next: () => {
+        this.historialRiesgo = [];
+        this.riesgo = null;
+      },
+      error: () => {
+        this.errorHistorialRiesgo = 'No se pudo vaciar el historial.';
+      }
+    });
+  }
+
+  fechaCorta(valor: unknown): string {
+    if (!valor) {
+      return '—';
+    }
+    const fecha = new Date(String(valor));
+    if (Number.isNaN(fecha.getTime())) {
+      return String(valor);
+    }
+    return fecha.toLocaleString();
   }
 
   alertasStats(): string[] {

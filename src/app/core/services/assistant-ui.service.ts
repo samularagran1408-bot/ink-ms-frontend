@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Subject } from 'rxjs';
 
-export type AssistantSection = 'chat' | 'rutinas' | 'riesgo' | 'competencia' | 'estadisticas';
+export type AssistantSection = 'chat' | 'rutinas' | 'planes' | 'riesgo' | 'competencia' | 'estadisticas';
 
 @Injectable({ providedIn: 'root' })
 export class AssistantUiService {
