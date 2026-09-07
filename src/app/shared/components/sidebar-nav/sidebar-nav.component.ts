@@ -216,8 +216,8 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
           { labelKey: 'NAV.ASSOCIATIONS', route: '/admin/associations', icon: 'link' },
           { labelKey: 'NAV.ROLES', route: '/admin/roles', icon: 'shield-check' },
           { labelKey: 'NAV.AUDIT_LOGS', route: '/admin/audit', icon: 'clipboard-document-list' },
+          { labelKey: 'NAV.SUBSCRIPTIONS', route: '/admin/subscriptions', icon: 'chart-bar' },
           { labelKey: 'NAV.CREW', route: '/admin/crew', icon: 'sparkles' }
-          
         ];
         this.secondaryItems = this.commonAccountItems('/admin');
         break;

@@ -27,6 +27,7 @@ import { AssistantPageComponent } from '@features/assistant/pages/assistant-page
 import { TrainerDashboardComponent } from '@features/assistant/pages/trainer-dashboard/trainer-dashboard.component';
 import { SessionsPageComponent } from '@features/assistant/pages/sessions-page/sessions-page.component';
 import { CrewPageComponent } from '@features/assistant/pages/crew-page/crew-page.component';
+import { OrganizerPlansComponent } from '@features/subscriptions/pages/organizer-plans/organizer-plans.component';
 
 const accountChildren = [
   { path: 'profile', component: ProfilePageComponent },
@@ -69,6 +70,7 @@ const routes: Routes = [
       { path: 'associations', component: AssociationsPageComponent },
       { path: 'roles', component: AdminRolesComponent },
       { path: 'audit', component: AdminAuditComponent },
+      { path: 'subscriptions', component: OrganizerPlansComponent },
       ...accountChildren
     ]
   },
