@@ -3,14 +3,14 @@ import { BehaviorSubject, Observable, of } from 'rxjs';
 import { catchError, finalize, map, shareReplay, switchMap, tap } from 'rxjs/operators';
 import { Router } from '@angular/router';
 
-import { AppRole, ROLE_HOME, ROLE_LABELS, normalizeRoles, resolvePrimaryRole } from '../models/app-role';
-import { UserProfile } from '../models/user-profile';
-import { decodeJwtPayload, isTokenExpired } from '../utils/jwt.util';
-import { UsersService } from './users.service';
-import { AccessibilityService } from './accessibility.service';
-import { NotificationAnnounceService } from './notification-announce.service';
-import { PreferencesApiService } from './preferences-api.service';
-import { UnreadNotificationsService } from './unread-notifications.service';
+import { AppRole, ROLE_HOME, ROLE_LABELS, normalizeRoles, resolvePrimaryRole } from '@core/models/app-role';
+import { UserProfile } from '@core/models/user-profile';
+import { decodeJwtPayload, isTokenExpired } from '@core/utils/jwt.util';
+import { UsersService } from '@features/users/services/users.service';
+import { AccessibilityService } from '@features/accessibility/services/accessibility.service';
+import { NotificationAnnounceService } from '@features/accessibility/services/notification-announce.service';
+import { PreferencesApiService } from '@features/accessibility/services/preferences-api.service';
+import { UnreadNotificationsService } from '@features/accessibility/services/unread-notifications.service';
 
 const TOKEN_KEY = 'auth_token';
 const PUBLIC_PATHS = new Set(['/', '', '/login', '/register', '/guest', '/forgot-password']);

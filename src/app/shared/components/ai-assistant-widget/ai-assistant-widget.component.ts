@@ -5,18 +5,18 @@ import { filter } from 'rxjs/operators';
 
 import { TranslateService } from '@ngx-translate/core';
 
-import { AppRole } from '../../../core/models/app-role';
-import { ChatCard, ChatCtaAccion, ChatHilo, ChatMensajeUi, ChatPasoActividad, ChatResponse, ChatStreamEvent } from '../../../core/models/chat';
-import { BodyMapData } from '../../../core/models/body-map';
-import { UserProfile } from '../../../core/models/user-profile';
-import { AiAssistantService } from '../../../core/services/ai-assistant.service';
-import { AssistantSection, AssistantUiService } from '../../../core/services/assistant-ui.service';
-import { ChatService } from '../../../core/services/chat.service';
-import { ConfirmDialogService } from '../../../core/services/confirm-dialog.service';
-import { CompetitionProgressService } from '../../../core/services/competition-progress.service';
-import { ReportsService } from '../../../core/services/reports.service';
-import { SessionService } from '../../../core/services/session.service';
-import { UsersService } from '../../../core/services/users.service';
+import { AppRole } from '@core/models/app-role';
+import { ChatCard, ChatCtaAccion, ChatHilo, ChatMensajeUi, ChatPasoActividad, ChatResponse, ChatStreamEvent } from '@features/assistant/models/chat';
+import { BodyMapData } from '@features/assistant/models/body-map';
+import { UserProfile } from '@core/models/user-profile';
+import { AiAssistantService } from '@features/assistant/services/ai-assistant.service';
+import { AssistantSection, AssistantUiService } from '@features/assistant/services/assistant-ui.service';
+import { ChatService } from '@features/assistant/services/chat.service';
+import { ConfirmDialogService } from '@shared/services/confirm-dialog.service';
+import { CompetitionProgressService } from '@features/assistant/services/competition-progress.service';
+import { ReportsService } from '@features/reports/services/reports.service';
+import { SessionService } from '@core/services/session.service';
+import { UsersService } from '@features/users/services/users.service';
 import { HeroIconName } from '../../icons/heroicons-outline';
 
 const STORAGE_KEY = 'inklusport.chat.conversacion_id';

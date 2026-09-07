@@ -9,8 +9,8 @@ import {
   ViewChild
 } from '@angular/core';
 
-import { GoogleMapsLoaderService } from '../../../core/services/google-maps-loader.service';
-import { googleMapsDirectionsUrl } from '../../../core/utils/maps.util';
+import { GoogleMapsLoaderService } from '@core/services/google-maps-loader.service';
+import { googleMapsDirectionsUrl } from '@features/sports-disabilities/utils/maps.util';
 
 @Component({
   selector: 'app-event-location-map',

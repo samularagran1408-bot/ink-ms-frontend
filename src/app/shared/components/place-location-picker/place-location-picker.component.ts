@@ -11,8 +11,8 @@ import {
   ViewChild
 } from '@angular/core';
 
-import { GoogleMapsLoaderService } from '../../../core/services/google-maps-loader.service';
-import { EventPlaceLocation } from '../../../core/utils/maps.util';
+import { GoogleMapsLoaderService } from '@core/services/google-maps-loader.service';
+import { EventPlaceLocation } from '@features/sports-disabilities/utils/maps.util';
 
 @Component({
   selector: 'app-place-location-picker',

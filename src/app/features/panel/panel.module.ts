@@ -1,60 +1,38 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
-import { SharedModule } from '../../shared/shared.module';
+import { SharedModule } from '@shared/shared.module';
 import { PanelRoutingModule } from './panel-routing.module';
-import { AdminDashboardComponent } from './pages/admin-dashboard/admin-dashboard.component';
-import { AdminUsersComponent } from './pages/admin-users/admin-users.component';
-import { AdminUserDetailComponent } from './pages/admin-user-detail/admin-user-detail.component';
-import { AdminRolesComponent } from './pages/admin-roles/admin-roles.component';
-import { AdminAuditComponent } from './pages/admin-audit/admin-audit.component';
-import { EventsPageComponent } from './pages/events-page/events-page.component';
-import { SportsPageComponent } from './pages/sports-page/sports-page.component';
-import { DisabilitiesPageComponent } from './pages/disabilities-page/disabilities-page.component';
-import { ProfilePageComponent } from './pages/profile-page/profile-page.component';
-import { AccessibilityPageComponent } from './pages/accessibility-page/accessibility-page.component';
-import { TrainerDashboardComponent } from './pages/trainer-dashboard/trainer-dashboard.component';
-import { SessionsPageComponent } from './pages/sessions-page/sessions-page.component';
-import { OrganizerDashboardComponent } from './pages/organizer-dashboard/organizer-dashboard.component';
-import { AthletesPageComponent } from './pages/athletes-page/athletes-page.component';
-import { AssociationsPageComponent } from './pages/associations-page/associations-page.component';
-import { NotificationsPageComponent } from './pages/notifications-page/notifications-page.component';
-import { PanelShellComponent } from './components/panel-shell/panel-shell.component';
-import { UserInterfaceComponent } from '../auth/pages/user-interface/user-interface.component';
-import { AptitudeQuizPageComponent } from './pages/aptitude-quiz-page/aptitude-quiz-page.component';
-import { AttendanceCheckinPageComponent } from './pages/attendance-checkin-page/attendance-checkin-page.component';
-import { AssistantPageComponent } from './pages/assistant-page/assistant-page.component';
 
+// Feature modules por modulo de producto (M02-M09). Cada uno declara y exporta
+// sus paginas; PanelRoutingModule las referencia en sus rutas por rol
+// (/admin, /trainer, /organizer, /home). Ver features/MODULES.md.
+import { UsersModule } from '@features/users/users.module';
+import { SportsDisabilitiesModule } from '@features/sports-disabilities/sports-disabilities.module';
+import { AccessibilityModule } from '@features/accessibility/accessibility.module';
+import { AdminModule } from '@features/admin/admin.module';
+import { ReportsModule } from '@features/reports/reports.module';
+import { AssistantModule } from '@features/assistant/assistant.module';
+import { SearchModule } from '@features/search/search.module';
+import { SubscriptionsModule } from '@features/subscriptions/subscriptions.module';
+
+/**
+ * Raiz de composicion del area autenticada. No declara paginas: solo compone
+ * los feature modules y mantiene el enrutado por rol (PanelRoutingModule).
+ * El layout `app-panel-shell` vive en SharedModule.
+ */
 @NgModule({
-  declarations: [
-    PanelShellComponent,
-    UserInterfaceComponent,
-    AdminDashboardComponent,
-    AdminUsersComponent,
-    AdminUserDetailComponent,
-    AdminRolesComponent,
-    AdminAuditComponent,
-    EventsPageComponent,
-    SportsPageComponent,
-    DisabilitiesPageComponent,
-    AssociationsPageComponent,
-    ProfilePageComponent,
-    AccessibilityPageComponent,
-    NotificationsPageComponent,
-    TrainerDashboardComponent,
-    SessionsPageComponent,
-    OrganizerDashboardComponent,
-    AthletesPageComponent,
-    AptitudeQuizPageComponent,
-    AttendanceCheckinPageComponent,
-    AssistantPageComponent
-  ],
   imports: [
     CommonModule,
-    FormsModule,
-    ReactiveFormsModule,
     SharedModule,
+    UsersModule,
+    SportsDisabilitiesModule,
+    AccessibilityModule,
+    AdminModule,
+    ReportsModule,
+    AssistantModule,
+    SearchModule,
+    SubscriptionsModule,
     PanelRoutingModule
   ]
 })

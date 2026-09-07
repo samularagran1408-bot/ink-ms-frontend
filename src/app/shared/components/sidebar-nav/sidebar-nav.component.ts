@@ -4,10 +4,10 @@ import { TranslateService } from '@ngx-translate/core';
 import { Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
 
-import { AppRole } from '../../../core/models/app-role';
-import { SessionService } from '../../../core/services/session.service';
-import { UnreadNotificationsService } from '../../../core/services/unread-notifications.service';
-import { ConfirmDialogService } from '../../../core/services/confirm-dialog.service';
+import { AppRole } from '@core/models/app-role';
+import { SessionService } from '@core/services/session.service';
+import { UnreadNotificationsService } from '@features/accessibility/services/unread-notifications.service';
+import { ConfirmDialogService } from '@shared/services/confirm-dialog.service';
 import { HeroIconName } from '../../icons/heroicons-outline';
 
 export interface SidebarNavItem {

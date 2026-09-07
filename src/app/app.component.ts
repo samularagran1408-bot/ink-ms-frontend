@@ -3,11 +3,11 @@ import { NavigationEnd, Router } from '@angular/router';
 import { Observable, Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
 
-import { LanguageService } from './core/services/language.service';
-import { AccessibilityService } from './core/services/accessibility.service';
-import { NotificationAnnounceService } from './core/services/notification-announce.service';
-import { SessionService } from './core/services/session.service';
-import { UnreadNotificationsService } from './core/services/unread-notifications.service';
+import { LanguageService } from '@features/accessibility/services/language.service';
+import { AccessibilityService } from '@features/accessibility/services/accessibility.service';
+import { NotificationAnnounceService } from '@features/accessibility/services/notification-announce.service';
+import { SessionService } from '@core/services/session.service';
+import { UnreadNotificationsService } from '@features/accessibility/services/unread-notifications.service';
 
 @Component({
   selector: 'app-root',

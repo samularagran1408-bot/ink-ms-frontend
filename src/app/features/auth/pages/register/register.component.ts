@@ -11,8 +11,8 @@ import {
   RegisterRequest
 } from '../../models/register-request';
 import { DisabilityType } from '../../models/disability-type';
-import { AccessibilityService } from '../../../../core/services/accessibility.service';
-import { SessionService } from '../../../../core/services/session.service';
+import { AccessibilityService } from '@features/accessibility/services/accessibility.service';
+import { SessionService } from '@core/services/session.service';
 
 @Component({
   selector: 'app-register',

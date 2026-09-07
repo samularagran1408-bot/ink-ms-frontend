@@ -1,29 +1,31 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 
-import { AuthGuard } from '../../core/guards/auth.guard';
-import { RoleGuard } from '../../core/guards/role.guard';
-import { QuizCompletedGuard } from '../../core/guards/quiz-completed.guard';
-import { UserInterfaceComponent } from '../auth/pages/user-interface/user-interface.component';
-import { AdminDashboardComponent } from './pages/admin-dashboard/admin-dashboard.component';
-import { AdminUsersComponent } from './pages/admin-users/admin-users.component';
-import { AdminUserDetailComponent } from './pages/admin-user-detail/admin-user-detail.component';
-import { AdminRolesComponent } from './pages/admin-roles/admin-roles.component';
-import { AdminAuditComponent } from './pages/admin-audit/admin-audit.component';
-import { EventsPageComponent } from './pages/events-page/events-page.component';
-import { SportsPageComponent } from './pages/sports-page/sports-page.component';
-import { DisabilitiesPageComponent } from './pages/disabilities-page/disabilities-page.component';
-import { ProfilePageComponent } from './pages/profile-page/profile-page.component';
-import { AccessibilityPageComponent } from './pages/accessibility-page/accessibility-page.component';
-import { NotificationsPageComponent } from './pages/notifications-page/notifications-page.component';
-import { TrainerDashboardComponent } from './pages/trainer-dashboard/trainer-dashboard.component';
-import { SessionsPageComponent } from './pages/sessions-page/sessions-page.component';
-import { OrganizerDashboardComponent } from './pages/organizer-dashboard/organizer-dashboard.component';
-import { AthletesPageComponent } from './pages/athletes-page/athletes-page.component';
-import { AssociationsPageComponent } from './pages/associations-page/associations-page.component';
-import { AptitudeQuizPageComponent } from './pages/aptitude-quiz-page/aptitude-quiz-page.component';
-import { AttendanceCheckinPageComponent } from './pages/attendance-checkin-page/attendance-checkin-page.component';
-import { AssistantPageComponent } from './pages/assistant-page/assistant-page.component';
+import { AuthGuard } from '@core/guards/auth.guard';
+import { RoleGuard } from '@core/guards/role.guard';
+import { QuizCompletedGuard } from '@core/guards/quiz-completed.guard';
+// Componentes de pagina agrupados por modulo de producto (M01-M09).
+// Ver features/MODULES.md para el mapa carpeta <-> modulo <-> RF.
+import { UserInterfaceComponent } from '@features/users/pages/user-interface/user-interface.component';
+import { ProfilePageComponent } from '@features/users/pages/profile-page/profile-page.component';
+import { AdminUsersComponent } from '@features/users/pages/admin-users/admin-users.component';
+import { AdminUserDetailComponent } from '@features/users/pages/admin-user-detail/admin-user-detail.component';
+import { AthletesPageComponent } from '@features/users/pages/athletes-page/athletes-page.component';
+import { AttendanceCheckinPageComponent } from '@features/users/pages/attendance-checkin-page/attendance-checkin-page.component';
+import { AptitudeQuizPageComponent } from '@features/users/pages/aptitude-quiz-page/aptitude-quiz-page.component';
+import { SportsPageComponent } from '@features/sports-disabilities/pages/sports-page/sports-page.component';
+import { DisabilitiesPageComponent } from '@features/sports-disabilities/pages/disabilities-page/disabilities-page.component';
+import { AssociationsPageComponent } from '@features/sports-disabilities/pages/associations-page/associations-page.component';
+import { EventsPageComponent } from '@features/sports-disabilities/pages/events-page/events-page.component';
+import { OrganizerDashboardComponent } from '@features/sports-disabilities/pages/organizer-dashboard/organizer-dashboard.component';
+import { AccessibilityPageComponent } from '@features/accessibility/pages/accessibility-page/accessibility-page.component';
+import { NotificationsPageComponent } from '@features/accessibility/pages/notifications-page/notifications-page.component';
+import { AdminDashboardComponent } from '@features/admin/pages/admin-dashboard/admin-dashboard.component';
+import { AdminRolesComponent } from '@features/admin/pages/admin-roles/admin-roles.component';
+import { AdminAuditComponent } from '@features/admin/pages/admin-audit/admin-audit.component';
+import { AssistantPageComponent } from '@features/assistant/pages/assistant-page/assistant-page.component';
+import { TrainerDashboardComponent } from '@features/assistant/pages/trainer-dashboard/trainer-dashboard.component';
+import { SessionsPageComponent } from '@features/assistant/pages/sessions-page/sessions-page.component';
 
 const accountChildren = [
   { path: 'profile', component: ProfilePageComponent },

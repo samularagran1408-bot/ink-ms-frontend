@@ -1,6 +1,6 @@
 import { BodyState, MUSCLE_MAP } from 'body-muscles';
 
-import { BodyMapData } from '../../../core/models/body-map';
+import { BodyMapData } from '@features/assistant/models/body-map';
 
 const MUSCLE_IDS = new Set(MUSCLE_MAP.map((muscle) => muscle.id));
 
