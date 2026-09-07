@@ -45,6 +45,7 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
   readonly tabs: { id: AssistantSection; labelKey: string; icon: HeroIconName }[] = [
     { id: 'chat', labelKey: 'AI_WIDGET.TAB_CHAT', icon: 'chat-bubble-left-right' },
     { id: 'rutinas', labelKey: 'AI_WIDGET.TAB_ROUTINES', icon: 'heart' },
+    { id: 'planes', labelKey: 'AI_WIDGET.TAB_PLANS', icon: 'clipboard-document-list' },
     { id: 'riesgo', labelKey: 'AI_WIDGET.TAB_RISK', icon: 'bolt' },
     { id: 'competencia', labelKey: 'AI_WIDGET.TAB_COMPETE', icon: 'trophy' },
     { id: 'estadisticas', labelKey: 'AI_WIDGET.TAB_STATS', icon: 'chart-bar' }
@@ -73,6 +74,17 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
   cargandoRutina = false;
   errorRutina: string | null = null;
   rutina: Record<string, unknown> | null = null;
+
+  planObjetivo = 'fuerza';
+  planSemanas = 4;
+  planSesiones = 3;
+  planMinutos = 35;
+  planNivel = 'principiante';
+  cargandoPlan = false;
+  errorPlan: string | null = null;
+  plan: Record<string, unknown> | null = null;
+  planes: Array<Record<string, unknown>> = [];
+  planSesionAbierta: string | null = null;
 
   rpe: number | null = 5;
   dolor = false;
@@ -134,6 +146,9 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
       if (id === 'estadisticas' && !this.stats && !this.cargandoStats) {
         this.cargarEstadisticas();
       }
+      if (id === 'planes' && !this.plan && !this.cargandoPlan) {
+        this.cargarPlanes();
+      }
     }));
     this.subs.add(this.competitionProgress.raw$.subscribe((raw) => {
       if (raw && (raw['activo'] || raw['vista'])) {
@@ -189,6 +204,9 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     }
     if (id === 'competencia' && !this.cargandoCompetencia) {
       this.cargarEstadoCompetencia();
+    }
+    if (id === 'planes') {
+      this.cargarPlanes();
     }
   }
 
@@ -376,6 +394,11 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
       }
       return;
     }
+    if (accion === 'ver_planes') {
+      this.section = 'planes';
+      this.cargarPlanes();
+      return;
+    }
     if (!accion) {
       return;
     }
@@ -450,6 +473,105 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
         this.errorRutina = err?.error?.detail || 'No se pudo generar la rutina.';
       }
     });
+  }
+
+  generarPlan(): void {
+    this.cargandoPlan = true;
+    this.errorPlan = null;
+    this.planSesionAbierta = null;
+    this.ai.generarPlan({
+      objetivo: this.planObjetivo,
+      semanas: this.planSemanas,
+      sesiones_por_semana: this.planSesiones,
+      duracion_minutos: this.planMinutos,
+      nivel: this.planNivel
+    }).subscribe({
+      next: (res) => {
+        this.cargandoPlan = false;
+        this.plan = res;
+        const id = res['plan_id'];
+        this.planes = [res, ...this.planes.filter((p) => p['plan_id'] !== id)];
+      },
+      error: (err) => {
+        this.cargandoPlan = false;
+        this.errorPlan = err?.error?.detail || 'No se pudo generar el plan.';
+      }
+    });
+  }
+
+  cargarPlanes(): void {
+    this.cargandoPlan = true;
+    this.errorPlan = null;
+    this.ai.listarPlanes().subscribe({
+      next: (res) => {
+        this.cargandoPlan = false;
+        const lista = res['planes'];
+        this.planes = Array.isArray(lista) ? lista as Array<Record<string, unknown>> : [];
+        if (!this.plan && this.planes.length) {
+          this.plan = this.planes[0];
+        }
+      },
+      error: (err) => {
+        this.cargandoPlan = false;
+        this.errorPlan = err?.error?.detail || 'No se pudieron cargar los planes.';
+      }
+    });
+  }
+
+  verPlan(item: Record<string, unknown>): void {
+    this.plan = item;
+    this.planSesionAbierta = null;
+  }
+
+  sesionesPlan(): Array<Record<string, unknown>> {
+    const lista = this.plan?.['sesiones'];
+    return Array.isArray(lista) ? lista as Array<Record<string, unknown>> : [];
+  }
+
+  semanasPlan(): number[] {
+    return [...new Set(this.sesionesPlan().map((s) => Number(s['semana'] || 0)).filter((n) => n > 0))];
+  }
+
+  sesionesDeSemana(semana: number): Array<Record<string, unknown>> {
+    return this.sesionesPlan().filter((s) => Number(s['semana']) === semana);
+  }
+
+  claveSesionPlan(sesion: Record<string, unknown>): string {
+    return String(sesion['id'] || `${sesion['semana']}-${sesion['sesion']}`);
+  }
+
+  esSesionAbierta(sesion: Record<string, unknown>): boolean {
+    return this.planSesionAbierta === this.claveSesionPlan(sesion);
+  }
+
+  toggleSesionPlan(sesion: Record<string, unknown>): void {
+    const clave = this.claveSesionPlan(sesion);
+    this.planSesionAbierta = this.planSesionAbierta === clave ? null : clave;
+  }
+
+  ejerciciosDeSesion(sesion: Record<string, unknown>): Array<Record<string, unknown>> {
+    const directo = sesion['ejercicios'];
+    if (Array.isArray(directo) && directo.length) {
+      return directo as Array<Record<string, unknown>>;
+    }
+    const bloques = sesion['bloques'];
+    if (!Array.isArray(bloques)) {
+      return [];
+    }
+    const planos: Array<Record<string, unknown>> = [];
+    for (const bloque of bloques) {
+      const row = bloque && typeof bloque === 'object' ? bloque as Record<string, unknown> : {};
+      const lista = row['ejercicios'];
+      if (!Array.isArray(lista)) {
+        continue;
+      }
+      for (const ej of lista) {
+        if (ej && typeof ej === 'object') {
+          planos.push(ej as Record<string, unknown>);
+        }
+      }
+    }
+    return planos;
   }
 
   evaluarRiesgo(): void {

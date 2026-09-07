@@ -23,6 +23,7 @@ export type ChatCtaAccion =
   | 'ver_perfil'
   | 'ver_estadisticas'
   | 'ver_competencia'
+  | 'ver_planes'
   | 'ver_usuarios'
   | 'descargar_pdf';
 
