@@ -282,6 +282,7 @@
             · {{ asText(plan['total_sesiones']) }} {{ 'AI_WIDGET.SESSIONS' | translate }}
           </p>
           <p *ngIf="plan['resumen']">{{ asText(plan['resumen']) }}</p>
+          <p *ngIf="plan['progresion']">{{ asText(plan['progresion']) }}</p>
           <p class="ai-lead">{{ 'AI_WIDGET.PLAN_CLICK_HINT' | translate }}</p>
           <ng-container *ngFor="let semana of semanasPlan()">
             <h4>{{ 'AI_WIDGET.WEEK' | translate }} {{ semana }}</h4>
@@ -364,6 +365,39 @@
           <small>{{ asText(riesgo['disclaimer']) }}</small>
           <app-body-map *ngIf="cuerpoDeRiesgo() as mapa" [mapa]="mapa" [compact]="true"></app-body-map>
         </article>
+        <div class="ai-toolbar">
+          <h4>{{ 'AI_WIDGET.RISK_HISTORY' | translate }}</h4>
+          <button
+            type="button"
+            class="ai-link"
+            *ngIf="historialRiesgo.length"
+            (click)="vaciarHistorialRiesgo()"
+          >
+            {{ 'AI_WIDGET.RISK_CLEAR' | translate }}
+          </button>
+        </div>
+        <p class="ai-lead">{{ 'AI_WIDGET.RISK_HISTORY_HINT' | translate }}</p>
+        <p *ngIf="cargandoHistorialRiesgo" class="ai-empty">{{ 'COMMON.LOADING' | translate }}</p>
+        <p *ngIf="errorHistorialRiesgo" class="ai-error">{{ errorHistorialRiesgo }}</p>
+        <p *ngIf="!cargandoHistorialRiesgo && !historialRiesgo.length" class="ai-empty">
+          {{ 'AI_WIDGET.RISK_HISTORY_EMPTY' | translate }}
+        </p>
+        <ul class="ai-list" *ngIf="historialRiesgo.length">
+          <li *ngFor="let item of historialRiesgo">
+            <div>
+              <strong>{{ asText(item['nivel']) }} · {{ asText(item['score_riesgo']) }}/100</strong>
+              <small>{{ fechaCorta(item['fecha']) }} · RPE {{ asText(item['rpe_reciente']) }}</small>
+            </div>
+            <button
+              type="button"
+              class="ai-hilo-del"
+              (click)="borrarEvaluacionRiesgo(item)"
+              [attr.aria-label]="'CHAT.DELETE' | translate"
+            >
+              <app-icon name="trash" [size]="14"></app-icon>
+            </button>
+          </li>
+        </ul>
       </section>
 
       <!-- Competencia -->
@@ -536,6 +570,8 @@
             <app-icon name="trophy" [size]="14"></app-icon>
             {{ 'AI_WIDGET.COMPETE_ON' | translate }}
           </p>
+          <h4>{{ 'AI_WIDGET.COMPARE' | translate }}</h4>
+          <p class="ai-lead">{{ 'AI_WIDGET.COMPARE_HINT' | translate }}</p>
           <div class="ai-compare" *ngIf="comparativaVista().length">
             <article *ngFor="let row of comparativaVista()">
               <span>{{ row.label }}</span>
@@ -543,6 +579,17 @@
               <small>{{ 'AI_WIDGET.PREVIOUS' | translate }}: {{ row.anterior }} ({{ row.delta >= 0 ? '+' : '' }}{{ row.delta }})</small>
             </article>
           </div>
+          <p class="ai-empty" *ngIf="!comparativaVista().length">{{ 'AI_WIDGET.COMPARE_EMPTY' | translate }}</p>
+          <h4 *ngIf="sesionesHistorialVista().length">{{ 'AI_WIDGET.SESSION_HISTORY' | translate }}</h4>
+          <ul class="ai-list" *ngIf="sesionesHistorialVista().length">
+            <li *ngFor="let s of sesionesHistorialVista()">
+              <app-icon name="bolt" [size]="14"></app-icon>
+              <div>
+                <strong>RPE {{ s.rpe }}</strong>
+                <small>{{ s.fecha }}</small>
+              </div>
+            </li>
+          </ul>
           <ul class="ai-alerts" *ngIf="alertasStats().length">
             <li *ngFor="let a of alertasStats()">
               <app-icon name="exclamation-triangle" [size]="14"></app-icon>

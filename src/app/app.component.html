@@ -1,11 +1,17 @@
 <router-outlet></router-outlet>
-<div
-  class="a11y-toast"
+<button
   *ngIf="visualAlert$ | async as toast"
+  type="button"
+  class="a11y-toast"
   role="status"
   aria-live="polite"
+  (click)="openLiveNotification()"
 >
-  {{ toast }}
-</div>
+  <span class="a11y-toast-count" *ngIf="toast.count > 0">{{ toast.count }}</span>
+  <span class="a11y-toast-copy">
+    <strong>{{ toast.title }}</strong>
+    <span *ngIf="toast.body">{{ toast.body }}</span>
+  </span>
+</button>
 <app-confirm-dialog></app-confirm-dialog>
 <app-ai-assistant-widget></app-ai-assistant-widget>

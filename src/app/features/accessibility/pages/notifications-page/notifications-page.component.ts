@@ -8,6 +8,7 @@ import { PreferencesApiService } from '@features/accessibility/services/preferen
 import { NotificationAnnounceService } from '@features/accessibility/services/notification-announce.service';
 import { TtsService } from '@features/accessibility/services/tts.service';
 import { UnreadNotificationsService } from '@features/accessibility/services/unread-notifications.service';
+import { NotificationRealtimeService } from '@features/accessibility/services/notification-realtime.service';
 
 @Component({
   selector: 'app-notifications-page',
@@ -23,6 +24,8 @@ export class NotificationsPageComponent implements OnInit, OnDestroy {
 
   private prefsSub: Subscription | null = null;
   private playingSub: Subscription | null = null;
+  private incomingSub: Subscription | null = null;
+  private reconnectSub: Subscription | null = null;
 
   constructor(
     private session: SessionService,
@@ -30,7 +33,8 @@ export class NotificationsPageComponent implements OnInit, OnDestroy {
     private notificationAnnounce: NotificationAnnounceService,
     private tts: TtsService,
     private translate: TranslateService,
-    private unreadNotifications: UnreadNotificationsService
+    private unreadNotifications: UnreadNotificationsService,
+    private realtime: NotificationRealtimeService
   ) {}
 
   ngOnInit(): void {
@@ -41,12 +45,16 @@ export class NotificationsPageComponent implements OnInit, OnDestroy {
     this.playingSub = this.tts.playingId$.subscribe((id) => {
       this.playingId = id;
     });
+    this.incomingSub = this.realtime.incoming$.subscribe((note) => this.prepend(note));
+    this.reconnectSub = this.realtime.reconnected$.subscribe(() => this.reload());
     this.reload();
   }
 
   ngOnDestroy(): void {
     this.prefsSub?.unsubscribe();
     this.playingSub?.unsubscribe();
+    this.incomingSub?.unsubscribe();
+    this.reconnectSub?.unsubscribe();
   }
 
   get fixedSidebar(): boolean {
@@ -67,6 +75,17 @@ export class NotificationsPageComponent implements OnInit, OnDestroy {
         this.loading = false;
       }
     });
+  }
+
+  private prepend(note: AppNotification): void {
+    if (!note?.id) {
+      this.notifications = [note, ...this.notifications];
+      return;
+    }
+    if (this.notifications.some((item) => item.id === note.id)) {
+      return;
+    }
+    this.notifications = [note, ...this.notifications];
   }
 
   togglePlay(note: AppNotification): void {

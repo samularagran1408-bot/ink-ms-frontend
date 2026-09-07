@@ -4,7 +4,22 @@
   <p *ngIf="loading" class="empty-text">{{ 'COMMON.LOADING' | translate }}</p>
   <p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
 
-  <div class="card" *ngFor="let summary of summaries" style="margin-bottom: 12px;">
+  <div class="search-bar" *ngIf="!loading">
+    <input
+      type="search"
+      name="athleteQuery"
+      [(ngModel)]="searchQuery"
+      [placeholder]="'ATHLETES.SEARCH_PH' | translate"
+    />
+    <button class="btn-secondary" type="button" *ngIf="searchQuery.trim()" (click)="clearSearch()">
+      {{ 'COMMON.CLEAR' | translate }}
+    </button>
+  </div>
+  <p class="search-count" *ngIf="searchQuery.trim()">
+    {{ 'COMMON.RESULTS' | translate:{ count: visibleSummaries().length } }}
+  </p>
+
+  <div class="card" *ngFor="let summary of visibleSummaries()" style="margin-bottom: 12px;">
     <h3 class="section-title">{{ summary.event.name }}</h3>
     <div class="kpi-sub" style="margin-bottom: 10px;">
       {{ 'ATHLETES.ENROLLED' | translate:{ occupied: summary.occupied, capacity: summary.event.maxCapacity, waitlist: summary.waitlist.length } }}
@@ -49,7 +64,13 @@
         </thead>
         <tbody>
           <tr *ngFor="let row of filteredEnrolled(summary)">
-            <td>{{ row.fullName || row.userId || ('ROLES.USER_FALLBACK' | translate) }}</td>
+            <td>
+              <span class="user-cell">
+                <img *ngIf="row.profilePicture" class="table-avatar" [src]="row.profilePicture" alt="" />
+                <span *ngIf="!row.profilePicture" class="avatar-fallback">{{ initials(row.fullName || row.email) }}</span>
+                {{ row.fullName || row.userId || ('ROLES.USER_FALLBACK' | translate) }}
+              </span>
+            </td>
             <td>{{ row.email || ('COMMON.NONE' | translate) }}</td>
             <td>
               <span class="status-pill" [class.status-pill--ok]="row.attended" [class.status-pill--warn]="!row.attended">
@@ -68,13 +89,20 @@
     <div *ngIf="summary.waitlist.length" style="margin-top: 16px;">
       <h4 class="section-title">{{ 'ATHLETES.WAITLIST' | translate }}</h4>
       <div class="list-item" *ngFor="let item of summary.waitlist">
-        <div>
+        <div class="user-cell">
+            <img *ngIf="item.userProfilePicture" class="table-avatar" [src]="item.userProfilePicture" alt="" />
+            <span *ngIf="!item.userProfilePicture" class="avatar-fallback">{{ initials(item.userFullName || item.userEmail) }}</span>
+            <div>
             <strong>{{ item.userFullName || item.userEmail || ('User ' + item.userId) }}</strong>
             <div class="kpi-sub">{{ 'ATHLETES.POSITION' | translate:{ position: (item.waitlistPosition ?? '—') } }} · {{ item.userEmail || item.userId }}</div>
+            </div>
         </div>
       </div>
     </div>
   </div>
 
   <p *ngIf="!loading && !summaries.length" class="empty-text">{{ 'ATHLETES.EMPTY' | translate }}</p>
+  <p *ngIf="!loading && summaries.length && !visibleSummaries().length" class="empty-text">
+    {{ 'ATHLETES.EMPTY_FILTER' | translate }}
+  </p>
 </app-panel-shell>

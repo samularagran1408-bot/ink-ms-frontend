@@ -13,6 +13,7 @@ import { HeroIconName } from '../../icons/heroicons-outline';
 export interface SidebarNavItem {
   labelKey: string;
   route?: string;
+  queryParams?: Record<string, string>;
   exact?: boolean;
   showBadge?: boolean;
   icon: HeroIconName;
@@ -38,8 +39,10 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
   navItems: SidebarNavItem[] = [];
   secondaryItems: SidebarNavItem[] = [];
   unreadCount = 0;
+  badgePulse = false;
 
   private subs = new Subscription();
+  private pulseTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(
     private router: Router,
@@ -65,6 +68,16 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
     this.subs.add(this.session.roles$.subscribe(() => this.refreshFromSession()));
     this.subs.add(this.translate.onLangChange.subscribe(() => this.refreshFromSession()));
     this.subs.add(this.unreadNotifications.count$.subscribe((count) => {
+      if (count > this.unreadCount) {
+        this.badgePulse = true;
+        if (this.pulseTimer) {
+          clearTimeout(this.pulseTimer);
+        }
+        this.pulseTimer = setTimeout(() => {
+          this.badgePulse = false;
+          this.pulseTimer = null;
+        }, 1800);
+      }
       this.unreadCount = count;
     }));
     this.subs.add(
@@ -81,6 +94,9 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    if (this.pulseTimer) {
+      clearTimeout(this.pulseTimer);
+    }
     this.subs.unsubscribe();
   }
 
@@ -155,6 +171,30 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
     return `${this.sessionHome}/notifications`;
   }
 
+  isNavActive(item: SidebarNavItem): boolean {
+    if (!item.route) {
+      return false;
+    }
+    const pathActive = this.router.isActive(
+      this.router.createUrlTree([item.route]),
+      {
+        paths: item.exact ? 'exact' : 'subset',
+        queryParams: 'ignored',
+        fragment: 'ignored',
+        matrixParams: 'ignored'
+      }
+    );
+    if (!pathActive) {
+      return false;
+    }
+    const currentVista = this.router.parseUrl(this.router.url).queryParams['vista'];
+    const wantedVista = item.queryParams?.['vista'];
+    if (wantedVista) {
+      return currentVista === wantedVista;
+    }
+    return !currentVista;
+  }
+
   private commonAccountItems(base: string): SidebarNavItem[] {
     return [
       { labelKey: 'NAV.PROFILE', route: `${base}/profile`, icon: 'user-circle' },
@@ -176,7 +216,8 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
           { labelKey: 'NAV.ASSOCIATIONS', route: '/admin/associations', icon: 'link' },
           { labelKey: 'NAV.ROLES', route: '/admin/roles', icon: 'shield-check' },
           { labelKey: 'NAV.AUDIT_LOGS', route: '/admin/audit', icon: 'clipboard-document-list' },
-          { labelKey: 'NAV.SUBSCRIPTIONS', route: '/admin/subscriptions', icon: 'sparkles' }
+          { labelKey: 'NAV.SUBSCRIPTIONS', route: '/admin/subscriptions', icon: 'chart-bar' },
+          { labelKey: 'NAV.CREW', route: '/admin/crew', icon: 'sparkles' }
         ];
         this.secondaryItems = this.commonAccountItems('/admin');
         break;
@@ -187,7 +228,8 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
           { labelKey: 'NAV.SESSIONS', route: '/trainer/sessions', icon: 'academic-cap' },
           { labelKey: 'NAV.SPORTS', route: '/trainer/sports', icon: 'trophy' },
           { labelKey: 'NAV.DISABILITIES', route: '/trainer/disabilities', icon: 'heart' },
-          { labelKey: 'NAV.ASSOCIATIONS', route: '/trainer/associations', icon: 'link' }
+          { labelKey: 'NAV.ASSOCIATIONS', route: '/trainer/associations', icon: 'link' },
+          { labelKey: 'NAV.CREW', route: '/trainer/crew', icon: 'sparkles' }
         ];
         this.secondaryItems = this.commonAccountItems('/trainer');
         break;
@@ -196,7 +238,8 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
           { labelKey: 'NAV.EVENTS', route: '/organizer', exact: true, icon: 'calendar-days' },
           { labelKey: 'NAV.QUIZ', route: '/organizer/quiz', icon: 'academic-cap' },
           { labelKey: 'NAV.MANAGE_EVENTS', route: '/organizer/events', icon: 'cog-6-tooth' },
-          { labelKey: 'NAV.ATHLETES_WAITLIST', route: '/organizer/athletes', icon: 'user-group' }
+          { labelKey: 'NAV.ATHLETES_WAITLIST', route: '/organizer/athletes', icon: 'user-group' },
+          { labelKey: 'NAV.CREW', route: '/organizer/crew', icon: 'sparkles' }
         ];
         this.secondaryItems = this.commonAccountItems('/organizer');
         break;
@@ -204,7 +247,8 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
         this.navItems = [
           { labelKey: 'NAV.HOME', route: '/home', exact: true, icon: 'home' },
           { labelKey: 'NAV.EVENTS', route: '/home/events', icon: 'calendar-days' },
-          { labelKey: 'NAV.HISTORY', route: '/home/events', icon: 'clipboard-document-list' },
+          { labelKey: 'NAV.CREW', route: '/home/crew', icon: 'sparkles' },
+          { labelKey: 'NAV.HISTORY', route: '/home/events', queryParams: { vista: 'historial' }, icon: 'clipboard-document-list' },
           ...this.commonAccountItems('/home')
         ];
         this.secondaryItems = [];
