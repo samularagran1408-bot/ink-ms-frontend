@@ -4,13 +4,13 @@
   box-sizing: border-box;
 }
 
-:host {
-  --rojo: #b91c1c;
-  --rojo-hover: #991b1b;
-  --negro: #111827;
-  --gris-oscuro: #374151;
-  --gris-medio: #6b7280;
-  --gris-claro: #f3f4f6;
+  :host {
+  --rojo: #A30D11;
+  --rojo-hover: #890A0D;
+  --negro: #0F172A;
+  --gris-oscuro: #334155;
+  --gris-medio: #64748B;
+  --gris-claro: #F3F5F8;
   --blanco: #ffffff;
 
   display: block;
@@ -31,8 +31,14 @@
 
 /* HEADER SUPERIOR */
 .top-header {
-  padding-top: 24px;
-  background: var(--blanco);
+  padding-top: 20px;
+  padding-bottom: 8px;
+  background: rgba(255, 255, 255, 0.92);
+  border-bottom: 1px solid #F1F5F9;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  backdrop-filter: blur(12px);
 }
 
 .top-header-inner {
@@ -73,8 +79,10 @@
 
 /* HERO SECTION */
 .hero {
-  padding: 80px 0 60px;
-  background: var(--blanco);
+  padding: 72px 0 56px;
+  background:
+    radial-gradient(720px 280px at 0% 0%, rgba(163, 13, 17, 0.06), transparent 50%),
+    var(--blanco);
 }
 
 .hero-wrapper {
@@ -243,9 +251,10 @@
 
 .servicio-card {
   padding: 32px;
-  border-radius: 16px;
+  border-radius: 18px;
   background: var(--blanco);
-  border: 1px solid #f3f4f6;
+  border: 1px solid #E8EEF5;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
   transition: all 0.3s ease;
 }
 
@@ -490,8 +499,8 @@
   background: var(--blanco);
   border-radius: 20px;
   padding: 40px;
-  box-shadow: 0 10px 50px rgba(0, 0, 0, 0.06);
-  border: 1px solid #f3f4f6;
+  box-shadow: 0 16px 48px rgba(15, 23, 42, 0.08);
+  border: 1px solid #E8EEF5;
 }
 
 .form-title {

@@ -91,4 +91,23 @@ export class AiAssistantService {
   listarPlanes(): Observable<Record<string, unknown>> {
     return this.http.get<Record<string, unknown>>(`${this.base}/planes`);
   }
+
+  historialRiesgo(): Observable<Record<string, unknown>> {
+    return this.http.get<Record<string, unknown>>(`${this.base}/riesgo/historial`);
+  }
+
+  borrarEvaluacionRiesgo(id: string): Observable<Record<string, unknown>> {
+    return this.http.delete<Record<string, unknown>>(`${this.base}/riesgo/historial/${encodeURIComponent(id)}`);
+  }
+
+  vaciarHistorialRiesgo(): Observable<Record<string, unknown>> {
+    return this.http.delete<Record<string, unknown>>(`${this.base}/riesgo/historial`);
+  }
+
+  compararHistorial(usuarioId?: string): Observable<Record<string, unknown>> {
+    const path = usuarioId
+      ? `${this.base}/historial/comparar/${encodeURIComponent(usuarioId)}`
+      : `${this.base}/historial/comparar`;
+    return this.http.get<Record<string, unknown>>(path);
+  }
 }

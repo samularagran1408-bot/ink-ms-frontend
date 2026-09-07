@@ -1,7 +1,9 @@
 import { Injectable, OnDestroy } from '@angular/core';
-import { BehaviorSubject, of } from 'rxjs';
+import { BehaviorSubject, Subscription, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
+import { AppNotification } from '../models/accessibility-api';
+import { NotificationRealtimeService } from './notification-realtime.service';
 import { PreferencesApiService } from './preferences-api.service';
 import { SessionService } from '@core/services/session.service';
 
@@ -13,10 +15,15 @@ export class UnreadNotificationsService implements OnDestroy {
   readonly count$ = this.countSubject.asObservable();
 
   private started = false;
+  private incomingSub: Subscription | null = null;
+  private reconnectSub: Subscription | null = null;
+  private pollTimer: ReturnType<typeof setInterval> | null = null;
+  private readonly seenIds = new Set<string>();
 
   constructor(
     private preferencesApi: PreferencesApiService,
-    private session: SessionService
+    private session: SessionService,
+    private realtime: NotificationRealtimeService
   ) {}
 
   start(): void {
@@ -25,10 +32,24 @@ export class UnreadNotificationsService implements OnDestroy {
     }
     this.started = true;
     this.refresh();
+    this.realtime.start();
+    this.incomingSub = this.realtime.incoming$.subscribe((note) => this.onIncoming(note));
+    this.reconnectSub = this.realtime.reconnected$.subscribe(() => this.refresh());
+    this.pollTimer = setInterval(() => this.refresh(), 20_000);
   }
 
   stop(): void {
     this.started = false;
+    this.incomingSub?.unsubscribe();
+    this.reconnectSub?.unsubscribe();
+    this.incomingSub = null;
+    this.reconnectSub = null;
+    this.seenIds.clear();
+    if (this.pollTimer) {
+      clearInterval(this.pollTimer);
+      this.pollTimer = null;
+    }
+    this.realtime.stop();
     this.countSubject.next(0);
   }
 
@@ -52,6 +73,19 @@ export class UnreadNotificationsService implements OnDestroy {
 
   ngOnDestroy(): void {
     this.stop();
+  }
+
+  private onIncoming(note: AppNotification): void {
+    if (note.id) {
+      if (this.seenIds.has(note.id)) {
+        return;
+      }
+      this.seenIds.add(note.id);
+    }
+    if (note.read) {
+      return;
+    }
+    this.countSubject.next(this.count + 1);
   }
 
   private normalize(value: { count: number } | number): number {

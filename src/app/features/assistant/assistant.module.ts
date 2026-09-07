@@ -7,6 +7,7 @@ import { SharedModule } from '@shared/shared.module';
 import { AssistantPageComponent } from './pages/assistant-page/assistant-page.component';
 import { TrainerDashboardComponent } from './pages/trainer-dashboard/trainer-dashboard.component';
 import { SessionsPageComponent } from './pages/sessions-page/sessions-page.component';
+import { CrewPageComponent } from './pages/crew-page/crew-page.component';
 
 /**
  * M08 - Asistente Virtual Inteligente.
@@ -18,7 +19,8 @@ import { SessionsPageComponent } from './pages/sessions-page/sessions-page.compo
   declarations: [
     AssistantPageComponent,
     TrainerDashboardComponent,
-    SessionsPageComponent
+    SessionsPageComponent,
+    CrewPageComponent
   ],
   imports: [
     CommonModule,
@@ -30,7 +32,8 @@ import { SessionsPageComponent } from './pages/sessions-page/sessions-page.compo
   exports: [
     AssistantPageComponent,
     TrainerDashboardComponent,
-    SessionsPageComponent
+    SessionsPageComponent,
+    CrewPageComponent
   ]
 })
 export class AssistantModule {}

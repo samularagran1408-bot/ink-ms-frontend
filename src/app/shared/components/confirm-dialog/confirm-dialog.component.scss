@@ -5,24 +5,26 @@
   display: grid;
   place-items: center;
   padding: 20px;
-  background: rgba(15, 23, 42, 0.48);
-  backdrop-filter: blur(4px);
+  background: rgba(11, 18, 32, 0.52);
+  backdrop-filter: blur(8px);
 }
 
 .confirm-card {
   width: min(420px, 100%);
   background: #fff;
-  border-radius: 18px;
+  border-radius: 20px;
   padding: 28px 24px 22px;
-  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.22);
+  box-shadow: 0 28px 56px rgba(15, 23, 42, 0.24);
   text-align: center;
+  border: 1px solid #E8EEF5;
+  animation: inkRise 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .confirm-icon {
   width: 52px;
   height: 52px;
   margin: 0 auto 16px;
-  border-radius: 50%;
+  border-radius: 14px;
   display: grid;
   place-items: center;
   background: #FEE2E2;
@@ -59,7 +61,7 @@
 
 .confirm-btn {
   border: none;
-  border-radius: 10px;
+  border-radius: 11px;
   padding: 12px 16px;
   font-size: 13px;
   font-weight: 700;
@@ -69,12 +71,13 @@
 .confirm-btn--ghost {
   background: #fff;
   color: #475569;
-  border: 1px solid #E2E8F0;
+  border: 1px solid #E8EEF5;
 }
 
 .confirm-btn--primary {
-  background: #A30D11;
+  background: linear-gradient(180deg, #c41218 0%, #A30D11 100%);
   color: #fff;
+  box-shadow: 0 8px 16px rgba(163, 13, 17, 0.22);
 }
 
 .confirm-btn--danger {

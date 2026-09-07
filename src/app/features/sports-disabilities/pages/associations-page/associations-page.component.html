@@ -29,29 +29,43 @@
   </div>
 
   <div class="card">
-    <h3 class="section-title">
-      Asociaciones del deporte
-      <span *ngIf="selectedSportId">seleccionado</span>
-    </h3>
+    <h3 class="section-title">{{ 'ASSOCIATIONS_PAGE.LIST' | translate }}</h3>
     <div class="search-bar">
       <input
         type="search"
         name="associationQuery"
         [(ngModel)]="searchQuery"
-        placeholder="Buscar por discapacidad o adaptaciones"
+        [placeholder]="'ASSOCIATIONS_PAGE.SEARCH_PH' | translate"
       />
+      <select name="associationSport" [(ngModel)]="listSportId">
+        <option value="">{{ 'ASSOCIATIONS_PAGE.ALL_SPORTS' | translate }}</option>
+        <option *ngFor="let sport of sports" [value]="sport.id">{{ sport.name }}</option>
+      </select>
+      <button
+        class="btn-secondary"
+        type="button"
+        *ngIf="searchQuery.trim() || listSportId"
+        (click)="clearSearch()"
+      >
+        {{ 'COMMON.CLEAR' | translate }}
+      </button>
     </div>
+    <p class="search-count" *ngIf="searchQuery.trim() || listSportId">
+      {{ 'COMMON.RESULTS' | translate:{ count: filteredAssociations.length } }}
+    </p>
     <div class="list-item" *ngFor="let item of filteredAssociations">
       <div>
         <strong>{{ item.disabilityName || ('Discapacidad #' + item.disabilityId) }}</strong>
-        <div class="kpi-sub">{{ item.adaptations || 'Sin adaptaciones' }}</div>
+        <div class="kpi-sub">
+          {{ item.sportName || ('Deporte #' + item.sportId) }} · {{ item.adaptations || 'Sin adaptaciones' }}
+        </div>
       </div>
       <button class="btn-danger" type="button" (click)="remove(item)">Eliminar</button>
     </div>
     <p *ngIf="!loading && !filteredAssociations.length" class="empty-text">
-      {{ searchQuery.trim()
-        ? 'No hay asociaciones que coincidan con la búsqueda.'
-        : 'Este deporte aún no tiene discapacidades asociadas.' }}
+      {{ (searchQuery.trim() || listSportId)
+        ? ('ASSOCIATIONS_PAGE.EMPTY_SEARCH' | translate)
+        : 'Aún no hay asociaciones registradas.' }}
     </p>
   </div>
 </app-panel-shell>

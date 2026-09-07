@@ -92,6 +92,9 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
   cargandoRiesgo = false;
   errorRiesgo: string | null = null;
   riesgo: Record<string, unknown> | null = null;
+  historialRiesgo: Array<Record<string, unknown>> = [];
+  cargandoHistorialRiesgo = false;
+  errorHistorialRiesgo: string | null = null;
 
   cargandoCompetencia = false;
   errorCompetencia: string | null = null;
@@ -148,6 +151,9 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
       }
       if (id === 'planes' && !this.plan && !this.cargandoPlan) {
         this.cargarPlanes();
+      }
+      if (id === 'riesgo' && !this.cargandoHistorialRiesgo) {
+        this.cargarHistorialRiesgo();
       }
     }));
     this.subs.add(this.competitionProgress.raw$.subscribe((raw) => {
@@ -207,6 +213,9 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     }
     if (id === 'planes') {
       this.cargarPlanes();
+    }
+    if (id === 'riesgo') {
+      this.cargarHistorialRiesgo();
     }
   }
 
@@ -382,9 +391,7 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     }
     if (accion === 'ver_estadisticas') {
       this.section = 'estadisticas';
-      if (!this.stats && !this.cargandoStats) {
-        this.cargarEstadisticas();
-      }
+      this.cargarEstadisticas();
       return;
     }
     if (accion === 'ver_competencia') {
@@ -574,6 +581,7 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     return planos;
   }
 
+
   evaluarRiesgo(): void {
     this.cargandoRiesgo = true;
     this.errorRiesgo = null;
@@ -586,6 +594,7 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
       next: (res) => {
         this.cargandoRiesgo = false;
         this.riesgo = res;
+        this.cargarHistorialRiesgo();
       },
       error: (err) => {
         this.cargandoRiesgo = false;
@@ -798,6 +807,20 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     return String(this.vistaStats()['tendencia'] || '');
   }
 
+  sesionesHistorialVista(): Array<{ fecha: string; rpe: string }> {
+    const lista = this.vistaStats()['sesiones_historial'];
+    if (!Array.isArray(lista)) {
+      return [];
+    }
+    return lista.map((item) => {
+      const row = item as Record<string, unknown>;
+      return {
+        fecha: this.fechaCorta(row['fecha']),
+        rpe: String(row['rpe'] ?? '—')
+      };
+    });
+  }
+
   competenciaActiva(): boolean {
     return !!this.vistaStats()['modo_competencia'];
   }
@@ -867,6 +890,81 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
   recomendacionesRiesgo(): string[] {
     const lista = this.riesgo?.['recomendaciones'];
     return Array.isArray(lista) ? lista.map(String) : [];
+  }
+
+  cargarHistorialRiesgo(): void {
+    this.cargandoHistorialRiesgo = true;
+    this.errorHistorialRiesgo = null;
+    this.ai.historialRiesgo().subscribe({
+      next: (res) => {
+        this.cargandoHistorialRiesgo = false;
+        const lista = res['evaluaciones'];
+        this.historialRiesgo = Array.isArray(lista) ? lista as Array<Record<string, unknown>> : [];
+      },
+      error: () => {
+        this.cargandoHistorialRiesgo = false;
+        this.errorHistorialRiesgo = 'No se pudo cargar el historial de riesgo.';
+      }
+    });
+  }
+
+  async borrarEvaluacionRiesgo(item: Record<string, unknown>): Promise<void> {
+    const id = String(item['id'] || '');
+    if (!id) {
+      return;
+    }
+    const ok = await this.confirm.ask({
+      title: this.translate.instant('AI_WIDGET.RISK_DELETE_TITLE'),
+      message: this.translate.instant('AI_WIDGET.RISK_DELETE_ONE'),
+      confirmLabel: this.translate.instant('CHAT.DELETE'),
+      cancelLabel: this.translate.instant('COMMON.CANCEL') || 'Cancelar',
+      tone: 'danger'
+    });
+    if (!ok) {
+      return;
+    }
+    this.ai.borrarEvaluacionRiesgo(id).subscribe({
+      next: () => this.cargarHistorialRiesgo(),
+      error: () => {
+        this.errorHistorialRiesgo = 'No se pudo borrar esa evaluación.';
+      }
+    });
+  }
+
+  async vaciarHistorialRiesgo(): Promise<void> {
+    if (!this.historialRiesgo.length) {
+      return;
+    }
+    const ok = await this.confirm.ask({
+      title: this.translate.instant('AI_WIDGET.RISK_DELETE_TITLE'),
+      message: this.translate.instant('AI_WIDGET.RISK_DELETE_ALL'),
+      confirmLabel: this.translate.instant('CHAT.DELETE'),
+      cancelLabel: this.translate.instant('COMMON.CANCEL') || 'Cancelar',
+      tone: 'danger'
+    });
+    if (!ok) {
+      return;
+    }
+    this.ai.vaciarHistorialRiesgo().subscribe({
+      next: () => {
+        this.historialRiesgo = [];
+        this.riesgo = null;
+      },
+      error: () => {
+        this.errorHistorialRiesgo = 'No se pudo vaciar el historial.';
+      }
+    });
+  }
+
+  fechaCorta(valor: unknown): string {
+    if (!valor) {
+      return '—';
+    }
+    const fecha = new Date(String(valor));
+    if (Number.isNaN(fecha.getTime())) {
+      return String(valor);
+    }
+    return fecha.toLocaleString();
   }
 
   alertasStats(): string[] {

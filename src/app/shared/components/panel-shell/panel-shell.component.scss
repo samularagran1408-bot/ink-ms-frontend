@@ -1,31 +1,33 @@
 .panel-shell {
   min-height: 100vh;
-  background: #F8FAFC;
+  background:
+    radial-gradient(920px 420px at 100% -8%, rgba(163, 13, 17, 0.07), transparent 52%),
+    radial-gradient(720px 360px at 0% 100%, rgba(15, 23, 42, 0.04), transparent 46%),
+    var(--ink-canvas, #F3F5F8);
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  color: #0F172A;
+  color: var(--ink-ink, #0F172A);
 }
 
 .panel-shell--fixed .panel-main {
-  margin-left: 260px;
+  margin-left: 272px;
 }
 
 .panel-main {
-  padding: 32px 72px 112px 40px;
+  padding: 36px 72px 120px 40px;
   max-width: 1280px;
   min-width: 0;
   overflow-x: auto;
-  animation: inkFadeIn 0.45s ease both;
+  animation: inkFadeIn 0.4s ease both;
 }
 
 @media (max-width: 900px) {
   .panel-shell--fixed .panel-main {
-    margin-left: 220px;
+    margin-left: 228px;
     padding: 24px 72px 112px 20px;
   }
 }
 
 @media (max-width: 700px) {
-  /* En móvil el staff pasa a drawer (sin sidebar fija): sin margen lateral. */
   .panel-shell--fixed .panel-main {
     margin-left: 0;
     padding: 16px 16px 112px;

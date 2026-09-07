@@ -29,7 +29,21 @@
   </div>
 
   <div class="card">
-    <div class="list-item" *ngFor="let routine of routines">
+    <div class="search-bar">
+      <input
+        type="search"
+        name="sessionQuery"
+        [(ngModel)]="searchQuery"
+        [placeholder]="'SESSIONS_PAGE.SEARCH_PH' | translate"
+      />
+      <button class="btn-secondary" type="button" *ngIf="searchQuery.trim()" (click)="clearSearch()">
+        {{ 'COMMON.CLEAR' | translate }}
+      </button>
+    </div>
+    <p class="search-count" *ngIf="searchQuery.trim()">
+      {{ 'COMMON.RESULTS' | translate:{ count: filteredRoutines.length } }}
+    </p>
+    <div class="list-item" *ngFor="let routine of filteredRoutines">
       <div>
         <strong>{{ routine.name }}</strong>
         <div class="kpi-sub">{{ routine.status }} · {{ routine.disabilityFocus || 'General' }} · {{ routine.durationMinutes || '—' }} min</div>
@@ -45,5 +59,8 @@
       <span *ngIf="routine.status === 'published'" class="status-pill status-pill--ok">Publicada</span>
     </div>
     <p *ngIf="!routines.length" class="empty-text">Sin sesiones todavía.</p>
+    <p *ngIf="routines.length && !filteredRoutines.length" class="empty-text">
+      {{ 'SESSIONS_PAGE.EMPTY_SEARCH' | translate }}
+    </p>
   </div>
 </app-panel-shell>

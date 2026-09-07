@@ -93,7 +93,7 @@ export class AttendanceCheckinPageComponent implements OnInit, OnDestroy {
       this.info?.eventDate || this.event?.eventDate,
       this.info?.eventTime || this.event?.eventTime
     );
-    return start == null || this.nowMs >= start;
+    return start != null && this.nowMs >= start;
   }
 
   reload(): void {
