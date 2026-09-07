@@ -71,4 +71,24 @@ export class AiAssistantService {
       : `${this.base}/dashboard`;
     return this.http.get<Record<string, unknown>>(path);
   }
+
+  generarPlan(body: {
+    objetivo?: string;
+    semanas?: number;
+    sesiones_por_semana?: number;
+    duracion_minutos?: number;
+    nivel?: string;
+  }): Observable<Record<string, unknown>> {
+    return this.http.post<Record<string, unknown>>(`${this.base}/planes/generar`, {
+      objetivo: body.objetivo || 'general',
+      semanas: body.semanas || 4,
+      sesiones_por_semana: body.sesiones_por_semana || 3,
+      duracion_minutos: body.duracion_minutos || 35,
+      nivel: body.nivel || 'principiante'
+    });
+  }
+
+  listarPlanes(): Observable<Record<string, unknown>> {
+    return this.http.get<Record<string, unknown>>(`${this.base}/planes`);
+  }
 }

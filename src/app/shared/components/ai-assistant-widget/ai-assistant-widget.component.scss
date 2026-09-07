@@ -908,6 +908,84 @@
   color: #a30d11;
 }
 
+.ai-plan-rutinas {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ai-plan-rutina {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.ai-plan-rutina--open {
+  border-color: #a30d11;
+  background: #fff7f7;
+}
+
+.ai-plan-rutina-btn {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  border: 0;
+  background: transparent;
+  padding: 10px 12px;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.ai-plan-rutina-btn strong {
+  display: block;
+  font-size: 13px;
+}
+
+.ai-plan-rutina-btn small {
+  display: block;
+  margin-top: 2px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.ai-plan-rutina-btn app-icon {
+  flex-shrink: 0;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.ai-plan-ej {
+  list-style: none;
+  margin: 0;
+  padding: 0 12px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ai-plan-ej li {
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.ai-plan-ej li strong {
+  display: block;
+  font-size: 13px;
+}
+
+.ai-plan-ej li span,
+.ai-plan-ej li small {
+  display: block;
+  color: #64748b;
+  font-size: 12px;
+}
+
 .ai-fases small,
 .ai-evento-objetivo small {
   display: block;
