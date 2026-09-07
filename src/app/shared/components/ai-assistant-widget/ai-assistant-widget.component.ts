@@ -14,6 +14,7 @@ import { AssistantSection, AssistantUiService } from '@features/assistant/servic
 import { ChatService } from '@features/assistant/services/chat.service';
 import { ConfirmDialogService } from '@shared/services/confirm-dialog.service';
 import { CompetitionProgressService } from '@features/assistant/services/competition-progress.service';
+import { LiveSyncService } from '@features/accessibility/services/live-sync.service';
 import { ReportsService } from '@features/reports/services/reports.service';
 import { SessionService } from '@core/services/session.service';
 import { UsersService } from '@features/users/services/users.service';
@@ -125,7 +126,8 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     private confirm: ConfirmDialogService,
     private translate: TranslateService,
     private competitionProgress: CompetitionProgressService,
-    private assistantUi: AssistantUiService
+    private assistantUi: AssistantUiService,
+    private liveSync: LiveSyncService
   ) {}
 
   ngOnInit(): void {
@@ -146,8 +148,8 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
       if (id === 'competencia' && !this.cargandoCompetencia) {
         this.cargarEstadoCompetencia();
       }
-      if (id === 'estadisticas' && !this.stats && !this.cargandoStats) {
-        this.cargarEstadisticas();
+      if (id === 'estadisticas' && !this.cargandoStats) {
+        this.cargarEstadisticas(this.statsObjetivoId || undefined, this.statsNombre || undefined);
       }
       if (id === 'planes' && !this.plan && !this.cargandoPlan) {
         this.cargarPlanes();
@@ -161,6 +163,8 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
         this.competencia = raw;
       }
     }));
+    this.liveSync.start();
+    this.subs.add(this.liveSync.pulse$.subscribe(() => this.onLiveSync()));
   }
 
   ngOnDestroy(): void {
@@ -205,8 +209,8 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
   selectSection(id: AssistantSection): void {
     this.cerrarHistorial();
     this.section = id;
-    if (id === 'estadisticas' && !this.stats && !this.cargandoStats) {
-      this.cargarEstadisticas();
+    if (id === 'estadisticas' && !this.cargandoStats) {
+      this.cargarEstadisticas(this.statsObjetivoId || undefined, this.statsNombre || undefined);
     }
     if (id === 'competencia' && !this.cargandoCompetencia) {
       this.cargarEstadoCompetencia();
@@ -586,7 +590,7 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     this.cargandoRiesgo = true;
     this.errorRiesgo = null;
     this.ai.evaluarRiesgo({
-      rpe_reciente: this.rpe,
+      rpe_reciente: this.rpe == null ? null : Number(this.rpe),
       dolor_reportado: this.dolor,
       dias_sin_descanso: this.diasSinDescanso,
       limitacion: this.limitacion
@@ -595,24 +599,36 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
         this.cargandoRiesgo = false;
         this.riesgo = res;
         this.cargarHistorialRiesgo();
+        this.cargarEstadisticas(this.statsObjetivoId || undefined, this.statsNombre || undefined, true);
       },
       error: (err) => {
         this.cargandoRiesgo = false;
-        this.errorRiesgo = err?.error?.detail || 'No se pudo evaluar el riesgo.';
+        this.errorRiesgo = this.httpErrorDetail(err, 'No se pudo evaluar el riesgo.');
       }
     });
   }
 
-  cargarEstadoCompetencia(): void {
-    this.cargandoCompetencia = true;
-    this.errorCompetencia = null;
+  cargarEstadoCompetencia(silent = false): void {
+    if (this.loggingChecklistId || this.loggingRoutineId) {
+      return;
+    }
+    if (!silent) {
+      this.cargandoCompetencia = true;
+      this.errorCompetencia = null;
+    }
     this.ai.obtenerModo().subscribe({
       next: (res) => {
         this.cargandoCompetencia = false;
         this.competencia = res;
         this.competitionProgress.publish(res);
       },
-      error: () => this.analizarCompetencia()
+      error: () => {
+        if (this.competenciaModoActivo() && this.checklistItems().length) {
+          this.cargandoCompetencia = false;
+          return;
+        }
+        this.analizarCompetencia();
+      }
     });
   }
 
@@ -622,12 +638,15 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     this.ai.analizarCompetencia().subscribe({
       next: (res) => {
         this.cargandoCompetencia = false;
+        if (this.competenciaModoActivo() && this.checklistItems().length) {
+          return;
+        }
         this.competencia = res;
         this.competitionProgress.publish(res);
       },
       error: (err) => {
         this.cargandoCompetencia = false;
-        this.errorCompetencia = err?.error?.detail || 'No se pudo analizar la competencia.';
+        this.errorCompetencia = this.httpErrorDetail(err, 'No se pudo analizar la competencia.');
       }
     });
   }
@@ -643,7 +662,8 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         this.cargandoCompetencia = false;
-        this.errorCompetencia = err?.error?.detail || 'No se pudo actualizar el modo competencia.';
+        this.errorCompetencia = this.httpErrorDetail(err, 'No se pudo actualizar el modo competencia.');
+        this.cargarEstadoCompetencia(true);
       }
     });
   }
@@ -660,7 +680,7 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         this.loggingChecklistId = null;
-        this.errorCompetencia = err?.error?.detail || 'No se pudo actualizar la lista del plan.';
+        this.errorCompetencia = this.httpErrorDetail(err, 'No se pudo actualizar la lista del plan.');
       }
     });
   }
@@ -677,7 +697,7 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         this.loggingRoutineId = null;
-        this.errorCompetencia = err?.error?.detail || 'No se pudo registrar la sesión.';
+        this.errorCompetencia = this.httpErrorDetail(err, 'No se pudo registrar la sesión.');
       }
     });
   }
@@ -694,19 +714,21 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     return this.session.hasRole('ENTRENADOR', 'ADMIN');
   }
 
-  cargarEstadisticas(usuarioId?: string, nombre?: string): void {
-    this.cargandoStats = true;
-    this.errorStats = null;
-    this.statsObjetivoId = usuarioId || null;
-    this.statsNombre = nombre || null;
-    this.ai.dashboard(usuarioId).subscribe({
+  cargarEstadisticas(usuarioId?: string, nombre?: string, silent = false): void {
+    if (!silent) {
+      this.cargandoStats = true;
+      this.errorStats = null;
+    }
+    this.statsObjetivoId = usuarioId || this.statsObjetivoId;
+    this.statsNombre = nombre || this.statsNombre;
+    this.ai.dashboard(usuarioId || this.statsObjetivoId || undefined).subscribe({
       next: (res) => {
         this.cargandoStats = false;
         this.stats = res;
       },
       error: (err) => {
         this.cargandoStats = false;
-        this.errorStats = err?.error?.detail || 'No se pudieron cargar las estadísticas.';
+        this.errorStats = this.httpErrorDetail(err, 'No se pudieron cargar las estadísticas.');
       }
     });
   }
@@ -1119,7 +1141,9 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
   }
 
   competenciaModoActivo(): boolean {
-    return !!this.vistaCompetencia()['activo'] || this.competencia?.['activo'] === true;
+    return !!this.vistaCompetencia()['activo']
+      || this.competencia?.['activo'] === true
+      || !!this.competitionProgress.snapshot?.activo;
   }
 
   labelPaso(paso: ChatPasoActividad): string {
@@ -1154,6 +1178,47 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     const directo = this.competencia?.[clave];
     const lista = Array.isArray(directo) ? directo : fuente?.[clave] || base?.[clave];
     return Array.isArray(lista) ? lista.map(String) : [];
+  }
+
+  private onLiveSync(): void {
+    if (this.section === 'estadisticas' || this.stats) {
+      this.cargarEstadisticas(this.statsObjetivoId || undefined, this.statsNombre || undefined, true);
+    }
+    if (this.section === 'competencia' || this.competenciaModoActivo()) {
+      this.cargarEstadoCompetencia(true);
+    }
+  }
+
+  private httpErrorDetail(err: unknown, fallback: string): string {
+    const detail = (err as { error?: { detail?: unknown; message?: string } })?.error?.detail
+      ?? (err as { error?: { message?: string } })?.error?.message;
+    if (typeof detail === 'string' && detail.trim()) {
+      return detail;
+    }
+    if (Array.isArray(detail)) {
+      const parts = detail
+        .map((item) => {
+          if (typeof item === 'string') {
+            return item;
+          }
+          if (item && typeof item === 'object') {
+            const row = item as { msg?: string; message?: string };
+            return row.msg || row.message || '';
+          }
+          return '';
+        })
+        .filter((part) => !!part);
+      if (parts.length) {
+        return parts.join(' ');
+      }
+    }
+    if (detail && typeof detail === 'object') {
+      const row = detail as { msg?: string; message?: string };
+      if (row.msg || row.message) {
+        return String(row.msg || row.message);
+      }
+    }
+    return fallback;
   }
 
   private openPanel(): void {

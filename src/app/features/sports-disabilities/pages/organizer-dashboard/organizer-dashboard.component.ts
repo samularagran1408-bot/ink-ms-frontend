@@ -1,17 +1,19 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { forkJoin, of } from 'rxjs';
+import { forkJoin, of, Subscription } from 'rxjs';
 
 import { AttendanceReport, EventItem, Registration, Sport } from '@features/sports-disabilities/models/sports';
 import { SessionService } from '@core/services/session.service';
 import { SportsService } from '@features/sports-disabilities/services/sports.service';
 import { ReportsService } from '@features/reports/services/reports.service';
 import { ConfirmDialogService } from '@shared/services/confirm-dialog.service';
+import { LiveSyncService } from '@features/accessibility/services/live-sync.service';
 import { resolveEventImage } from '@features/sports-disabilities/utils/event-image.util';
 import { EventPlaceLocation } from '@features/sports-disabilities/utils/maps.util';
 import { eventDateTimeMs } from '@core/utils/qr-attendance.util';
 import { userInitials } from '@core/utils/avatar.util';
+import { isEventVisible } from '@features/sports-disabilities/utils/event-visibility.util';
 
 interface EnrolledPreview {
   registrationId: string;
@@ -26,7 +28,7 @@ interface EnrolledPreview {
   templateUrl: './organizer-dashboard.component.html',
   styleUrl: './organizer-dashboard.component.scss'
 })
-export class OrganizerDashboardComponent implements OnInit {
+export class OrganizerDashboardComponent implements OnInit, OnDestroy {
   loading = true;
   events: EventItem[] = [];
   sports: Sport[] = [];
@@ -44,6 +46,7 @@ export class OrganizerDashboardComponent implements OnInit {
   nextEnrolled: EnrolledPreview[] = [];
   nextReport: AttendanceReport | null = null;
   loadingNextDetails = false;
+  private liveSub: Subscription | null = null;
 
   constructor(
     private session: SessionService,
@@ -51,7 +54,8 @@ export class OrganizerDashboardComponent implements OnInit {
     private reportsService: ReportsService,
     private fb: FormBuilder,
     private router: Router,
-    private confirm: ConfirmDialogService
+    private confirm: ConfirmDialogService,
+    private liveSync: LiveSyncService
   ) {
     this.form = this.fb.group({
       sportId: [null, Validators.required],
@@ -68,6 +72,12 @@ export class OrganizerDashboardComponent implements OnInit {
 
   ngOnInit(): void {
     this.reload();
+    this.liveSync.start();
+    this.liveSub = this.liveSync.pulse$.subscribe(() => this.reload(true));
+  }
+
+  ngOnDestroy(): void {
+    this.liveSub?.unsubscribe();
   }
 
   get upcomingCount(): number {
@@ -120,8 +130,10 @@ export class OrganizerDashboardComponent implements OnInit {
     });
   }
 
-  reload(): void {
-    this.loading = true;
+  reload(silent = false): void {
+    if (!silent) {
+      this.loading = true;
+    }
     const profile$ = this.session.getProfile()
       ? of(this.session.getProfile())
       : this.session.loadProfile();
@@ -130,7 +142,7 @@ export class OrganizerDashboardComponent implements OnInit {
       this.quizPassed = !!profile?.organizerQuizPassed;
       this.reportsService.getOrganizerPanel(profile?.id).subscribe({
         next: (panel) => {
-          this.events = panel.events || [];
+          this.events = (panel.events || []).filter((event) => isEventVisible(event));
           this.activeEvents = panel.metrics?.['active_events'] ?? 0;
           this.sports = panel.sports || [];
           this.athleteCount = panel.athleteCount ?? panel.metrics?.['athletes'] ?? 0;
@@ -140,12 +152,16 @@ export class OrganizerDashboardComponent implements OnInit {
             this.form.patchValue({ sportId: this.sports[0].id });
           }
           this.nextEvent = this.resolveNextEvent(this.events);
-          this.loading = false;
-          this.loadNextEventDetails();
+          if (!silent) {
+            this.loading = false;
+          }
+          this.loadNextEventDetails(silent);
         },
         error: () => {
           this.errorMessage = 'No se pudo cargar el panel del organizador.';
-          this.loading = false;
+          if (!silent) {
+            this.loading = false;
+          }
         }
       });
     });
@@ -323,7 +339,7 @@ export class OrganizerDashboardComponent implements OnInit {
     return `En ${days} días`;
   }
 
-  private loadNextEventDetails(): void {
+  private loadNextEventDetails(silent = false): void {
     if (!this.nextEvent) {
       this.nextWaitlist = [];
       this.nextEnrolled = [];
@@ -332,7 +348,9 @@ export class OrganizerDashboardComponent implements OnInit {
       return;
     }
 
-    this.loadingNextDetails = true;
+    if (!silent) {
+      this.loadingNextDetails = true;
+    }
     const eventId = this.nextEvent.id;
     forkJoin({
       report: this.sportsService.getAttendanceReport(eventId),

@@ -17,6 +17,7 @@ import { SessionService } from '@core/services/session.service';
 import { SportsService } from '@features/sports-disabilities/services/sports.service';
 import { ReportsService } from '@features/reports/services/reports.service';
 import { PreferencesApiService } from '@features/accessibility/services/preferences-api.service';
+import { LiveSyncService } from '@features/accessibility/services/live-sync.service';
 import { ConfirmDialogService } from '@shared/services/confirm-dialog.service';
 import { AttendanceCheckInMethod, normalizeAttendanceCheckInMethod } from '@features/accessibility/models/accessibility-api';
 import { resolveEventImage } from '@features/sports-disabilities/utils/event-image.util';
@@ -24,6 +25,7 @@ import { EventPlaceLocation } from '@features/sports-disabilities/utils/maps.uti
 import { buildAttendanceCheckinUrl, extractQrCode, eventDateTimeMs } from '@core/utils/qr-attendance.util';
 import { userInitials } from '@core/utils/avatar.util';
 import { matchesQuery } from '@core/utils/search.util';
+import { isEventVisible } from '@features/sports-disabilities/utils/event-visibility.util';
 
 interface EventManageRow {
   event: EventItem;
@@ -98,8 +100,11 @@ export class EventsPageComponent implements OnInit, OnDestroy {
   };
 
   private clockTimer: ReturnType<typeof setInterval> | null = null;
+  private reportPoll: ReturnType<typeof setInterval> | null = null;
   private html5Qr: Html5Qrcode | null = null;
   private querySub: Subscription | null = null;
+  private liveSub: Subscription | null = null;
+  private reportEventId: string | null = null;
   private readonly scannerElementId = 'attendance-qr-reader';
 
   constructor(
@@ -109,6 +114,7 @@ export class EventsPageComponent implements OnInit, OnDestroy {
     private session: SessionService,
     private reportsService: ReportsService,
     private preferencesApi: PreferencesApiService,
+    private liveSync: LiveSyncService,
     private fb: FormBuilder,
     private confirm: ConfirmDialogService
   ) {
@@ -145,13 +151,24 @@ export class EventsPageComponent implements OnInit, OnDestroy {
       }
     }, 30_000);
     this.reload();
+    this.liveSync.start();
+    this.liveSub = this.liveSync.pulse$.subscribe((pulse) => {
+      this.reload(true);
+      if (this.reportOpen && this.reportEventId) {
+        if (!pulse.eventId || pulse.eventId === this.reportEventId || pulse.kind === 'reconnect') {
+          this.fetchAttendanceReport(this.reportEventId, true);
+        }
+      }
+    });
   }
 
   ngOnDestroy(): void {
     if (this.clockTimer) {
       clearInterval(this.clockTimer);
     }
+    this.stopReportPoll();
     this.querySub?.unsubscribe();
+    this.liveSub?.unsubscribe();
     void this.stopScanner();
   }
 
@@ -171,13 +188,13 @@ export class EventsPageComponent implements OnInit, OnDestroy {
   }
 
   get filteredEvents(): EventItem[] {
-    return this.filterEventList(this.events);
+    return this.filterEventList(this.visibleEvents);
   }
 
   /** Eventos en los que el atleta está inscrito o en lista de espera. */
   get myRegisteredEvents(): EventItem[] {
     const ids = new Set(this.registrations.map((reg) => reg.eventId));
-    const items = this.filterEventList(this.events.filter((event) => ids.has(event.id)));
+    const items = this.filterEventList(this.visibleEvents.filter((event) => ids.has(event.id)));
     return [...items].sort((a, b) => {
       const aMs = eventDateTimeMs(a.eventDate, a.eventTime) ?? 0;
       const bMs = eventDateTimeMs(b.eventDate, b.eventTime) ?? 0;
@@ -191,11 +208,16 @@ export class EventsPageComponent implements OnInit, OnDestroy {
   }
 
   get filteredManageRows(): EventManageRow[] {
+    const visible = this.manageRows.filter((row) => isEventVisible(row.event, this.nowMs));
     const q = this.catalogQuery;
     if (!q.trim()) {
-      return this.manageRows;
+      return visible;
     }
-    return this.manageRows.filter((row) => this.eventMatchesQuery(row.event, q));
+    return visible.filter((row) => this.eventMatchesQuery(row.event, q));
+  }
+
+  private get visibleEvents(): EventItem[] {
+    return this.events.filter((event) => isEventVisible(event, this.nowMs));
   }
 
   private filterEventList(events: EventItem[]): EventItem[] {
@@ -224,9 +246,11 @@ export class EventsPageComponent implements OnInit, OnDestroy {
     this.lookupEventId = '';
   }
 
-  reload(): void {
-    this.loading = true;
-    this.errorMessage = null;
+  reload(silent = false): void {
+    if (!silent) {
+      this.loading = true;
+      this.errorMessage = null;
+    }
 
     const profile$ = this.session.getProfile()
       ? of(this.session.getProfile())
@@ -254,7 +278,7 @@ export class EventsPageComponent implements OnInit, OnDestroy {
             void this.refreshPassQrImages();
           }
         }
-        this.applyEventsToCalendar(events);
+        this.applyEventsToCalendar(this.visibleEvents);
         if (this.canManage && this.mode === 'manage') {
           this.applyWaitlists(events, panel.waitlists || {});
         } else {
@@ -443,6 +467,12 @@ export class EventsPageComponent implements OnInit, OnDestroy {
             return;
           }
           this.lookupEvent = events[0];
+          if (!isEventVisible(this.lookupEvent)) {
+            this.lookupEvent = null;
+            this.successMessage = null;
+            this.errorMessage = `Evento no encontrado: ${id}`;
+            return;
+          }
           this.catalogQuery = id;
           this.errorMessage = null;
           this.successMessage = `Evento encontrado: ${events[0].name}.`;
@@ -458,6 +488,12 @@ export class EventsPageComponent implements OnInit, OnDestroy {
 
     this.sportsService.getEvent(id).subscribe({
       next: (event) => {
+        if (!isEventVisible(event)) {
+          this.lookupEvent = null;
+          this.successMessage = null;
+          this.errorMessage = `Evento no encontrado: ${id}`;
+          return;
+        }
         this.lookupEvent = event;
         this.errorMessage = null;
         this.successMessage = `Evento encontrado: ${event.name}.`;
@@ -603,7 +639,12 @@ export class EventsPageComponent implements OnInit, OnDestroy {
   }
 
   get historyRegistrations(): Registration[] {
-    return [...this.registrations].sort((a, b) => {
+    return [...this.registrations]
+      .filter((reg) => {
+        const event = this.events.find((item) => item.id === reg.eventId);
+        return !event || isEventVisible(event, this.nowMs);
+      })
+      .sort((a, b) => {
       const aKey = `${a.eventDate || a.registrationDate || ''}T${a.eventTime || '00:00:00'}`;
       const bKey = `${b.eventDate || b.registrationDate || ''}T${b.eventTime || '00:00:00'}`;
       return bKey.localeCompare(aKey);
@@ -1059,26 +1100,20 @@ export class EventsPageComponent implements OnInit, OnDestroy {
 
   openAttendanceReport(event: EventItem): void {
     this.reportOpen = true;
+    this.reportEventId = event.id;
     this.attendanceReport = null;
     this.reportError = null;
     this.reportLoading = true;
-
-    this.sportsService.getAttendanceReport(event.id).subscribe({
-      next: (report) => {
-        this.attendanceReport = report;
-        this.reportLoading = false;
-      },
-      error: (error) => {
-        this.reportLoading = false;
-        this.reportError = error?.error?.message || 'No se pudo cargar el reporte de asistencia.';
-      }
-    });
+    this.fetchAttendanceReport(event.id, false);
+    this.startReportPoll();
   }
 
   closeAttendanceReport(): void {
     this.reportOpen = false;
+    this.reportEventId = null;
     this.attendanceReport = null;
     this.reportError = null;
+    this.stopReportPoll();
   }
 
   printAttendanceReport(): void {
@@ -1152,6 +1187,10 @@ export class EventsPageComponent implements OnInit, OnDestroy {
         this.checkInMessage = response?.message || 'Asistencia registrada.';
         this.manualQrCode = '';
         void this.stopScanner();
+        this.reload(true);
+        if (this.reportOpen && this.reportEventId) {
+          this.fetchAttendanceReport(this.reportEventId, true);
+        }
       },
       error: (error) => {
         this.checkInBusy = false;
@@ -1238,15 +1277,54 @@ export class EventsPageComponent implements OnInit, OnDestroy {
     this.calendarLoaded = true;
   }
 
+  private fetchAttendanceReport(eventId: string, silent: boolean): void {
+    if (!silent) {
+      this.reportLoading = true;
+      this.reportError = null;
+    }
+    this.sportsService.getAttendanceReport(eventId).subscribe({
+      next: (report) => {
+        this.attendanceReport = report;
+        this.reportLoading = false;
+      },
+      error: (error) => {
+        if (!silent) {
+          this.reportLoading = false;
+          this.reportError = error?.error?.message || 'No se pudo cargar el reporte de asistencia.';
+        }
+      }
+    });
+  }
+
+  private startReportPoll(): void {
+    this.stopReportPoll();
+    this.reportPoll = setInterval(() => {
+      if (this.reportOpen && this.reportEventId) {
+        this.fetchAttendanceReport(this.reportEventId, true);
+      }
+    }, 8000);
+  }
+
+  private stopReportPoll(): void {
+    if (this.reportPoll) {
+      clearInterval(this.reportPoll);
+      this.reportPoll = null;
+    }
+  }
+
   private applyWaitlists(events: EventItem[], waitlists: Record<string, Registration[]>): void {
-    this.manageRows = events.map((event) => ({
-      event,
-      waitlist: waitlists[event.id] || [],
-      showWaitlist: false,
-      editing: false,
-      editForm: this.buildEditForm(event),
-      saving: false
-    }));
+    const prev = new Map(this.manageRows.map((row) => [row.event.id, row]));
+    this.manageRows = events.map((event) => {
+      const existing = prev.get(event.id);
+      return {
+        event,
+        waitlist: waitlists[event.id] || [],
+        showWaitlist: existing?.showWaitlist || false,
+        editing: existing?.editing || false,
+        editForm: existing?.editing ? existing.editForm : this.buildEditForm(event),
+        saving: existing?.saving || false
+      };
+    });
     this.loading = false;
   }
 }

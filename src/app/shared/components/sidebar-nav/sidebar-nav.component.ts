@@ -7,6 +7,7 @@ import { filter } from 'rxjs/operators';
 import { AppRole } from '@core/models/app-role';
 import { SessionService } from '@core/services/session.service';
 import { UnreadNotificationsService } from '@features/accessibility/services/unread-notifications.service';
+import { LiveSyncService } from '@features/accessibility/services/live-sync.service';
 import { ConfirmDialogService } from '@shared/services/confirm-dialog.service';
 import { HeroIconName } from '../../icons/heroicons-outline';
 
@@ -49,6 +50,7 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
     private session: SessionService,
     private translate: TranslateService,
     private unreadNotifications: UnreadNotificationsService,
+    private liveSync: LiveSyncService,
     private confirm: ConfirmDialogService
   ) {}
 
@@ -64,6 +66,7 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
     this.updateViewport();
     this.refreshFromSession();
     this.unreadNotifications.start();
+    this.liveSync.start();
     this.subs.add(this.session.profile$.subscribe(() => this.refreshFromSession()));
     this.subs.add(this.session.roles$.subscribe(() => this.refreshFromSession()));
     this.subs.add(this.translate.onLangChange.subscribe(() => this.refreshFromSession()));
@@ -216,8 +219,7 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
           { labelKey: 'NAV.ASSOCIATIONS', route: '/admin/associations', icon: 'link' },
           { labelKey: 'NAV.ROLES', route: '/admin/roles', icon: 'shield-check' },
           { labelKey: 'NAV.AUDIT_LOGS', route: '/admin/audit', icon: 'clipboard-document-list' },
-          { labelKey: 'NAV.SUBSCRIPTIONS', route: '/admin/subscriptions', icon: 'chart-bar' },
-          { labelKey: 'NAV.CREW', route: '/admin/crew', icon: 'sparkles' }
+          { labelKey: 'NAV.SUBSCRIPTIONS', route: '/admin/subscriptions', icon: 'chart-bar' }
         ];
         this.secondaryItems = this.commonAccountItems('/admin');
         break;
@@ -228,8 +230,7 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
           { labelKey: 'NAV.SESSIONS', route: '/trainer/sessions', icon: 'academic-cap' },
           { labelKey: 'NAV.SPORTS', route: '/trainer/sports', icon: 'trophy' },
           { labelKey: 'NAV.DISABILITIES', route: '/trainer/disabilities', icon: 'heart' },
-          { labelKey: 'NAV.ASSOCIATIONS', route: '/trainer/associations', icon: 'link' },
-          { labelKey: 'NAV.CREW', route: '/trainer/crew', icon: 'sparkles' }
+          { labelKey: 'NAV.ASSOCIATIONS', route: '/trainer/associations', icon: 'link' }
         ];
         this.secondaryItems = this.commonAccountItems('/trainer');
         break;
@@ -238,8 +239,7 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
           { labelKey: 'NAV.EVENTS', route: '/organizer', exact: true, icon: 'calendar-days' },
           { labelKey: 'NAV.QUIZ', route: '/organizer/quiz', icon: 'academic-cap' },
           { labelKey: 'NAV.MANAGE_EVENTS', route: '/organizer/events', icon: 'cog-6-tooth' },
-          { labelKey: 'NAV.ATHLETES_WAITLIST', route: '/organizer/athletes', icon: 'user-group' },
-          { labelKey: 'NAV.CREW', route: '/organizer/crew', icon: 'sparkles' }
+          { labelKey: 'NAV.ATHLETES_WAITLIST', route: '/organizer/athletes', icon: 'user-group' }
         ];
         this.secondaryItems = this.commonAccountItems('/organizer');
         break;
@@ -247,7 +247,6 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
         this.navItems = [
           { labelKey: 'NAV.HOME', route: '/home', exact: true, icon: 'home' },
           { labelKey: 'NAV.EVENTS', route: '/home/events', icon: 'calendar-days' },
-          { labelKey: 'NAV.CREW', route: '/home/crew', icon: 'sparkles' },
           { labelKey: 'NAV.HISTORY', route: '/home/events', queryParams: { vista: 'historial' }, icon: 'clipboard-document-list' },
           ...this.commonAccountItems('/home')
         ];

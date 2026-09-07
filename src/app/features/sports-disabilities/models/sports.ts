@@ -33,6 +33,7 @@ export interface EventItem {
   status?: string;
   createdBy?: string;
   createdAt?: string;
+  cancelledAt?: string;
 }
 
 export interface EventRequest {
