@@ -10,10 +10,10 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { catchError, map, switchMap } from 'rxjs/operators';
 
-import { API_BASE_URL } from '../../../core/config/api.config';
-import { UsersService } from '../../../core/services/users.service';
-import { SessionService } from '../../../core/services/session.service';
-import { UpdateProfileRequest } from '../../../core/models/user-profile';
+import { API_BASE_URL } from '@core/config/api.config';
+import { UsersService } from '@features/users/services/users.service';
+import { SessionService } from '@core/services/session.service';
+import { UpdateProfileRequest } from '@core/models/user-profile';
 
 @Injectable({
   providedIn: 'root'

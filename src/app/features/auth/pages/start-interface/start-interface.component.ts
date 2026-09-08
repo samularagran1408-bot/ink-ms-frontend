@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { Location } from '@angular/common';
 import { Router } from '@angular/router';
 
-import { AccessibilityService } from '../../../../core/services/accessibility.service';
+import { AccessibilityService } from '@features/accessibility/services/accessibility.service';
 
 @Component({
   selector: 'app-start-interface',

@@ -3,11 +3,11 @@ import { NavigationEnd, Router } from '@angular/router';
 import { Observable, Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
 
-import { LanguageService } from './core/services/language.service';
-import { AccessibilityService } from './core/services/accessibility.service';
-import { NotificationAnnounceService } from './core/services/notification-announce.service';
-import { SessionService } from './core/services/session.service';
-import { UnreadNotificationsService } from './core/services/unread-notifications.service';
+import { LanguageService } from '@features/accessibility/services/language.service';
+import { AccessibilityService } from '@features/accessibility/services/accessibility.service';
+import { LiveNotificationAlert, NotificationAnnounceService } from '@features/accessibility/services/notification-announce.service';
+import { SessionService } from '@core/services/session.service';
+import { UnreadNotificationsService } from '@features/accessibility/services/unread-notifications.service';
 
 @Component({
   selector: 'app-root',
@@ -16,7 +16,7 @@ import { UnreadNotificationsService } from './core/services/unread-notifications
 })
 export class AppComponent implements OnInit, OnDestroy {
   title = 'Fronted-Inklusport';
-  visualAlert$: Observable<string | null>;
+  visualAlert$: Observable<LiveNotificationAlert | null>;
 
   private routerSub: Subscription | null = null;
   private panelBooted = false;
@@ -45,6 +45,11 @@ export class AppComponent implements OnInit, OnDestroy {
     this.routerSub?.unsubscribe();
   }
 
+  openLiveNotification(): void {
+    const home = this.session.homeForCurrentUser();
+    void this.router.navigate([`${home}/notifications`]);
+  }
+
   /** Preferencias y badge: una sola vez al entrar al panel, no en cada navegación. */
   private bootPanelServices(): void {
     if (!this.session.isAuthenticated() || this.session.isPublicRoute()) {
@@ -56,8 +61,8 @@ export class AppComponent implements OnInit, OnDestroy {
     }
     this.panelBooted = true;
     this.accessibility.syncFromServer().subscribe(() => {
-      this.notificationAnnounce.start();
       this.unreadNotifications.start();
+      this.notificationAnnounce.start();
     });
   }
 }

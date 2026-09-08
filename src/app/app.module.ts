@@ -7,7 +7,7 @@ import { TranslateHttpLoader } from '@ngx-translate/http-loader';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
-import { AuthInterceptor } from './core/interceptors/auth.interceptor';
+import { AuthInterceptor } from '@core/interceptors/auth.interceptor';
 import { SharedModule } from './shared/shared.module';
 
 export function httpLoaderFactory(http: HttpClient): TranslateHttpLoader {

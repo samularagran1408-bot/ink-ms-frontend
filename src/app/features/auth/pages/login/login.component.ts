@@ -2,12 +2,12 @@ import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Location } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { isSafeReturnUrl } from '../../../../core/utils/qr-attendance.util';
+import { isSafeReturnUrl } from '@core/utils/qr-attendance.util';
 
 import { AuthService } from '../../services/auth.service';
 import { LoginRequest } from '../../models/login-request';
-import { AccessibilityService } from '../../../../core/services/accessibility.service';
-import { SessionService } from '../../../../core/services/session.service';
+import { AccessibilityService } from '@features/accessibility/services/accessibility.service';
+import { SessionService } from '@core/services/session.service';
 import { TranslateService } from '@ngx-translate/core';
 
 @Component({

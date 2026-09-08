@@ -119,6 +119,21 @@
   box-shadow: 0 0 0 2px #fff;
 }
 
+.nav-bell-btn--dark {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+
+.nav-bell-btn--dark:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
+.nav-bell-btn--dark .nav-bell-badge {
+  box-shadow: 0 0 0 2px #121a2b;
+}
+
 .user-avatar-btn {
   width: 40px;
   height: 40px;
@@ -311,7 +326,15 @@
   margin-bottom: 22px;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 10px;
+}
+
+.role-sidebar-brand-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
 }
 
 .role-profile-card {
@@ -390,6 +413,21 @@
   align-items: center;
   justify-content: center;
   line-height: 1;
+}
+
+.nav-badge--pulse,
+.nav-bell-badge--pulse {
+  animation: navBadgePulse 0.7s ease 0s 3;
+}
+
+@keyframes navBadgePulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.25);
+  }
 }
 
 .sidebar-nav-item--active .nav-badge,

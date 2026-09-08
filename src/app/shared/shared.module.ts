@@ -6,6 +6,7 @@ import { TranslateModule } from '@ngx-translate/core';
 
 import { SpaceBackgroundComponent } from './components/space-background/space-background.component';
 import { SidebarNavComponent } from './components/sidebar-nav/sidebar-nav.component';
+import { PanelShellComponent } from './components/panel-shell/panel-shell.component';
 import { IconComponent } from './components/icon/icon.component';
 import { PlaceLocationPickerComponent } from './components/place-location-picker/place-location-picker.component';
 import { EventLocationMapComponent } from './components/event-location-map/event-location-map.component';
@@ -18,6 +19,7 @@ import { DisabilityLabelPipe, RolesLabelPipe } from './pipes/catalog-label.pipe'
   declarations: [
     SpaceBackgroundComponent,
     SidebarNavComponent,
+    PanelShellComponent,
     IconComponent,
     PlaceLocationPickerComponent,
     EventLocationMapComponent,
@@ -36,6 +38,7 @@ import { DisabilityLabelPipe, RolesLabelPipe } from './pipes/catalog-label.pipe'
   exports: [
     SpaceBackgroundComponent,
     SidebarNavComponent,
+    PanelShellComponent,
     IconComponent,
     PlaceLocationPickerComponent,
     EventLocationMapComponent,

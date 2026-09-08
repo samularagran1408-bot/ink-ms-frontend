@@ -12,7 +12,7 @@ import {
 } from '@angular/core';
 import { BodyChart, BodyState, ViewSide } from 'body-muscles';
 
-import { BodyMapData } from '../../../core/models/body-map';
+import { BodyMapData } from '@features/assistant/models/body-map';
 import { bodyStateDesdeMapa } from './body-map-zones';
 
 @Component({

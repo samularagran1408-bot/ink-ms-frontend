@@ -22,7 +22,7 @@
         [attr.aria-label]="'NAV.NOTIFICATIONS' | translate"
       >
         <app-icon name="bell" [size]="18"></app-icon>
-        <span *ngIf="unreadCount > 0" class="nav-bell-badge">{{ unreadCount }}</span>
+        <span *ngIf="unreadCount > 0" class="nav-bell-badge" [class.nav-bell-badge--pulse]="badgePulse">{{ unreadCount }}</span>
       </a>
       <button
         class="user-avatar-btn"
@@ -72,7 +72,7 @@
           <app-icon [name]="item.icon" [size]="20"></app-icon>
           <span>{{ item.labelKey | translate }}</span>
         </span>
-        <span *ngIf="item.showBadge && unreadCount > 0" class="nav-badge">{{ unreadCount }}</span>
+        <span *ngIf="item.showBadge && unreadCount > 0" class="nav-badge" [class.nav-badge--pulse]="badgePulse">{{ unreadCount }}</span>
       </a>
 
       <ng-container *ngIf="secondaryItems.length">
@@ -89,7 +89,7 @@
             <app-icon [name]="item.icon" [size]="20"></app-icon>
             <span>{{ item.labelKey | translate }}</span>
           </span>
-          <span *ngIf="item.showBadge && unreadCount > 0" class="nav-badge">{{ unreadCount }}</span>
+          <span *ngIf="item.showBadge && unreadCount > 0" class="nav-badge" [class.nav-badge--pulse]="badgePulse">{{ unreadCount }}</span>
         </a>
       </ng-container>
     </nav>
@@ -109,8 +109,19 @@
 <!-- Layout admin / entrenador / organizador: sidebar fijo (desktop) -->
 <aside *ngIf="layout === 'fixed'" class="role-sidebar">
   <div class="role-sidebar-brand">
-    <span class="brand-mark" aria-hidden="true">I</span>
-    <span>{{ brandTitle }}</span>
+    <span class="role-sidebar-brand-label">
+      <span class="brand-mark" aria-hidden="true">I</span>
+      <span>{{ brandTitle }}</span>
+    </span>
+    <a
+      class="nav-bell-btn nav-bell-btn--dark"
+      [routerLink]="notificationsRoute"
+      [attr.title]="'NAV.NOTIFICATIONS' | translate"
+      [attr.aria-label]="'NAV.NOTIFICATIONS' | translate"
+    >
+      <app-icon name="bell" [size]="18"></app-icon>
+      <span *ngIf="unreadCount > 0" class="nav-bell-badge" [class.nav-bell-badge--pulse]="badgePulse">{{ unreadCount }}</span>
+    </a>
   </div>
 
   <div class="role-profile-card">
@@ -136,7 +147,7 @@
         <app-icon [name]="item.icon" [size]="20"></app-icon>
         <span>{{ item.labelKey | translate }}</span>
       </span>
-      <span *ngIf="item.showBadge && unreadCount > 0" class="nav-badge">{{ unreadCount }}</span>
+      <span *ngIf="item.showBadge && unreadCount > 0" class="nav-badge" [class.nav-badge--pulse]="badgePulse">{{ unreadCount }}</span>
     </a>
 
     <ng-container *ngIf="secondaryItems.length">
@@ -152,7 +163,7 @@
           <app-icon [name]="item.icon" [size]="20"></app-icon>
           <span>{{ item.labelKey | translate }}</span>
         </span>
-        <span *ngIf="item.showBadge && unreadCount > 0" class="nav-badge">{{ unreadCount }}</span>
+        <span *ngIf="item.showBadge && unreadCount > 0" class="nav-badge" [class.nav-badge--pulse]="badgePulse">{{ unreadCount }}</span>
       </a>
     </ng-container>
   </nav>
