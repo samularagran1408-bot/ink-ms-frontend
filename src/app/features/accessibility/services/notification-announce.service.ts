@@ -8,7 +8,6 @@ import { PreferencesApiService } from './preferences-api.service';
 import { SessionService } from '@core/services/session.service';
 import { TtsService } from './tts.service';
 import { UnreadNotificationsService } from './unread-notifications.service';
-import { NotificationRealtimeService } from './notification-realtime.service';
 
 export interface LiveNotificationAlert {
   count: number;
@@ -21,7 +20,6 @@ export interface LiveNotificationAlert {
 })
 export class NotificationAnnounceService implements OnDestroy {
   private countSub: Subscription | null = null;
-  private incomingSub: Subscription | null = null;
   private unlockListener: (() => void) | null = null;
   private started = false;
   private lastSeenCount = -1;
@@ -36,7 +34,6 @@ export class NotificationAnnounceService implements OnDestroy {
     private session: SessionService,
     private tts: TtsService,
     private unreadNotifications: UnreadNotificationsService,
-    private realtime: NotificationRealtimeService,
     private translate: TranslateService
   ) {}
 
@@ -54,14 +51,11 @@ export class NotificationAnnounceService implements OnDestroy {
       this.refreshPreferences().subscribe();
     }
     this.bindUnreadAnnouncements();
-    this.bindIncomingAlerts();
   }
 
   stop(): void {
     this.countSub?.unsubscribe();
-    this.incomingSub?.unsubscribe();
     this.countSub = null;
-    this.incomingSub = null;
     this.started = false;
     this.lastSeenCount = -1;
     this.shownIds.clear();
@@ -103,13 +97,6 @@ export class NotificationAnnounceService implements OnDestroy {
     });
   }
 
-  private bindIncomingAlerts(): void {
-    this.incomingSub?.unsubscribe();
-    this.incomingSub = this.realtime.incoming$.subscribe((note) => {
-      this.announceIncoming(note);
-    });
-  }
-
   private bindUnreadAnnouncements(): void {
     this.countSub?.unsubscribe();
     this.countSub = this.unreadNotifications.count$.subscribe((count) => {
@@ -120,19 +107,6 @@ export class NotificationAnnounceService implements OnDestroy {
       }
       this.announceFreshUnread();
     });
-  }
-
-  private announceIncoming(note: AppNotification): void {
-    if (!this.session.isAuthenticated() || !note || note.read) {
-      return;
-    }
-    if (note.id && this.shownIds.has(note.id)) {
-      return;
-    }
-    if (note.id) {
-      this.shownIds.add(note.id);
-    }
-    this.presentIncoming(note);
   }
 
   private announceFreshUnread(): void {

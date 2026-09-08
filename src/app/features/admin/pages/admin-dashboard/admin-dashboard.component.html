@@ -91,7 +91,7 @@
             <td>
               <span class="user-cell">
                 <img *ngIf="user.profilePicture" class="table-avatar" [src]="user.profilePicture" alt="" />
-                {{ user.fullName || ('COMMON.NONE' | translate) }}
+                {{ user.fullName || user.email || ('COMMON.NONE' | translate) }}
               </span>
             </td>
             <td>{{ user.email }}</td>

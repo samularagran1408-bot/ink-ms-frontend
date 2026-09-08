@@ -137,6 +137,7 @@ export interface AttendanceReportAttendee {
   checkInTime?: string;
   checkInMethod?: string;
   verifiedBy?: string;
+  notes?: string;
 }
 
 export interface AttendanceReportAbsent {

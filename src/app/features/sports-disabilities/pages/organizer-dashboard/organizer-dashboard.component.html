@@ -120,9 +120,9 @@
         <div class="enrolled-row" *ngFor="let person of nextEnrolled">
           <span class="user-cell">
             <img *ngIf="person.profilePicture" class="table-avatar" [src]="person.profilePicture" alt="" />
-            <span *ngIf="!person.profilePicture" class="avatar-fallback">{{ initials(person.fullName) }}</span>
+            <span *ngIf="!person.profilePicture" class="avatar-fallback">{{ initials(person.fullName || person.email) }}</span>
             <span>
-              <strong>{{ person.fullName || ('ROLES.USER_FALLBACK' | translate) }}</strong>
+              <strong>{{ person.fullName || person.email || ('ROLES.USER_FALLBACK' | translate) }}</strong>
               <div class="kpi-sub">{{ person.email || ('COMMON.NONE' | translate) }}</div>
             </span>
           </span>
@@ -140,7 +140,7 @@
             <img *ngIf="item.userProfilePicture" class="table-avatar" [src]="item.userProfilePicture" alt="" />
             <span *ngIf="!item.userProfilePicture" class="avatar-fallback">{{ initials(item.userFullName || item.userEmail) }}</span>
             <span>
-              <strong>{{ item.userFullName || item.userEmail || ('User ' + item.userId) }}</strong>
+              <strong>{{ item.userFullName || item.userEmail || ('ROLES.USER_FALLBACK' | translate) }}</strong>
               <div class="kpi-sub">{{ 'ATHLETES.POSITION' | translate:{ position: (item.waitlistPosition ?? '—') } }}</div>
             </span>
           </span>

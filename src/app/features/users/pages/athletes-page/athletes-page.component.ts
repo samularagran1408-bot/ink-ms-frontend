@@ -19,6 +19,7 @@ interface EnrolledUserRow {
   profilePicture?: string;
   attended: boolean;
   checkInTime?: string;
+  notes?: string;
 }
 
 interface EventAthleteSummary {
@@ -101,7 +102,7 @@ export class AthletesPageComponent implements OnInit, OnDestroy {
     } else if (summary.filter === 'absent') {
       rows = rows.filter((row) => !row.attended);
     }
-    return rows.filter((row) => matchesQuery(this.searchQuery, row.fullName, row.email, row.userId));
+    return rows.filter((row) => matchesQuery(this.searchQuery, row.fullName, row.email, row.notes));
   }
 
   visibleSummaries(): EventAthleteSummary[] {
@@ -113,7 +114,7 @@ export class AthletesPageComponent implements OnInit, OnDestroy {
       matchesQuery(q, summary.event.name, summary.event.sportName)
       || this.filteredEnrolled(summary).length > 0
       || summary.waitlist.some((item) =>
-        matchesQuery(q, item.userFullName, item.userEmail, item.userId)
+        matchesQuery(q, item.userFullName, item.userEmail)
       )
     );
   }
@@ -149,7 +150,8 @@ export class AthletesPageComponent implements OnInit, OnDestroy {
         email: item.email,
         profilePicture: item.profilePicture,
         attended: true,
-        checkInTime: item.checkInTime
+        checkInTime: item.checkInTime,
+        notes: item.notes
       })),
       ...(report?.absentees || []).map((item) => ({
         registrationId: item.registrationId,

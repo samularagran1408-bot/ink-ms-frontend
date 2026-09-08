@@ -82,6 +82,7 @@ export class EventsPageComponent implements OnInit, OnDestroy {
   checkInBusy = false;
   checkInMessage: string | null = null;
   checkInError: string | null = null;
+  checkInNotes = '';
   scannerRunning = false;
   scannerError: string | null = null;
 
@@ -1014,6 +1015,7 @@ export class EventsPageComponent implements OnInit, OnDestroy {
     this.checkInEvent = event;
     this.checkInOpen = true;
     this.manualQrCode = '';
+    this.checkInNotes = '';
     this.checkInMessage = null;
     this.checkInError = null;
     this.scannerError = null;
@@ -1026,6 +1028,7 @@ export class EventsPageComponent implements OnInit, OnDestroy {
     this.checkInMessage = null;
     this.checkInError = null;
     this.scannerError = null;
+    this.checkInNotes = '';
     void this.stopScanner();
   }
 
@@ -1126,23 +1129,21 @@ export class EventsPageComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const header = ['Evento', 'Estado', 'Nombre', 'Email', 'UserId', 'CheckIn', 'Metodo', 'VerificadoPor'];
+    const header = ['Evento', 'Estado', 'Nombre', 'Email', 'CheckIn', 'Metodo', 'Comentario'];
     const attendedRows = (report.attendees || []).map((row) => [
       report.eventName || report.eventId,
       'ASISTIO',
       row.fullName || '',
       row.email || '',
-      row.userId || '',
       row.checkInTime || '',
       row.checkInMethod || '',
-      row.verifiedBy || ''
+      row.notes || ''
     ]);
     const absentRows = (report.absentees || []).map((row) => [
       report.eventName || report.eventId,
       'AUSENTE',
       row.fullName || '',
       row.email || '',
-      row.userId || '',
       '',
       '',
       ''
@@ -1181,11 +1182,12 @@ export class EventsPageComponent implements OnInit, OnDestroy {
     this.checkInMessage = null;
 
     const verifiedBy = this.session.getProfile()?.id || this.session.getDisplayName();
-    this.sportsService.markAttendanceByQr(qrCode, verifiedBy).subscribe({
+    this.sportsService.markAttendanceByQr(qrCode, verifiedBy, this.checkInNotes).subscribe({
       next: (response) => {
         this.checkInBusy = false;
         this.checkInMessage = response?.message || 'Asistencia registrada.';
         this.manualQrCode = '';
+        this.checkInNotes = '';
         void this.stopScanner();
         this.reload(true);
         if (this.reportOpen && this.reportEventId) {

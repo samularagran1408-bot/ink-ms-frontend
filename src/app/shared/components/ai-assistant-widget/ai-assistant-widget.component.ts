@@ -23,11 +23,6 @@ import { HeroIconName } from '../../icons/heroicons-outline';
 const STORAGE_KEY = 'inklusport.chat.conversacion_id';
 const PUBLIC_PATHS = new Set(['/', '', '/login', '/register', '/guest', '/forgot-password']);
 
-interface ChatHiloGrupo {
-  labelKey: string;
-  hilos: ChatHilo[];
-}
-
 @Component({
   selector: 'app-ai-assistant-widget',
   templateUrl: './ai-assistant-widget.component.html',
@@ -60,6 +55,7 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
   errorChat: string | null = null;
   conversacionId: string | null = null;
   hilos: ChatHilo[] = [];
+  hilosVisibles: ChatHilo[] = [];
   historialAbierto = false;
   busquedaHistorial = '';
   cargandoHilos = false;
@@ -178,23 +174,15 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
 
   @HostListener('document:keydown.escape')
   onEscape(): void {
+    if (this.confirm.state$.value) {
+      return;
+    }
     if (this.historialAbierto) {
       this.cerrarHistorial();
       return;
     }
     if (this.open) {
       this.closePanel();
-    }
-  }
-
-  @HostListener('document:click', ['$event'])
-  onDocumentClick(event: MouseEvent): void {
-    if (!this.historialAbierto) {
-      return;
-    }
-    const wrap = this.historyWrap?.nativeElement;
-    if (wrap && !wrap.contains(event.target as Node)) {
-      this.cerrarHistorial();
     }
   }
 
@@ -263,14 +251,19 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     this.pasosAgente = [];
     this.chat.nueva().subscribe({
       next: (res) => {
-        this.conversacionId = res.conversacion_id;
-        sessionStorage.setItem(STORAGE_KEY, res.conversacion_id);
+        const cid = res.conversacion_id || (res as { session_id?: string }).session_id;
+        if (!cid) {
+          return;
+        }
+        this.conversacionId = cid;
+        sessionStorage.setItem(STORAGE_KEY, cid);
         this.cargarHilos();
       }
     });
   }
 
   toggleHistorial(event?: Event): void {
+    event?.preventDefault();
     event?.stopPropagation();
     this.historialAbierto = !this.historialAbierto;
     if (this.historialAbierto) {
@@ -282,59 +275,52 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
   cerrarHistorial(): void {
     this.historialAbierto = false;
     this.busquedaHistorial = '';
+    this.filtrarHistorial();
   }
 
-  hilosAgrupados(): ChatHiloGrupo[] {
+  filtrarHistorial(): void {
     const q = this.busquedaHistorial.trim().toLowerCase();
-    const filtrados = q
-      ? this.hilos.filter((h) => (h.titulo || '').toLowerCase().includes(q))
-      : this.hilos;
-    if (!filtrados.length) {
-      return [];
-    }
-    const inicioHoy = new Date();
-    inicioHoy.setHours(0, 0, 0, 0);
-    const inicioAyer = new Date(inicioHoy);
-    inicioAyer.setDate(inicioAyer.getDate() - 1);
-    const inicioSemana = new Date(inicioHoy);
-    inicioSemana.setDate(inicioSemana.getDate() - 7);
-    const grupos: Record<string, ChatHilo[]> = {
-      'CHAT.TODAY': [],
-      'CHAT.YESTERDAY': [],
-      'CHAT.LAST_7_DAYS': [],
-      'CHAT.OLDER': []
-    };
-    for (const hilo of filtrados) {
-      const fecha = this.fechaDeHilo(hilo);
-      if (!fecha || fecha >= inicioHoy) {
-        grupos['CHAT.TODAY'].push(hilo);
-      } else if (fecha >= inicioAyer) {
-        grupos['CHAT.YESTERDAY'].push(hilo);
-      } else if (fecha >= inicioSemana) {
-        grupos['CHAT.LAST_7_DAYS'].push(hilo);
-      } else {
-        grupos['CHAT.OLDER'].push(hilo);
-      }
-    }
-    return Object.entries(grupos)
-      .filter(([, hilos]) => hilos.length)
-      .map(([labelKey, hilos]) => ({ labelKey, hilos }));
+    this.hilosVisibles = q
+      ? this.hilos.filter((h) => (this.tituloDeHilo(h) || '').toLowerCase().includes(q))
+      : [...this.hilos];
   }
 
-  abrirHilo(hilo: ChatHilo): void {
-    if (!hilo?.conversacion_id) {
+  textoHistorial(): string {
+    const n = this.hilosVisibles.length;
+    if (n > 0) {
+      return n === 1 ? '1 conversación' : `${n} conversaciones`;
+    }
+    if (this.hilos.length) {
+      return this.translate.instant('CHAT.NO_RESULTS');
+    }
+    return 'Aún no hay conversaciones guardadas.';
+  }
+
+  trackByHilo(_index: number, hilo: ChatHilo): string {
+    return this.idDeHilo(hilo) || String(_index);
+  }
+
+  abrirHilo(event: Event, hilo: ChatHilo): void {
+    event.preventDefault();
+    event.stopPropagation();
+    const cid = this.idDeHilo(hilo);
+    if (!cid) {
+      this.errorHistorial = this.translate.instant('CHAT.LOAD_ERROR');
       return;
     }
     this.chatSub?.unsubscribe();
     this.enviando = false;
     this.detenerCicloLocal();
     this.pasosAgente = [];
-    this.cargarHilo(hilo.conversacion_id);
+    this.cargarHilo(cid);
   }
 
   async borrarHilo(event: Event, hilo: ChatHilo): Promise<void> {
+    event.preventDefault();
     event.stopPropagation();
-    if (!hilo?.conversacion_id) {
+    const cid = this.idDeHilo(hilo);
+    if (!cid) {
+      this.errorHistorial = this.translate.instant('CHAT.LOAD_ERROR');
       return;
     }
     const ok = await this.confirm.ask({
@@ -347,9 +333,9 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     if (!ok) {
       return;
     }
-    this.chat.borrarHilo(hilo.conversacion_id).subscribe({
+    this.chat.borrarHilo(cid).subscribe({
       next: () => {
-        if (this.conversacionId === hilo.conversacion_id) {
+        if (this.conversacionId === cid) {
           this.mensajes = [];
           this.conversacionId = null;
           sessionStorage.removeItem(STORAGE_KEY);
@@ -362,18 +348,35 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     });
   }
 
-  private fechaDeHilo(hilo: ChatHilo): Date | null {
-    const raw = hilo.ultima_interaccion || hilo.creada_en;
-    if (!raw) {
-      return null;
+  idDeHilo(hilo: ChatHilo | Record<string, unknown> | null | undefined): string {
+    if (!hilo) {
+      return '';
     }
-    const fecha = new Date(raw);
-    return Number.isNaN(fecha.getTime()) ? null : fecha;
+    const row = hilo as Record<string, unknown>;
+    const raw = row['conversacion_id'] ?? row['session_id'] ?? row['conversacionId'] ?? row['sessionId'];
+    return raw == null ? '' : String(raw).trim();
+  }
+
+  private normalizarHilo(hilo: ChatHilo): ChatHilo {
+    const id = this.idDeHilo(hilo);
+    return {
+      ...hilo,
+      conversacion_id: id || hilo.conversacion_id,
+      session_id: hilo.session_id || id
+    };
   }
 
   tituloHiloActual(): string {
-    const actual = this.hilos.find((h) => h.conversacion_id === this.conversacionId);
-    return actual?.titulo || this.translate.instant('CHAT.NEW');
+    const actual = this.hilos.find((h) => this.idDeHilo(h) === this.conversacionId);
+    return this.tituloDeHilo(actual) || this.translate.instant('CHAT.NEW');
+  }
+
+  tituloDeHilo(hilo: ChatHilo | null | undefined): string {
+    const titulo = String(hilo?.titulo || '').trim();
+    if (titulo) {
+      return titulo;
+    }
+    return this.translate.instant('CHAT.NEW');
   }
 
   onChatKey(event: KeyboardEvent): void {
@@ -1237,7 +1240,10 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     this.chat.listarHilos().subscribe({
       next: (res) => {
         this.cargandoHilos = false;
-        this.hilos = res.conversaciones || [];
+        this.hilos = (res.conversaciones || [])
+          .filter((hilo): hilo is ChatHilo => !!hilo && typeof hilo === 'object')
+          .map((hilo) => this.normalizarHilo(hilo));
+        this.filtrarHistorial();
       },
       error: () => {
         this.cargandoHilos = false;
@@ -1252,8 +1258,9 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     this.chat.obtenerHilo(conversacionId).subscribe({
       next: (detalle) => {
         this.cargandoHilo = false;
-        this.conversacionId = detalle.conversacion_id;
-        sessionStorage.setItem(STORAGE_KEY, detalle.conversacion_id);
+        const cid = this.idDeHilo(detalle) || conversacionId;
+        this.conversacionId = cid;
+        sessionStorage.setItem(STORAGE_KEY, cid);
         this.mensajes = (detalle.mensajes || []).map((m) => ({
           remitente: m.remitente === 'usuario' ? 'usuario' : 'asistente',
           texto: m.mensaje || '',
@@ -1267,9 +1274,6 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
       },
       error: () => {
         this.cargandoHilo = false;
-        this.conversacionId = null;
-        sessionStorage.removeItem(STORAGE_KEY);
-        this.mensajes = [];
         this.errorChat = this.translate.instant('CHAT.LOAD_ERROR');
       }
     });

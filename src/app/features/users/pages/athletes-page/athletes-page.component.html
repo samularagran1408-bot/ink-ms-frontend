@@ -60,6 +60,7 @@
             <th>{{ 'CATALOG.EMAIL' | translate }}</th>
             <th>{{ 'CATALOG.STATUS' | translate }}</th>
             <th>{{ 'CATALOG.CHECKIN' | translate }}</th>
+            <th>{{ 'CATALOG.COMMENT' | translate }}</th>
           </tr>
         </thead>
         <tbody>
@@ -68,7 +69,7 @@
               <span class="user-cell">
                 <img *ngIf="row.profilePicture" class="table-avatar" [src]="row.profilePicture" alt="" />
                 <span *ngIf="!row.profilePicture" class="avatar-fallback">{{ initials(row.fullName || row.email) }}</span>
-                {{ row.fullName || row.userId || ('ROLES.USER_FALLBACK' | translate) }}
+                {{ row.fullName || row.email || ('ROLES.USER_FALLBACK' | translate) }}
               </span>
             </td>
             <td>{{ row.email || ('COMMON.NONE' | translate) }}</td>
@@ -78,6 +79,10 @@
               </span>
             </td>
             <td>{{ row.checkInTime || ('COMMON.NONE' | translate) }}</td>
+            <td>
+              <span *ngIf="row.notes" class="athlete-comment">{{ row.notes }}</span>
+              <span *ngIf="!row.notes" class="kpi-sub">{{ 'COMMON.NONE' | translate }}</span>
+            </td>
           </tr>
         </tbody>
       </table>
@@ -93,8 +98,8 @@
             <img *ngIf="item.userProfilePicture" class="table-avatar" [src]="item.userProfilePicture" alt="" />
             <span *ngIf="!item.userProfilePicture" class="avatar-fallback">{{ initials(item.userFullName || item.userEmail) }}</span>
             <div>
-            <strong>{{ item.userFullName || item.userEmail || ('User ' + item.userId) }}</strong>
-            <div class="kpi-sub">{{ 'ATHLETES.POSITION' | translate:{ position: (item.waitlistPosition ?? '—') } }} · {{ item.userEmail || item.userId }}</div>
+            <strong>{{ item.userFullName || item.userEmail || ('ROLES.USER_FALLBACK' | translate) }}</strong>
+            <div class="kpi-sub">{{ 'ATHLETES.POSITION' | translate:{ position: (item.waitlistPosition ?? '—') } }}<ng-container *ngIf="item.userEmail"> · {{ item.userEmail }}</ng-container></div>
             </div>
         </div>
       </div>

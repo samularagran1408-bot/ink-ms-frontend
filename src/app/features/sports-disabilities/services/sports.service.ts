@@ -206,10 +206,11 @@ export class SportsService {
     return this.http.get<Registration[]>(`${this.registrationsUrl}/${eventId}/waitlist`);
   }
 
-  markAttendanceByQr(qrCode: string, verifiedBy?: string): Observable<AttendanceActionResponse> {
+  markAttendanceByQr(qrCode: string, verifiedBy?: string, notes?: string): Observable<AttendanceActionResponse> {
     return this.http.post<AttendanceActionResponse>(`${this.attendanceUrl}/qr`, {
       qrCode,
-      verifiedBy
+      verifiedBy,
+      notes
     });
   }
 
@@ -222,12 +223,14 @@ export class SportsService {
   markAttendance(
     registrationId: string,
     checkInMethod: 'qr' | 'manual' | 'admin' = 'manual',
-    verifiedBy?: string
+    verifiedBy?: string,
+    notes?: string
   ): Observable<AttendanceActionResponse> {
     return this.http.post<AttendanceActionResponse>(this.attendanceUrl, {
       registrationId,
       checkInMethod,
-      verifiedBy
+      verifiedBy,
+      notes
     });
   }
 
