@@ -586,6 +586,7 @@
     "CHECKIN": "Check-in",
     "ATTENDED": "Attended",
     "NO_CHECKIN": "No check-in",
+    "COMMENT": "Comment",
     "CREATE": "Create",
     "DELETE": "Delete",
     "SEARCH": "Search",
@@ -593,8 +594,8 @@
   },
   "ATHLETES": {
     "TITLE": "Registered athletes",
-    "SUBTITLE": "Users registered per event, with attendance status filter.",
-    "SEARCH_PH": "Search athlete by name or email",
+    "SUBTITLE": "Users registered per event, with attendance status filter and check-in comments.",
+    "SEARCH_PH": "Search athlete by name, email or comment",
     "ENROLLED": "{{occupied}}/{{capacity}} registered · Waitlist: {{waitlist}}",
     "ALL": "All ({{count}})",
     "ATTENDED": "Attended ({{count}})",

@@ -9,12 +9,14 @@ import { SportsService } from '@features/sports-disabilities/services/sports.ser
 import { ReportsService } from '@features/reports/services/reports.service';
 import { LanguageService } from '@features/accessibility/services/language.service';
 import { UnreadNotificationsService } from '@features/accessibility/services/unread-notifications.service';
+import { LiveSyncService } from '@features/accessibility/services/live-sync.service';
 import { ConfirmDialogService } from '@shared/services/confirm-dialog.service';
 import { AssistantUiService } from '@features/assistant/services/assistant-ui.service';
 import { CompetitionProgressService } from '@features/assistant/services/competition-progress.service';
 import { CompetitionModeState } from '@features/assistant/models/competition';
 import { resolveEventImage } from '@features/sports-disabilities/utils/event-image.util';
 import { eventDateTimeMs } from '@core/utils/qr-attendance.util';
+import { isEventVisible } from '@features/sports-disabilities/utils/event-visibility.util';
 
 type CatalogFilter = 'all' | 'sports' | 'disabilities' | 'associations' | 'routines';
 
@@ -62,6 +64,7 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
   private langSub: Subscription | null = null;
   private competitionSub: Subscription | null = null;
   private unreadSub: Subscription | null = null;
+  private liveSub: Subscription | null = null;
 
   constructor(
     private session: SessionService,
@@ -73,7 +76,8 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
     private unreadNotifications: UnreadNotificationsService,
     private confirm: ConfirmDialogService,
     private competitionProgress: CompetitionProgressService,
-    private assistantUi: AssistantUiService
+    private assistantUi: AssistantUiService,
+    private liveSync: LiveSyncService
   ) {}
 
   ngOnInit(): void {
@@ -86,10 +90,14 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
     this.buildCalendar(new Date());
     this.langSub = this.translate.onLangChange.subscribe(() => this.buildCalendar(new Date()));
     this.loadHomeData();
+    this.liveSync.start();
+    this.liveSub = this.liveSync.pulse$.subscribe(() => this.loadHomeData(true));
   }
 
-  private loadHomeData(): void {
-    this.loading = true;
+  private loadHomeData(silent = false): void {
+    if (!silent) {
+      this.loading = true;
+    }
     const profile$ = this.session.getProfile()
       ? of(this.session.getProfile())
       : this.session.loadProfile();
@@ -97,8 +105,12 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
     profile$.subscribe((profile) => {
       this.reportsService.getHomePanel(profile?.id).subscribe({
         next: (panel) => {
-          const events = panel.events || [];
-          const registrations = panel.registrations || [];
+          const rawEvents = panel.events || [];
+          const events = rawEvents.filter((event) => isEventVisible(event));
+          const registrations = (panel.registrations || []).filter((reg) => {
+            const event = rawEvents.find((item) => item.id === reg.eventId);
+            return !event || isEventVisible(event);
+          });
           this.allEvents = this.sortEvents(events);
           this.events = this.resolveFeaturedEvents(this.allEvents, registrations);
           this.registrations = this.sortRegistrations(registrations);
@@ -116,8 +128,10 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
           this.loading = false;
         },
         error: () => {
-          this.errorMessage = this.translate.instant('HOME.LOAD_ERROR');
-          this.loading = false;
+          if (!silent) {
+            this.errorMessage = this.translate.instant('HOME.LOAD_ERROR');
+            this.loading = false;
+          }
         }
       });
     });
@@ -127,6 +141,7 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
     this.langSub?.unsubscribe();
     this.competitionSub?.unsubscribe();
     this.unreadSub?.unsubscribe();
+    this.liveSub?.unsubscribe();
   }
 
   get catalogEventCount(): number {

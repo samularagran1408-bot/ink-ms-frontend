@@ -506,8 +506,8 @@
             <img *ngIf="item.userProfilePicture" class="table-avatar" [src]="item.userProfilePicture" alt="" />
             <span *ngIf="!item.userProfilePicture" class="avatar-fallback">{{ initials(item.userFullName || item.userEmail) }}</span>
             <div>
-            <strong>{{ item.userFullName || item.userEmail || ('User ' + item.userId) }}</strong>
-            <div class="kpi-sub">Posición {{ item.waitlistPosition ?? '—' }} · {{ item.userEmail || item.userId }}</div>
+            <strong>{{ item.userFullName || item.userEmail || ('ROLES.USER_FALLBACK' | translate) }}</strong>
+            <div class="kpi-sub">Posición {{ item.waitlistPosition ?? '—' }}<ng-container *ngIf="item.userEmail"> · {{ item.userEmail }}</ng-container></div>
             </div>
           </div>
         </div>
@@ -527,7 +527,19 @@
         <button type="button" class="btn-secondary" (click)="closeCheckIn()">×</button>
       </div>
 
-      <p class="kpi-sub">Escanea el QR del inscrito con la cámara, súbelo desde una imagen, o escribe el código.</p>
+      <p class="kpi-sub">Puedes anotar un comentario del atleta y luego escanear el QR, subir una imagen o escribir el código.</p>
+
+      <label class="survey-notes">
+        Comentario del atleta (opcional)
+        <textarea
+          rows="2"
+          [(ngModel)]="checkInNotes"
+          name="checkInNotes"
+          maxlength="500"
+          placeholder="Se guarda junto a esta asistencia (QR o código)."
+          [disabled]="checkInBusy"
+        ></textarea>
+      </label>
 
       <div class="checkin-actions">
         <button class="btn-primary" type="button" (click)="startScanner()" [disabled]="scannerRunning || checkInBusy">
@@ -611,6 +623,7 @@
                 <th>{{ 'CATALOG.EMAIL' | translate }}</th>
                 <th>{{ 'CATALOG.CHECKIN' | translate }}</th>
                 <th>Método</th>
+                <th>{{ 'CATALOG.COMMENT' | translate }}</th>
               </tr>
             </thead>
             <tbody>
@@ -619,12 +632,13 @@
                   <span class="user-cell">
                     <img *ngIf="attendee.profilePicture" class="table-avatar" [src]="attendee.profilePicture" alt="" />
                     <span *ngIf="!attendee.profilePicture" class="avatar-fallback">{{ initials(attendee.fullName || attendee.email) }}</span>
-                    {{ attendee.fullName || attendee.userId || 'Usuario' }}
+                    {{ attendee.fullName || attendee.email || 'Usuario' }}
                   </span>
                 </td>
                 <td>{{ attendee.email || '—' }}</td>
                 <td>{{ attendee.checkInTime || '—' }}</td>
                 <td>{{ attendee.checkInMethod || '—' }}</td>
+                <td>{{ attendee.notes || '—' }}</td>
               </tr>
             </tbody>
           </table>
@@ -640,7 +654,6 @@
               <tr>
                 <th>{{ 'CATALOG.NAME' | translate }}</th>
                 <th>{{ 'CATALOG.EMAIL' | translate }}</th>
-                <th>User ID</th>
               </tr>
             </thead>
             <tbody>
@@ -649,11 +662,10 @@
                   <span class="user-cell">
                     <img *ngIf="absent.profilePicture" class="table-avatar" [src]="absent.profilePicture" alt="" />
                     <span *ngIf="!absent.profilePicture" class="avatar-fallback">{{ initials(absent.fullName || absent.email) }}</span>
-                    {{ absent.fullName || absent.userId || 'Usuario' }}
+                    {{ absent.fullName || absent.email || 'Usuario' }}
                   </span>
                 </td>
                 <td>{{ absent.email || '—' }}</td>
-                <td>{{ absent.userId || '—' }}</td>
               </tr>
             </tbody>
           </table>

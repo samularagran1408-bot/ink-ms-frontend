@@ -586,6 +586,7 @@
     "CHECKIN": "Check-in",
     "ATTENDED": "Asistió",
     "NO_CHECKIN": "Sin check-in",
+    "COMMENT": "Comentario",
     "CREATE": "Crear",
     "DELETE": "Eliminar",
     "SEARCH": "Buscar",
@@ -593,8 +594,8 @@
   },
   "ATHLETES": {
     "TITLE": "Atletas inscritos",
-    "SUBTITLE": "Usuarios inscritos por evento, con filtro por estado de asistencia.",
-    "SEARCH_PH": "Buscar atleta por nombre o correo",
+    "SUBTITLE": "Usuarios inscritos por evento, con filtro por estado de asistencia y comentarios del check-in.",
+    "SEARCH_PH": "Buscar atleta por nombre, correo o comentario",
     "ENROLLED": "{{occupied}}/{{capacity}} inscritos · Waitlist: {{waitlist}}",
     "ALL": "Todos ({{count}})",
     "ATTENDED": "Asistieron ({{count}})",

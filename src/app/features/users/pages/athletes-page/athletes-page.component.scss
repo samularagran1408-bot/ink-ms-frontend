@@ -3,3 +3,13 @@
 .table-wrap {
   overflow-x: auto;
 }
+
+.athlete-comment {
+  display: block;
+  max-width: 280px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: #334155;
+  font-size: 13px;
+  line-height: 1.35;
+}

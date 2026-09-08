@@ -1,36 +1,47 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { of } from 'rxjs';
+import { of, Subscription } from 'rxjs';
 
 import { Disability, Routine } from '@features/sports-disabilities/models/sports';
 import { SessionService } from '@core/services/session.service';
 import { ReportsService } from '@features/reports/services/reports.service';
+import { LiveSyncService } from '@features/accessibility/services/live-sync.service';
 
 @Component({
   selector: 'app-trainer-dashboard',
   templateUrl: './trainer-dashboard.component.html',
   styleUrl: './trainer-dashboard.component.scss'
 })
-export class TrainerDashboardComponent implements OnInit {
+export class TrainerDashboardComponent implements OnInit, OnDestroy {
   loading = true;
   routines: Routine[] = [];
   disabilities: Disability[] = [];
   athleteCount = 0;
   errorMessage: string | null = null;
   quizPassed = false;
+  private liveSub: Subscription | null = null;
 
   constructor(
     private session: SessionService,
     private reportsService: ReportsService,
-    private router: Router
+    private router: Router,
+    private liveSync: LiveSyncService
   ) {}
 
   ngOnInit(): void {
     this.reload();
+    this.liveSync.start();
+    this.liveSub = this.liveSync.pulse$.subscribe(() => this.reload(true));
   }
 
-  reload(): void {
-    this.loading = true;
+  ngOnDestroy(): void {
+    this.liveSub?.unsubscribe();
+  }
+
+  reload(silent = false): void {
+    if (!silent) {
+      this.loading = true;
+    }
     const bootstrap$ = this.session.getProfile()
       ? of(this.session.getProfile())
       : this.session.loadProfile();
@@ -45,8 +56,10 @@ export class TrainerDashboardComponent implements OnInit {
           this.loading = false;
         },
         error: () => {
-          this.errorMessage = 'No se pudo cargar el panel del entrenador.';
-          this.loading = false;
+          if (!silent) {
+            this.errorMessage = 'No se pudo cargar el panel del entrenador.';
+            this.loading = false;
+          }
         }
       });
     });

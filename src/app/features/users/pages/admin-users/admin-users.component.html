@@ -85,7 +85,7 @@
                 <span *ngIf="!user.profilePicture">{{ initials(user) }}</span>
               </span>
               <button class="user-link" type="button" (click)="openProfile(user)">
-                {{ user.fullName || ('COMMON.NONE' | translate) }}
+                {{ user.fullName || user.email || ('COMMON.NONE' | translate) }}
               </button>
             </td>
             <td class="email-cell">{{ user.email }}</td>
@@ -158,7 +158,7 @@
           </span>
           <div class="user-card-identity">
             <button class="user-link" type="button" (click)="openProfile(user)">
-              {{ user.fullName || ('COMMON.NONE' | translate) }}
+              {{ user.fullName || user.email || ('COMMON.NONE' | translate) }}
             </button>
             <p>{{ user.email }}</p>
           </div>

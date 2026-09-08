@@ -76,6 +76,7 @@ export interface ChatResponse {
 
 export interface ChatHilo {
   conversacion_id: string;
+  session_id?: string;
   titulo: string;
   estado: string;
   creada_en?: string;

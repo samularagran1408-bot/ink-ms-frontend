@@ -399,9 +399,11 @@ a.register-event-btn:hover {
 
 .calendar-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  justify-items: center;
+  align-items: center;
   text-align: center;
-  gap: 6px;
+  gap: 6px 4px;
 }
 
 .cal-day-header {
@@ -409,18 +411,26 @@ a.register-event-btn:hover {
   font-weight: 700;
   color: #94A3B8;
   padding-bottom: 6px;
+  width: 100%;
 }
 
 .cal-cell {
   font-size: 12px;
   font-weight: 500;
   color: #334155;
-  height: 30px;
+  width: min(32px, 100%);
+  aspect-ratio: 1 / 1;
+  height: auto;
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
   cursor: pointer;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  overflow: hidden;
+  line-height: 1;
 }
 
 .cal-cell--muted {

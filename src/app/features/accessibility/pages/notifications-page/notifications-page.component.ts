@@ -8,7 +8,6 @@ import { PreferencesApiService } from '@features/accessibility/services/preferen
 import { NotificationAnnounceService } from '@features/accessibility/services/notification-announce.service';
 import { TtsService } from '@features/accessibility/services/tts.service';
 import { UnreadNotificationsService } from '@features/accessibility/services/unread-notifications.service';
-import { NotificationRealtimeService } from '@features/accessibility/services/notification-realtime.service';
 
 @Component({
   selector: 'app-notifications-page',
@@ -24,8 +23,7 @@ export class NotificationsPageComponent implements OnInit, OnDestroy {
 
   private prefsSub: Subscription | null = null;
   private playingSub: Subscription | null = null;
-  private incomingSub: Subscription | null = null;
-  private reconnectSub: Subscription | null = null;
+  private pollTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(
     private session: SessionService,
@@ -33,8 +31,7 @@ export class NotificationsPageComponent implements OnInit, OnDestroy {
     private notificationAnnounce: NotificationAnnounceService,
     private tts: TtsService,
     private translate: TranslateService,
-    private unreadNotifications: UnreadNotificationsService,
-    private realtime: NotificationRealtimeService
+    private unreadNotifications: UnreadNotificationsService
   ) {}
 
   ngOnInit(): void {
@@ -45,24 +42,27 @@ export class NotificationsPageComponent implements OnInit, OnDestroy {
     this.playingSub = this.tts.playingId$.subscribe((id) => {
       this.playingId = id;
     });
-    this.incomingSub = this.realtime.incoming$.subscribe((note) => this.prepend(note));
-    this.reconnectSub = this.realtime.reconnected$.subscribe(() => this.reload());
     this.reload();
+    this.pollTimer = setInterval(() => this.reload(false), 20_000);
   }
 
   ngOnDestroy(): void {
     this.prefsSub?.unsubscribe();
     this.playingSub?.unsubscribe();
-    this.incomingSub?.unsubscribe();
-    this.reconnectSub?.unsubscribe();
+    if (this.pollTimer) {
+      clearInterval(this.pollTimer);
+      this.pollTimer = null;
+    }
   }
 
   get fixedSidebar(): boolean {
     return this.session.getPrimaryRole() !== 'USUARIO';
   }
 
-  reload(): void {
-    this.loading = true;
+  reload(showLoading = true): void {
+    if (showLoading) {
+      this.loading = true;
+    }
     this.audioMode = this.tts.isAudioNotificationsActive;
     this.preferencesApi.getNotifications().subscribe({
       next: (notifications) => {
@@ -75,17 +75,6 @@ export class NotificationsPageComponent implements OnInit, OnDestroy {
         this.loading = false;
       }
     });
-  }
-
-  private prepend(note: AppNotification): void {
-    if (!note?.id) {
-      this.notifications = [note, ...this.notifications];
-      return;
-    }
-    if (this.notifications.some((item) => item.id === note.id)) {
-      return;
-    }
-    this.notifications = [note, ...this.notifications];
   }
 
   togglePlay(note: AppNotification): void {

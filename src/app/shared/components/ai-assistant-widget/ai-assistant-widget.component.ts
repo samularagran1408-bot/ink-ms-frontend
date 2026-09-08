@@ -14,6 +14,7 @@ import { AssistantSection, AssistantUiService } from '@features/assistant/servic
 import { ChatService } from '@features/assistant/services/chat.service';
 import { ConfirmDialogService } from '@shared/services/confirm-dialog.service';
 import { CompetitionProgressService } from '@features/assistant/services/competition-progress.service';
+import { LiveSyncService } from '@features/accessibility/services/live-sync.service';
 import { ReportsService } from '@features/reports/services/reports.service';
 import { SessionService } from '@core/services/session.service';
 import { UsersService } from '@features/users/services/users.service';
@@ -21,11 +22,6 @@ import { HeroIconName } from '../../icons/heroicons-outline';
 
 const STORAGE_KEY = 'inklusport.chat.conversacion_id';
 const PUBLIC_PATHS = new Set(['/', '', '/login', '/register', '/guest', '/forgot-password']);
-
-interface ChatHiloGrupo {
-  labelKey: string;
-  hilos: ChatHilo[];
-}
 
 @Component({
   selector: 'app-ai-assistant-widget',
@@ -59,6 +55,7 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
   errorChat: string | null = null;
   conversacionId: string | null = null;
   hilos: ChatHilo[] = [];
+  hilosVisibles: ChatHilo[] = [];
   historialAbierto = false;
   busquedaHistorial = '';
   cargandoHilos = false;
@@ -125,7 +122,8 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     private confirm: ConfirmDialogService,
     private translate: TranslateService,
     private competitionProgress: CompetitionProgressService,
-    private assistantUi: AssistantUiService
+    private assistantUi: AssistantUiService,
+    private liveSync: LiveSyncService
   ) {}
 
   ngOnInit(): void {
@@ -146,8 +144,8 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
       if (id === 'competencia' && !this.cargandoCompetencia) {
         this.cargarEstadoCompetencia();
       }
-      if (id === 'estadisticas' && !this.stats && !this.cargandoStats) {
-        this.cargarEstadisticas();
+      if (id === 'estadisticas' && !this.cargandoStats) {
+        this.cargarEstadisticas(this.statsObjetivoId || undefined, this.statsNombre || undefined);
       }
       if (id === 'planes' && !this.plan && !this.cargandoPlan) {
         this.cargarPlanes();
@@ -161,6 +159,8 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
         this.competencia = raw;
       }
     }));
+    this.liveSync.start();
+    this.subs.add(this.liveSync.pulse$.subscribe(() => this.onLiveSync()));
   }
 
   ngOnDestroy(): void {
@@ -174,23 +174,15 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
 
   @HostListener('document:keydown.escape')
   onEscape(): void {
+    if (this.confirm.state$.value) {
+      return;
+    }
     if (this.historialAbierto) {
       this.cerrarHistorial();
       return;
     }
     if (this.open) {
       this.closePanel();
-    }
-  }
-
-  @HostListener('document:click', ['$event'])
-  onDocumentClick(event: MouseEvent): void {
-    if (!this.historialAbierto) {
-      return;
-    }
-    const wrap = this.historyWrap?.nativeElement;
-    if (wrap && !wrap.contains(event.target as Node)) {
-      this.cerrarHistorial();
     }
   }
 
@@ -205,8 +197,8 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
   selectSection(id: AssistantSection): void {
     this.cerrarHistorial();
     this.section = id;
-    if (id === 'estadisticas' && !this.stats && !this.cargandoStats) {
-      this.cargarEstadisticas();
+    if (id === 'estadisticas' && !this.cargandoStats) {
+      this.cargarEstadisticas(this.statsObjetivoId || undefined, this.statsNombre || undefined);
     }
     if (id === 'competencia' && !this.cargandoCompetencia) {
       this.cargarEstadoCompetencia();
@@ -259,14 +251,19 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     this.pasosAgente = [];
     this.chat.nueva().subscribe({
       next: (res) => {
-        this.conversacionId = res.conversacion_id;
-        sessionStorage.setItem(STORAGE_KEY, res.conversacion_id);
+        const cid = res.conversacion_id || (res as { session_id?: string }).session_id;
+        if (!cid) {
+          return;
+        }
+        this.conversacionId = cid;
+        sessionStorage.setItem(STORAGE_KEY, cid);
         this.cargarHilos();
       }
     });
   }
 
   toggleHistorial(event?: Event): void {
+    event?.preventDefault();
     event?.stopPropagation();
     this.historialAbierto = !this.historialAbierto;
     if (this.historialAbierto) {
@@ -278,59 +275,52 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
   cerrarHistorial(): void {
     this.historialAbierto = false;
     this.busquedaHistorial = '';
+    this.filtrarHistorial();
   }
 
-  hilosAgrupados(): ChatHiloGrupo[] {
+  filtrarHistorial(): void {
     const q = this.busquedaHistorial.trim().toLowerCase();
-    const filtrados = q
-      ? this.hilos.filter((h) => (h.titulo || '').toLowerCase().includes(q))
-      : this.hilos;
-    if (!filtrados.length) {
-      return [];
-    }
-    const inicioHoy = new Date();
-    inicioHoy.setHours(0, 0, 0, 0);
-    const inicioAyer = new Date(inicioHoy);
-    inicioAyer.setDate(inicioAyer.getDate() - 1);
-    const inicioSemana = new Date(inicioHoy);
-    inicioSemana.setDate(inicioSemana.getDate() - 7);
-    const grupos: Record<string, ChatHilo[]> = {
-      'CHAT.TODAY': [],
-      'CHAT.YESTERDAY': [],
-      'CHAT.LAST_7_DAYS': [],
-      'CHAT.OLDER': []
-    };
-    for (const hilo of filtrados) {
-      const fecha = this.fechaDeHilo(hilo);
-      if (!fecha || fecha >= inicioHoy) {
-        grupos['CHAT.TODAY'].push(hilo);
-      } else if (fecha >= inicioAyer) {
-        grupos['CHAT.YESTERDAY'].push(hilo);
-      } else if (fecha >= inicioSemana) {
-        grupos['CHAT.LAST_7_DAYS'].push(hilo);
-      } else {
-        grupos['CHAT.OLDER'].push(hilo);
-      }
-    }
-    return Object.entries(grupos)
-      .filter(([, hilos]) => hilos.length)
-      .map(([labelKey, hilos]) => ({ labelKey, hilos }));
+    this.hilosVisibles = q
+      ? this.hilos.filter((h) => (this.tituloDeHilo(h) || '').toLowerCase().includes(q))
+      : [...this.hilos];
   }
 
-  abrirHilo(hilo: ChatHilo): void {
-    if (!hilo?.conversacion_id) {
+  textoHistorial(): string {
+    const n = this.hilosVisibles.length;
+    if (n > 0) {
+      return n === 1 ? '1 conversación' : `${n} conversaciones`;
+    }
+    if (this.hilos.length) {
+      return this.translate.instant('CHAT.NO_RESULTS');
+    }
+    return 'Aún no hay conversaciones guardadas.';
+  }
+
+  trackByHilo(_index: number, hilo: ChatHilo): string {
+    return this.idDeHilo(hilo) || String(_index);
+  }
+
+  abrirHilo(event: Event, hilo: ChatHilo): void {
+    event.preventDefault();
+    event.stopPropagation();
+    const cid = this.idDeHilo(hilo);
+    if (!cid) {
+      this.errorHistorial = this.translate.instant('CHAT.LOAD_ERROR');
       return;
     }
     this.chatSub?.unsubscribe();
     this.enviando = false;
     this.detenerCicloLocal();
     this.pasosAgente = [];
-    this.cargarHilo(hilo.conversacion_id);
+    this.cargarHilo(cid);
   }
 
   async borrarHilo(event: Event, hilo: ChatHilo): Promise<void> {
+    event.preventDefault();
     event.stopPropagation();
-    if (!hilo?.conversacion_id) {
+    const cid = this.idDeHilo(hilo);
+    if (!cid) {
+      this.errorHistorial = this.translate.instant('CHAT.LOAD_ERROR');
       return;
     }
     const ok = await this.confirm.ask({
@@ -343,9 +333,9 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     if (!ok) {
       return;
     }
-    this.chat.borrarHilo(hilo.conversacion_id).subscribe({
+    this.chat.borrarHilo(cid).subscribe({
       next: () => {
-        if (this.conversacionId === hilo.conversacion_id) {
+        if (this.conversacionId === cid) {
           this.mensajes = [];
           this.conversacionId = null;
           sessionStorage.removeItem(STORAGE_KEY);
@@ -358,18 +348,35 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     });
   }
 
-  private fechaDeHilo(hilo: ChatHilo): Date | null {
-    const raw = hilo.ultima_interaccion || hilo.creada_en;
-    if (!raw) {
-      return null;
+  idDeHilo(hilo: ChatHilo | Record<string, unknown> | null | undefined): string {
+    if (!hilo) {
+      return '';
     }
-    const fecha = new Date(raw);
-    return Number.isNaN(fecha.getTime()) ? null : fecha;
+    const row = hilo as Record<string, unknown>;
+    const raw = row['conversacion_id'] ?? row['session_id'] ?? row['conversacionId'] ?? row['sessionId'];
+    return raw == null ? '' : String(raw).trim();
+  }
+
+  private normalizarHilo(hilo: ChatHilo): ChatHilo {
+    const id = this.idDeHilo(hilo);
+    return {
+      ...hilo,
+      conversacion_id: id || hilo.conversacion_id,
+      session_id: hilo.session_id || id
+    };
   }
 
   tituloHiloActual(): string {
-    const actual = this.hilos.find((h) => h.conversacion_id === this.conversacionId);
-    return actual?.titulo || this.translate.instant('CHAT.NEW');
+    const actual = this.hilos.find((h) => this.idDeHilo(h) === this.conversacionId);
+    return this.tituloDeHilo(actual) || this.translate.instant('CHAT.NEW');
+  }
+
+  tituloDeHilo(hilo: ChatHilo | null | undefined): string {
+    const titulo = String(hilo?.titulo || '').trim();
+    if (titulo) {
+      return titulo;
+    }
+    return this.translate.instant('CHAT.NEW');
   }
 
   onChatKey(event: KeyboardEvent): void {
@@ -586,7 +593,7 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     this.cargandoRiesgo = true;
     this.errorRiesgo = null;
     this.ai.evaluarRiesgo({
-      rpe_reciente: this.rpe,
+      rpe_reciente: this.rpe == null ? null : Number(this.rpe),
       dolor_reportado: this.dolor,
       dias_sin_descanso: this.diasSinDescanso,
       limitacion: this.limitacion
@@ -595,24 +602,36 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
         this.cargandoRiesgo = false;
         this.riesgo = res;
         this.cargarHistorialRiesgo();
+        this.cargarEstadisticas(this.statsObjetivoId || undefined, this.statsNombre || undefined, true);
       },
       error: (err) => {
         this.cargandoRiesgo = false;
-        this.errorRiesgo = err?.error?.detail || 'No se pudo evaluar el riesgo.';
+        this.errorRiesgo = this.httpErrorDetail(err, 'No se pudo evaluar el riesgo.');
       }
     });
   }
 
-  cargarEstadoCompetencia(): void {
-    this.cargandoCompetencia = true;
-    this.errorCompetencia = null;
+  cargarEstadoCompetencia(silent = false): void {
+    if (this.loggingChecklistId || this.loggingRoutineId) {
+      return;
+    }
+    if (!silent) {
+      this.cargandoCompetencia = true;
+      this.errorCompetencia = null;
+    }
     this.ai.obtenerModo().subscribe({
       next: (res) => {
         this.cargandoCompetencia = false;
         this.competencia = res;
         this.competitionProgress.publish(res);
       },
-      error: () => this.analizarCompetencia()
+      error: () => {
+        if (this.competenciaModoActivo() && this.checklistItems().length) {
+          this.cargandoCompetencia = false;
+          return;
+        }
+        this.analizarCompetencia();
+      }
     });
   }
 
@@ -622,12 +641,15 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     this.ai.analizarCompetencia().subscribe({
       next: (res) => {
         this.cargandoCompetencia = false;
+        if (this.competenciaModoActivo() && this.checklistItems().length) {
+          return;
+        }
         this.competencia = res;
         this.competitionProgress.publish(res);
       },
       error: (err) => {
         this.cargandoCompetencia = false;
-        this.errorCompetencia = err?.error?.detail || 'No se pudo analizar la competencia.';
+        this.errorCompetencia = this.httpErrorDetail(err, 'No se pudo analizar la competencia.');
       }
     });
   }
@@ -643,7 +665,8 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         this.cargandoCompetencia = false;
-        this.errorCompetencia = err?.error?.detail || 'No se pudo actualizar el modo competencia.';
+        this.errorCompetencia = this.httpErrorDetail(err, 'No se pudo actualizar el modo competencia.');
+        this.cargarEstadoCompetencia(true);
       }
     });
   }
@@ -660,7 +683,7 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         this.loggingChecklistId = null;
-        this.errorCompetencia = err?.error?.detail || 'No se pudo actualizar la lista del plan.';
+        this.errorCompetencia = this.httpErrorDetail(err, 'No se pudo actualizar la lista del plan.');
       }
     });
   }
@@ -677,7 +700,7 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         this.loggingRoutineId = null;
-        this.errorCompetencia = err?.error?.detail || 'No se pudo registrar la sesión.';
+        this.errorCompetencia = this.httpErrorDetail(err, 'No se pudo registrar la sesión.');
       }
     });
   }
@@ -694,19 +717,21 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     return this.session.hasRole('ENTRENADOR', 'ADMIN');
   }
 
-  cargarEstadisticas(usuarioId?: string, nombre?: string): void {
-    this.cargandoStats = true;
-    this.errorStats = null;
-    this.statsObjetivoId = usuarioId || null;
-    this.statsNombre = nombre || null;
-    this.ai.dashboard(usuarioId).subscribe({
+  cargarEstadisticas(usuarioId?: string, nombre?: string, silent = false): void {
+    if (!silent) {
+      this.cargandoStats = true;
+      this.errorStats = null;
+    }
+    this.statsObjetivoId = usuarioId || this.statsObjetivoId;
+    this.statsNombre = nombre || this.statsNombre;
+    this.ai.dashboard(usuarioId || this.statsObjetivoId || undefined).subscribe({
       next: (res) => {
         this.cargandoStats = false;
         this.stats = res;
       },
       error: (err) => {
         this.cargandoStats = false;
-        this.errorStats = err?.error?.detail || 'No se pudieron cargar las estadísticas.';
+        this.errorStats = this.httpErrorDetail(err, 'No se pudieron cargar las estadísticas.');
       }
     });
   }
@@ -1119,7 +1144,9 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
   }
 
   competenciaModoActivo(): boolean {
-    return !!this.vistaCompetencia()['activo'] || this.competencia?.['activo'] === true;
+    return !!this.vistaCompetencia()['activo']
+      || this.competencia?.['activo'] === true
+      || !!this.competitionProgress.snapshot?.activo;
   }
 
   labelPaso(paso: ChatPasoActividad): string {
@@ -1156,6 +1183,47 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     return Array.isArray(lista) ? lista.map(String) : [];
   }
 
+  private onLiveSync(): void {
+    if (this.section === 'estadisticas' || this.stats) {
+      this.cargarEstadisticas(this.statsObjetivoId || undefined, this.statsNombre || undefined, true);
+    }
+    if (this.section === 'competencia' || this.competenciaModoActivo()) {
+      this.cargarEstadoCompetencia(true);
+    }
+  }
+
+  private httpErrorDetail(err: unknown, fallback: string): string {
+    const detail = (err as { error?: { detail?: unknown; message?: string } })?.error?.detail
+      ?? (err as { error?: { message?: string } })?.error?.message;
+    if (typeof detail === 'string' && detail.trim()) {
+      return detail;
+    }
+    if (Array.isArray(detail)) {
+      const parts = detail
+        .map((item) => {
+          if (typeof item === 'string') {
+            return item;
+          }
+          if (item && typeof item === 'object') {
+            const row = item as { msg?: string; message?: string };
+            return row.msg || row.message || '';
+          }
+          return '';
+        })
+        .filter((part) => !!part);
+      if (parts.length) {
+        return parts.join(' ');
+      }
+    }
+    if (detail && typeof detail === 'object') {
+      const row = detail as { msg?: string; message?: string };
+      if (row.msg || row.message) {
+        return String(row.msg || row.message);
+      }
+    }
+    return fallback;
+  }
+
   private openPanel(): void {
     this.open = true;
     this.closing = false;
@@ -1172,7 +1240,10 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     this.chat.listarHilos().subscribe({
       next: (res) => {
         this.cargandoHilos = false;
-        this.hilos = res.conversaciones || [];
+        this.hilos = (res.conversaciones || [])
+          .filter((hilo): hilo is ChatHilo => !!hilo && typeof hilo === 'object')
+          .map((hilo) => this.normalizarHilo(hilo));
+        this.filtrarHistorial();
       },
       error: () => {
         this.cargandoHilos = false;
@@ -1187,8 +1258,9 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     this.chat.obtenerHilo(conversacionId).subscribe({
       next: (detalle) => {
         this.cargandoHilo = false;
-        this.conversacionId = detalle.conversacion_id;
-        sessionStorage.setItem(STORAGE_KEY, detalle.conversacion_id);
+        const cid = this.idDeHilo(detalle) || conversacionId;
+        this.conversacionId = cid;
+        sessionStorage.setItem(STORAGE_KEY, cid);
         this.mensajes = (detalle.mensajes || []).map((m) => ({
           remitente: m.remitente === 'usuario' ? 'usuario' : 'asistente',
           texto: m.mensaje || '',
@@ -1202,9 +1274,6 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
       },
       error: () => {
         this.cargandoHilo = false;
-        this.conversacionId = null;
-        sessionStorage.removeItem(STORAGE_KEY);
-        this.mensajes = [];
         this.errorChat = this.translate.instant('CHAT.LOAD_ERROR');
       }
     });

@@ -33,6 +33,7 @@ export interface EventItem {
   status?: string;
   createdBy?: string;
   createdAt?: string;
+  cancelledAt?: string;
 }
 
 export interface EventRequest {
@@ -136,6 +137,7 @@ export interface AttendanceReportAttendee {
   checkInTime?: string;
   checkInMethod?: string;
   verifiedBy?: string;
+  notes?: string;
 }
 
 export interface AttendanceReportAbsent {
