@@ -26,6 +26,7 @@ import { AdminAuditComponent } from '@features/admin/pages/admin-audit/admin-aud
 import { AssistantPageComponent } from '@features/assistant/pages/assistant-page/assistant-page.component';
 import { TrainerDashboardComponent } from '@features/assistant/pages/trainer-dashboard/trainer-dashboard.component';
 import { SessionsPageComponent } from '@features/assistant/pages/sessions-page/sessions-page.component';
+import { CrewPageComponent } from '@features/assistant/pages/crew-page/crew-page.component';
 import { OrganizerPlansComponent } from '@features/subscriptions/pages/organizer-plans/organizer-plans.component';
 import { SubscriptionComponent } from '@features/subscriptions/pages/subscription/subscription.component';
 import { PaymentHistoryComponent } from '@features/subscriptions/pages/payment-history/payment-history.component';
@@ -51,6 +52,7 @@ const routes: Routes = [
       { path: '', component: UserInterfaceComponent },
       { path: 'events', component: EventsPageComponent, data: { mode: 'user' } },
       { path: 'asistente', component: AssistantPageComponent },
+      { path: 'crew', component: CrewPageComponent },
       ...accountChildren
     ]
   },
@@ -61,6 +63,7 @@ const routes: Routes = [
     children: [
       { path: '', component: AdminDashboardComponent },
       { path: 'asistente', component: AssistantPageComponent },
+      { path: 'crew', component: CrewPageComponent },
       { path: 'users', component: AdminUsersComponent },
       { path: 'users/:email', component: AdminUserDetailComponent },
       { path: 'events', component: EventsPageComponent, data: { mode: 'manage' } },
@@ -81,6 +84,7 @@ const routes: Routes = [
     children: [
       { path: '', component: TrainerDashboardComponent },
       { path: 'asistente', component: AssistantPageComponent },
+      { path: 'crew', component: CrewPageComponent },
       {
         path: 'quiz',
         component: AptitudeQuizPageComponent,
@@ -120,6 +124,7 @@ const routes: Routes = [
     children: [
       { path: '', component: OrganizerDashboardComponent },
       { path: 'asistente', component: AssistantPageComponent },
+      { path: 'crew', component: CrewPageComponent },
       {
         path: 'quiz',
         component: AptitudeQuizPageComponent,

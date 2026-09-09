@@ -9,11 +9,14 @@ import { SportsService } from '@features/sports-disabilities/services/sports.ser
 import { ReportsService } from '@features/reports/services/reports.service';
 import { LanguageService } from '@features/accessibility/services/language.service';
 import { UnreadNotificationsService } from '@features/accessibility/services/unread-notifications.service';
+import { LiveSyncService } from '@features/accessibility/services/live-sync.service';
 import { ConfirmDialogService } from '@shared/services/confirm-dialog.service';
 import { AssistantUiService } from '@features/assistant/services/assistant-ui.service';
 import { CompetitionProgressService } from '@features/assistant/services/competition-progress.service';
 import { CompetitionModeState } from '@features/assistant/models/competition';
 import { resolveEventImage } from '@features/sports-disabilities/utils/event-image.util';
+import { eventDateTimeMs } from '@core/utils/qr-attendance.util';
+import { isEventVisible } from '@features/sports-disabilities/utils/event-visibility.util';
 
 type CatalogFilter = 'all' | 'sports' | 'disabilities' | 'associations' | 'routines';
 
@@ -61,6 +64,7 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
   private langSub: Subscription | null = null;
   private competitionSub: Subscription | null = null;
   private unreadSub: Subscription | null = null;
+  private liveSub: Subscription | null = null;
 
   constructor(
     private session: SessionService,
@@ -72,7 +76,8 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
     private unreadNotifications: UnreadNotificationsService,
     private confirm: ConfirmDialogService,
     private competitionProgress: CompetitionProgressService,
-    private assistantUi: AssistantUiService
+    private assistantUi: AssistantUiService,
+    private liveSync: LiveSyncService
   ) {}
 
   ngOnInit(): void {
@@ -85,10 +90,14 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
     this.buildCalendar(new Date());
     this.langSub = this.translate.onLangChange.subscribe(() => this.buildCalendar(new Date()));
     this.loadHomeData();
+    this.liveSync.start();
+    this.liveSub = this.liveSync.pulse$.subscribe(() => this.loadHomeData(true));
   }
 
-  private loadHomeData(): void {
-    this.loading = true;
+  private loadHomeData(silent = false): void {
+    if (!silent) {
+      this.loading = true;
+    }
     const profile$ = this.session.getProfile()
       ? of(this.session.getProfile())
       : this.session.loadProfile();
@@ -96,10 +105,14 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
     profile$.subscribe((profile) => {
       this.reportsService.getHomePanel(profile?.id).subscribe({
         next: (panel) => {
-          const events = panel.events || [];
-          const registrations = panel.registrations || [];
+          const rawEvents = panel.events || [];
+          const events = rawEvents.filter((event) => isEventVisible(event));
+          const registrations = (panel.registrations || []).filter((reg) => {
+            const event = rawEvents.find((item) => item.id === reg.eventId);
+            return !event || isEventVisible(event);
+          });
           this.allEvents = this.sortEvents(events);
-          this.events = this.allEvents.slice(0, 6);
+          this.events = this.resolveFeaturedEvents(this.allEvents, registrations);
           this.registrations = this.sortRegistrations(registrations);
           this.nextEvent = this.resolveNextEvent(events, registrations);
           this.applyEventsToCalendar(this.allEvents);
@@ -115,8 +128,10 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
           this.loading = false;
         },
         error: () => {
-          this.errorMessage = this.translate.instant('HOME.LOAD_ERROR');
-          this.loading = false;
+          if (!silent) {
+            this.errorMessage = this.translate.instant('HOME.LOAD_ERROR');
+            this.loading = false;
+          }
         }
       });
     });
@@ -126,6 +141,11 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
     this.langSub?.unsubscribe();
     this.competitionSub?.unsubscribe();
     this.unreadSub?.unsubscribe();
+    this.liveSub?.unsubscribe();
+  }
+
+  get catalogEventCount(): number {
+    return this.allEvents.length;
   }
 
   get confirmedCount(): number {
@@ -342,6 +362,10 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
     this.router.navigate(['/home/events']);
   }
 
+  onSeeHistory(): void {
+    this.router.navigate(['/home/events'], { queryParams: { vista: 'historial' } });
+  }
+
   onRegisterEvent(event: EventItem): void {
     void this.confirmRegisterEvent(event);
   }
@@ -402,7 +426,12 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
   }
 
   canJoinEvent(eventId: string): boolean {
-    return !this.isRegistered(eventId) && !this.isOnWaitlist(eventId);
+    if (this.isRegistered(eventId) || this.isOnWaitlist(eventId)) {
+      return false;
+    }
+    const event = this.allEvents.find((item) => item.id === eventId) || this.events.find((item) => item.id === eventId);
+    const status = (event?.status || '').toLowerCase();
+    return status !== 'cancelled' && status !== 'finished';
   }
 
   anyRegistrationFor(eventId: string): Registration | null {
@@ -665,14 +694,52 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
   }
 
   private resolveNextEvent(events: EventItem[], registrations: Registration[]): EventItem | null {
-    const registeredIds = new Set(registrations.map((reg) => reg.eventId));
+    const registeredIds = new Set(
+      registrations
+        .filter((reg) => reg.waitlistPosition == null)
+        .map((reg) => reg.eventId)
+    );
     const upcoming = this.sortEvents(events).filter((event) => {
-      const when = new Date(`${event.eventDate}T${event.eventTime || '00:00:00'}`);
-      return when.getTime() >= Date.now() && (registeredIds.has(event.id) || event.status === 'active');
+      const when = eventDateTimeMs(event.eventDate, event.eventTime);
+      const status = (event.status || '').toLowerCase();
+      if (status === 'cancelled' || status === 'finished') {
+        return false;
+      }
+      return when == null || when >= Date.now();
     });
 
     const registeredUpcoming = upcoming.find((event) => registeredIds.has(event.id));
     return registeredUpcoming || upcoming[0] || null;
+  }
+
+  private resolveFeaturedEvents(events: EventItem[], registrations: Registration[]): EventItem[] {
+    const next = this.resolveNextEvent(events, registrations);
+    return next ? [next] : [];
+  }
+
+  get nextRegisteredEvent(): EventItem | null {
+    const registeredIds = new Set(this.confirmedRegistrations.map((reg) => reg.eventId));
+    return this.sortEvents(this.allEvents).find((event) => {
+      if (!registeredIds.has(event.id)) {
+        return false;
+      }
+      const status = (event.status || '').toLowerCase();
+      if (status === 'cancelled' || status === 'finished') {
+        return false;
+      }
+      const when = eventDateTimeMs(event.eventDate, event.eventTime);
+      return when == null || when >= Date.now();
+    }) || null;
+  }
+
+  get historyPreview(): Registration[] {
+    const nextId = this.nextRegisteredEvent?.id;
+    return this.registrations.filter((reg) => reg.eventId !== nextId).slice(0, 3);
+  }
+
+  historyEventImage(reg: Registration): string {
+    const event = this.allEvents.find((item) => item.id === reg.eventId);
+    return event ? this.eventImage(event) : resolveEventImage({});
   }
 
   private buildCalendar(base: Date): void {

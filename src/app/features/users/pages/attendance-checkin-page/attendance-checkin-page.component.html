@@ -2,7 +2,7 @@
   <h1 class="page-title">{{ attendanceByQr ? 'Check-in por QR' : 'Encuesta de asistencia' }}</h1>
   <p class="page-subtitle">
     {{ attendanceByQr
-      ? 'Al escanear el código, tu asistencia se registra de inmediato.'
+      ? 'Confirma tu asistencia. Puedes dejar un comentario opcional para el organizador.'
       : 'Confirma que estás en el evento. Al enviar, queda registrada tu asistencia.' }}
   </p>
 
@@ -21,21 +21,24 @@
       {{ info?.location || event?.location }}
     </p>
 
-    <div class="attendance-survey" *ngIf="!attendanceByQr && !alreadyAttended && !successMessage && eventHasStarted">
-      <label class="survey-check">
-        <input type="checkbox" [(ngModel)]="survey.present" name="surveyPresent" />
-        Confirmo que estoy en el lugar del evento
-      </label>
-      <label class="survey-check">
-        <input type="checkbox" [(ngModel)]="survey.readyForCheckIn" name="surveyReady" />
-        Estoy listo/a para el check-in
-      </label>
+    <div class="attendance-survey" *ngIf="!alreadyAttended && !successMessage && eventHasStarted">
+      <ng-container *ngIf="!attendanceByQr">
+        <label class="survey-check">
+          <input type="checkbox" [(ngModel)]="survey.present" name="surveyPresent" />
+          Confirmo que estoy en el lugar del evento
+        </label>
+        <label class="survey-check">
+          <input type="checkbox" [(ngModel)]="survey.readyForCheckIn" name="surveyReady" />
+          Estoy listo/a para el check-in
+        </label>
+      </ng-container>
       <label class="survey-notes">
         Comentario (opcional)
         <textarea
           rows="2"
           [(ngModel)]="survey.notes"
           name="surveyNotes"
+          maxlength="500"
           placeholder="Ej. llegué con acompañante, necesito apoyo de acceso..."
         ></textarea>
       </label>
@@ -43,12 +46,12 @@
       <button
         class="btn-primary"
         type="button"
-        [disabled]="!surveyReady || submitting"
+        [disabled]="(!attendanceByQr && !surveyReady) || submitting"
         (click)="submit()"
       >
-        {{ submitting ? 'Registrando...' : 'Enviar asistencia' }}
+        {{ submitting ? 'Registrando...' : (attendanceByQr ? 'Confirmar asistencia' : 'Enviar asistencia') }}
       </button>
-      <p *ngIf="!surveyReady" class="kpi-sub">Marca las dos casillas para enviar.</p>
+      <p *ngIf="!attendanceByQr && !surveyReady" class="kpi-sub">Marca las dos casillas para enviar.</p>
     </div>
 
     <div *ngIf="alreadyAttended || successMessage">

@@ -13,6 +13,8 @@ export class TtsService {
   private voiceLanguage = 'es-ES';
   private unlocked = false;
   private playingId: string | null = null;
+  private speakTimer: ReturnType<typeof setTimeout> | null = null;
+  private audioCtx: AudioContext | null = null;
   private readonly spokenIds = new Set<string>();
   private readonly prefsSubject = new BehaviorSubject<{
     voiceCommandsEnabled: boolean;
@@ -76,23 +78,55 @@ export class TtsService {
 
   /** Los navegadores suelen exigir un gesto del usuario antes de reproducir audio. */
   unlock(): void {
-    if (this.unlocked || !this.isSupported) {
+    if (this.unlocked) {
+      this.resumeAudio();
       return;
     }
     this.unlocked = true;
+    this.resumeAudio();
+    if (!this.isSupported) {
+      return;
+    }
     try {
-      window.speechSynthesis.cancel();
       const warmUp = new SpeechSynthesisUtterance(' ');
       warmUp.volume = 0;
       warmUp.lang = this.voiceLanguage;
       window.speechSynthesis.speak(warmUp);
-      window.speechSynthesis.cancel();
     } catch {
       // Ignorar errores de warm-up.
     }
   }
 
+  /** Pitido corto para avisar aunque el texto a voz esté bloqueado. */
+  playAlertChime(): void {
+    this.resumeAudio();
+    const ctx = this.audioCtx;
+    if (!ctx) {
+      return;
+    }
+    try {
+      const now = ctx.currentTime;
+      const oscillator = ctx.createOscillator();
+      const gain = ctx.createGain();
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(880, now);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.09, now + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.28);
+      oscillator.connect(gain);
+      gain.connect(ctx.destination);
+      oscillator.start(now);
+      oscillator.stop(now + 0.3);
+    } catch {
+      // Sin audio de alerta.
+    }
+  }
+
   stop(): void {
+    if (this.speakTimer) {
+      clearTimeout(this.speakTimer);
+      this.speakTimer = null;
+    }
     if (!this.isSupported) {
       return;
     }
@@ -110,24 +144,30 @@ export class TtsService {
     }
 
     this.unlock();
+    if (this.speakTimer) {
+      clearTimeout(this.speakTimer);
+    }
     window.speechSynthesis.cancel();
     this.setPlayingId(options?.notificationId || null);
 
-    const utterance = new SpeechSynthesisUtterance(content);
-    utterance.lang = this.voiceLanguage;
-    utterance.rate = 1;
-    utterance.pitch = 1;
-    const voice = this.pickVoice(this.voiceLanguage);
-    if (voice) {
-      utterance.voice = voice;
-    }
-    utterance.onend = () => {
-      this.setPlayingId(null);
-    };
-    utterance.onerror = () => {
-      this.setPlayingId(null);
-    };
-    window.speechSynthesis.speak(utterance);
+    this.speakTimer = setTimeout(() => {
+      this.speakTimer = null;
+      const utterance = new SpeechSynthesisUtterance(content);
+      utterance.lang = this.voiceLanguage;
+      utterance.rate = 1;
+      utterance.pitch = 1;
+      const voice = this.pickVoice(this.voiceLanguage);
+      if (voice) {
+        utterance.voice = voice;
+      }
+      utterance.onend = () => {
+        this.setPlayingId(null);
+      };
+      utterance.onerror = () => {
+        this.setPlayingId(null);
+      };
+      window.speechSynthesis.speak(utterance);
+    }, 120);
   }
 
   speakNotification(note: AppNotification, options?: { force?: boolean; skipIfSpoken?: boolean }): void {
@@ -212,6 +252,26 @@ export class TtsService {
       return voices.find((v) => v.lang.toLowerCase().startsWith(prefix)) || null;
     } catch {
       return null;
+    }
+  }
+
+  private resumeAudio(): void {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    try {
+      const AudioCtx = window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (!AudioCtx) {
+        return;
+      }
+      if (!this.audioCtx) {
+        this.audioCtx = new AudioCtx();
+      }
+      if (this.audioCtx.state === 'suspended') {
+        void this.audioCtx.resume();
+      }
+    } catch {
+      // Sin Web Audio.
     }
   }
 }

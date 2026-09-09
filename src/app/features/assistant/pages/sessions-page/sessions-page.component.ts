@@ -1,32 +1,37 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { of } from 'rxjs';
+import { of, Subscription } from 'rxjs';
 
 import { Routine, Sport } from '@features/sports-disabilities/models/sports';
 import { SessionService } from '@core/services/session.service';
 import { SportsService } from '@features/sports-disabilities/services/sports.service';
 import { ReportsService } from '@features/reports/services/reports.service';
 import { ConfirmDialogService } from '@shared/services/confirm-dialog.service';
+import { LiveSyncService } from '@features/accessibility/services/live-sync.service';
+import { matchesQuery } from '@core/utils/search.util';
 
 @Component({
   selector: 'app-sessions-page',
   templateUrl: './sessions-page.component.html',
   styleUrl: './sessions-page.component.scss'
 })
-export class SessionsPageComponent implements OnInit {
+export class SessionsPageComponent implements OnInit, OnDestroy {
   routines: Routine[] = [];
   sports: Sport[] = [];
   form: FormGroup;
+  searchQuery = '';
   errorMessage: string | null = null;
   successMessage: string | null = null;
   loading = true;
+  private liveSub: Subscription | null = null;
 
   constructor(
     private fb: FormBuilder,
     private session: SessionService,
     private sportsService: SportsService,
     private reportsService: ReportsService,
-    private confirm: ConfirmDialogService
+    private confirm: ConfirmDialogService,
+    private liveSync: LiveSyncService
   ) {
     this.form = this.fb.group({
       name: ['', Validators.required],
@@ -42,10 +47,28 @@ export class SessionsPageComponent implements OnInit {
 
   ngOnInit(): void {
     this.reload();
+    this.liveSync.start();
+    this.liveSub = this.liveSync.pulse$.subscribe(() => this.reload(true));
   }
 
-  reload(): void {
-    this.loading = true;
+  ngOnDestroy(): void {
+    this.liveSub?.unsubscribe();
+  }
+
+  get filteredRoutines(): Routine[] {
+    return this.routines.filter((routine) =>
+      matchesQuery(this.searchQuery, routine.name, routine.status, routine.disabilityFocus, routine.description)
+    );
+  }
+
+  clearSearch(): void {
+    this.searchQuery = '';
+  }
+
+  reload(silent = false): void {
+    if (!silent) {
+      this.loading = true;
+    }
     this.withTrainerId((trainerId) => {
       this.reportsService.getSessionsPanel(trainerId).subscribe({
         next: (panel) => {
@@ -57,8 +80,10 @@ export class SessionsPageComponent implements OnInit {
           this.loading = false;
         },
         error: (error) => {
-          this.errorMessage = error?.error?.message || 'No se pudieron cargar sesiones.';
-          this.loading = false;
+          if (!silent) {
+            this.errorMessage = error?.error?.message || 'No se pudieron cargar sesiones.';
+            this.loading = false;
+          }
         }
       });
     });

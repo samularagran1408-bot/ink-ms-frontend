@@ -23,6 +23,7 @@ export class NotificationsPageComponent implements OnInit, OnDestroy {
 
   private prefsSub: Subscription | null = null;
   private playingSub: Subscription | null = null;
+  private pollTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(
     private session: SessionService,
@@ -42,19 +43,26 @@ export class NotificationsPageComponent implements OnInit, OnDestroy {
       this.playingId = id;
     });
     this.reload();
+    this.pollTimer = setInterval(() => this.reload(false), 20_000);
   }
 
   ngOnDestroy(): void {
     this.prefsSub?.unsubscribe();
     this.playingSub?.unsubscribe();
+    if (this.pollTimer) {
+      clearInterval(this.pollTimer);
+      this.pollTimer = null;
+    }
   }
 
   get fixedSidebar(): boolean {
     return this.session.getPrimaryRole() !== 'USUARIO';
   }
 
-  reload(): void {
-    this.loading = true;
+  reload(showLoading = true): void {
+    if (showLoading) {
+      this.loading = true;
+    }
     this.audioMode = this.tts.isAudioNotificationsActive;
     this.preferencesApi.getNotifications().subscribe({
       next: (notifications) => {

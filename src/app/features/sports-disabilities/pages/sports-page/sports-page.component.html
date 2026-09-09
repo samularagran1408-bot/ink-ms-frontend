@@ -29,7 +29,19 @@
         [(ngModel)]="searchQuery"
         [placeholder]="'SPORTS_PAGE.SEARCH_PH' | translate"
       />
+      <select name="sportDifficulty" [(ngModel)]="difficultyFilter">
+        <option value="">{{ 'COMMON.ALL' | translate }}</option>
+        <option value="bajo">{{ 'SPORTS_PAGE.LOW' | translate }}</option>
+        <option value="medio">{{ 'SPORTS_PAGE.MEDIUM' | translate }}</option>
+        <option value="alto">{{ 'SPORTS_PAGE.HIGH' | translate }}</option>
+      </select>
+      <button class="btn-secondary" type="button" *ngIf="searchQuery.trim() || difficultyFilter" (click)="clearSearch()">
+        {{ 'COMMON.CLEAR' | translate }}
+      </button>
     </div>
+    <p class="search-count" *ngIf="searchQuery.trim() || difficultyFilter">
+      {{ 'COMMON.RESULTS' | translate:{ count: filteredSports.length } }}
+    </p>
     <div *ngFor="let sport of filteredSports">
       <div class="list-item">
         <div>

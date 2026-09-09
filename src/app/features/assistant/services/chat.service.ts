@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 import { API_BASE_URL } from '@core/config/api.config';
 import { ChatHilo, ChatHiloDetalle, ChatResponse, ChatStreamEvent } from '../models/chat';
@@ -66,7 +67,32 @@ export class ChatService {
   }
 
   listarHilos(): Observable<{ conversaciones: ChatHilo[] }> {
-    return this.http.get<{ conversaciones: ChatHilo[] }>(`${this.base}/conversaciones`);
+    return this.http.get<unknown>(`${this.base}/conversaciones`, { params: { limite: 50 } }).pipe(
+      map((res) => ({ conversaciones: this.extraerHilos(res) }))
+    );
+  }
+
+  private extraerHilos(res: unknown): ChatHilo[] {
+    if (Array.isArray(res)) {
+      return res.filter((item): item is ChatHilo => !!item && typeof item === 'object');
+    }
+    if (!res || typeof res !== 'object') {
+      return [];
+    }
+    const row = res as Record<string, unknown>;
+    const nested = row['data'];
+    if (Array.isArray(nested)) {
+      return nested.filter((item): item is ChatHilo => !!item && typeof item === 'object');
+    }
+    const fuente = nested && typeof nested === 'object' ? { ...row, ...(nested as object) } : row;
+    const raw =
+      (fuente as Record<string, unknown>)['conversaciones'] ??
+      (fuente as Record<string, unknown>)['sessions'] ??
+      (fuente as Record<string, unknown>)['hilos'] ??
+      (fuente as Record<string, unknown>)['items'];
+    return Array.isArray(raw)
+      ? raw.filter((item): item is ChatHilo => !!item && typeof item === 'object')
+      : [];
   }
 
   obtenerHilo(conversacionId: string): Observable<ChatHiloDetalle> {

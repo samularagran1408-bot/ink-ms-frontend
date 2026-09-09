@@ -5,7 +5,10 @@
       <button class="hamburger-btn" type="button" (click)="openSidebar()" [attr.aria-label]="'COMMON.OPEN_MENU' | translate">
         <app-icon name="bars-3" [size]="22"></app-icon>
       </button>
-      <a [routerLink]="sessionHome" class="brand-logo">{{ brandTitle }}</a>
+      <a [routerLink]="sessionHome" class="brand-logo">
+        <span class="brand-mark" aria-hidden="true">I</span>
+        <span>{{ brandTitle }}</span>
+      </a>
     </div>
     <div class="nav-right">
       <div class="user-info-text">
@@ -19,7 +22,7 @@
         [attr.aria-label]="'NAV.NOTIFICATIONS' | translate"
       >
         <app-icon name="bell" [size]="18"></app-icon>
-        <span *ngIf="unreadCount > 0" class="nav-bell-badge">{{ unreadCount }}</span>
+        <span *ngIf="unreadCount > 0" class="nav-bell-badge" [class.nav-bell-badge--pulse]="badgePulse">{{ unreadCount }}</span>
       </a>
       <button
         class="user-avatar-btn"
@@ -60,8 +63,8 @@
       <a
         *ngFor="let item of navItems"
         [routerLink]="item.route"
-        routerLinkActive="sidebar-nav-item--active"
-        [routerLinkActiveOptions]="{ exact: !!item.exact }"
+        [queryParams]="item.queryParams || {}"
+        [class.sidebar-nav-item--active]="isNavActive(item)"
         class="sidebar-nav-item"
         (click)="closeSidebar()"
       >
@@ -69,7 +72,7 @@
           <app-icon [name]="item.icon" [size]="20"></app-icon>
           <span>{{ item.labelKey | translate }}</span>
         </span>
-        <span *ngIf="item.showBadge && unreadCount > 0" class="nav-badge">{{ unreadCount }}</span>
+        <span *ngIf="item.showBadge && unreadCount > 0" class="nav-badge" [class.nav-badge--pulse]="badgePulse">{{ unreadCount }}</span>
       </a>
 
       <ng-container *ngIf="secondaryItems.length">
@@ -77,8 +80,8 @@
         <a
           *ngFor="let item of secondaryItems"
           [routerLink]="item.route"
-          routerLinkActive="sidebar-nav-item--active"
-          [routerLinkActiveOptions]="{ exact: !!item.exact }"
+          [queryParams]="item.queryParams || {}"
+          [class.sidebar-nav-item--active]="isNavActive(item)"
           class="sidebar-nav-item"
           (click)="closeSidebar()"
         >
@@ -86,7 +89,7 @@
             <app-icon [name]="item.icon" [size]="20"></app-icon>
             <span>{{ item.labelKey | translate }}</span>
           </span>
-          <span *ngIf="item.showBadge && unreadCount > 0" class="nav-badge">{{ unreadCount }}</span>
+          <span *ngIf="item.showBadge && unreadCount > 0" class="nav-badge" [class.nav-badge--pulse]="badgePulse">{{ unreadCount }}</span>
         </a>
       </ng-container>
     </nav>
@@ -105,7 +108,21 @@
 
 <!-- Layout admin / entrenador / organizador: sidebar fijo (desktop) -->
 <aside *ngIf="layout === 'fixed'" class="role-sidebar">
-  <div class="role-sidebar-brand">{{ brandTitle }}</div>
+  <div class="role-sidebar-brand">
+    <span class="role-sidebar-brand-label">
+      <span class="brand-mark" aria-hidden="true">I</span>
+      <span>{{ brandTitle }}</span>
+    </span>
+    <a
+      class="nav-bell-btn nav-bell-btn--dark"
+      [routerLink]="notificationsRoute"
+      [attr.title]="'NAV.NOTIFICATIONS' | translate"
+      [attr.aria-label]="'NAV.NOTIFICATIONS' | translate"
+    >
+      <app-icon name="bell" [size]="18"></app-icon>
+      <span *ngIf="unreadCount > 0" class="nav-bell-badge" [class.nav-bell-badge--pulse]="badgePulse">{{ unreadCount }}</span>
+    </a>
+  </div>
 
   <div class="role-profile-card">
     <div class="role-avatar" [class.role-avatar--photo]="!!profilePicture">
@@ -122,15 +139,15 @@
     <a
       *ngFor="let item of navItems"
       [routerLink]="item.route"
-      routerLinkActive="role-nav-item--active"
-      [routerLinkActiveOptions]="{ exact: !!item.exact }"
+      [queryParams]="item.queryParams || {}"
+      [class.role-nav-item--active]="isNavActive(item)"
       class="role-nav-item"
     >
       <span class="nav-item-main">
         <app-icon [name]="item.icon" [size]="20"></app-icon>
         <span>{{ item.labelKey | translate }}</span>
       </span>
-      <span *ngIf="item.showBadge && unreadCount > 0" class="nav-badge">{{ unreadCount }}</span>
+      <span *ngIf="item.showBadge && unreadCount > 0" class="nav-badge" [class.nav-badge--pulse]="badgePulse">{{ unreadCount }}</span>
     </a>
 
     <ng-container *ngIf="secondaryItems.length">
@@ -138,15 +155,15 @@
       <a
         *ngFor="let item of secondaryItems"
         [routerLink]="item.route"
-        routerLinkActive="role-nav-item--active"
-        [routerLinkActiveOptions]="{ exact: !!item.exact }"
+        [queryParams]="item.queryParams || {}"
+        [class.role-nav-item--active]="isNavActive(item)"
         class="role-nav-item"
       >
         <span class="nav-item-main">
           <app-icon [name]="item.icon" [size]="20"></app-icon>
           <span>{{ item.labelKey | translate }}</span>
         </span>
-        <span *ngIf="item.showBadge && unreadCount > 0" class="nav-badge">{{ unreadCount }}</span>
+        <span *ngIf="item.showBadge && unreadCount > 0" class="nav-badge" [class.nav-badge--pulse]="badgePulse">{{ unreadCount }}</span>
       </a>
     </ng-container>
   </nav>

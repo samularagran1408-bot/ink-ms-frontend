@@ -1,6 +1,4 @@
-<div
-  class="start-wrapper"
->
+<div class="start-wrapper">
   <div class="gridOverlay"></div>
   <header class="top-header">
     <div class="brand-logo-container" (click)="goBack()">
@@ -10,21 +8,14 @@
           <polyline points="12 19 5 12 12 5" />
         </svg>
       </button>
+      <span class="brand-mark" aria-hidden="true">I</span>
       <span class="brand-name">INKLUSPORT</span>
-    </div>
-
-    <div class="user-top-icon" aria-hidden="true">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#A30D11" stroke-width="2">
-        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-        <circle cx="12" cy="7" r="4" />
-        <path d="M19 11v6m3-3h-6" />
-      </svg>
     </div>
   </header>
 
-  
   <main class="auth-card">
     <div class="hero-panel">
+      <div class="hero-overlay"></div>
       <div class="hero-content">
         <span class="highlight-text">{{ 'AUTH.START_BADGE' | translate }}</span>
         <h1 class="hero-title" [innerHTML]="'AUTH.START_TITLE' | translate"></h1>
@@ -46,15 +37,17 @@
       <div class="button-group">
         <button type="button" class="login-button" (click)="goToLogin()">
           {{ 'AUTH.LOGIN_CTA' | translate }}
-          <span class="arrow">
-            
+          <span class="arrow" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M5 12h14M12 5l7 7-7 7"/>
+            </svg>
           </span>
         </button>
 
         <button type="button" class="register-button" (click)="goToRegister()">
           <span class="register-content">
             <span>{{ 'AUTH.REGISTER_CTA' | translate }}</span>
-            </span>
+          </span>
         </button>
 
         <button type="button" class="guest-button" (click)="goToGuest()">

@@ -33,6 +33,7 @@ export interface EventItem {
   status?: string;
   createdBy?: string;
   createdAt?: string;
+  cancelledAt?: string;
 }
 
 export interface EventRequest {
@@ -94,6 +95,7 @@ export interface Registration {
   userId: string;
   userFullName?: string;
   userEmail?: string;
+  userProfilePicture?: string;
   eventId: string;
   eventName?: string;
   eventDate?: string;
@@ -131,9 +133,11 @@ export interface AttendanceReportAttendee {
   userId?: string;
   fullName?: string;
   email?: string;
+  profilePicture?: string;
   checkInTime?: string;
   checkInMethod?: string;
   verifiedBy?: string;
+  notes?: string;
 }
 
 export interface AttendanceReportAbsent {
@@ -141,6 +145,7 @@ export interface AttendanceReportAbsent {
   userId?: string;
   fullName?: string;
   email?: string;
+  profilePicture?: string;
 }
 
 export interface AttendanceReport {

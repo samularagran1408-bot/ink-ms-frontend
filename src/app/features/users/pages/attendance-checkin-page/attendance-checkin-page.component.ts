@@ -46,9 +46,6 @@ export class AttendanceCheckinPageComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.clockTimer = setInterval(() => {
       this.nowMs = Date.now();
-      if (!this.loading && !this.alreadyAttended && this.attendanceByQr && this.eventHasStarted && !this.submitting && !this.successMessage) {
-        this.submitAttendance();
-      }
     }, 15_000);
     this.qrCode = extractQrCode(this.route.snapshot.queryParamMap.get('code') || '');
     if (!this.qrCode) {
@@ -93,7 +90,7 @@ export class AttendanceCheckinPageComponent implements OnInit, OnDestroy {
       this.info?.eventDate || this.event?.eventDate,
       this.info?.eventTime || this.event?.eventTime
     );
-    return start == null || this.nowMs >= start;
+    return start != null && this.nowMs >= start;
   }
 
   reload(): void {
@@ -132,9 +129,6 @@ export class AttendanceCheckinPageComponent implements OnInit, OnDestroy {
           this.errorMessage = 'No encontramos una inscripción válida para este código QR.';
           return;
         }
-        if (!this.alreadyAttended && this.attendanceByQr && this.eventHasStarted) {
-          this.submitAttendance();
-        }
       },
       error: (error) => {
         this.loading = false;
@@ -144,7 +138,10 @@ export class AttendanceCheckinPageComponent implements OnInit, OnDestroy {
   }
 
   submit(): void {
-    if (!this.surveyReady || !this.eventHasStarted) {
+    if (!this.eventHasStarted) {
+      return;
+    }
+    if (!this.attendanceByQr && !this.surveyReady) {
       return;
     }
     this.submitAttendance();
@@ -167,7 +164,7 @@ export class AttendanceCheckinPageComponent implements OnInit, OnDestroy {
     this.submitting = true;
     this.errorMessage = null;
     const verifiedBy = this.session.getProfile()?.id || this.session.getDisplayName();
-    this.sportsService.markAttendanceByQr(this.qrCode, verifiedBy).subscribe({
+    this.sportsService.markAttendanceByQr(this.qrCode, verifiedBy, this.survey.notes).subscribe({
       next: (response) => {
         this.submitting = false;
         this.successMessage = response?.message || 'Asistencia registrada. ¡Gracias!';

@@ -13,6 +13,7 @@ export class UnreadNotificationsService implements OnDestroy {
   readonly count$ = this.countSubject.asObservable();
 
   private started = false;
+  private pollTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(
     private preferencesApi: PreferencesApiService,
@@ -25,10 +26,15 @@ export class UnreadNotificationsService implements OnDestroy {
     }
     this.started = true;
     this.refresh();
+    this.pollTimer = setInterval(() => this.refresh(), 20_000);
   }
 
   stop(): void {
     this.started = false;
+    if (this.pollTimer) {
+      clearInterval(this.pollTimer);
+      this.pollTimer = null;
+    }
     this.countSubject.next(0);
   }
 
