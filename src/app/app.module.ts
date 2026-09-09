@@ -2,12 +2,14 @@ import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { CommonModule } from '@angular/common';
 import { HTTP_INTERCEPTORS, HttpClient, HttpClientModule } from '@angular/common/http';
+import { RouteReuseStrategy } from '@angular/router';
 import { TranslateLoader, TranslateModule } from '@ngx-translate/core';
 import { TranslateHttpLoader } from '@ngx-translate/http-loader';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { AuthInterceptor } from '@core/interceptors/auth.interceptor';
+import { PanelRouteReuseStrategy } from '@core/routing/panel-route-reuse.strategy';
 import { SharedModule } from './shared/shared.module';
 
 export function httpLoaderFactory(http: HttpClient): TranslateHttpLoader {
@@ -34,7 +36,9 @@ export function httpLoaderFactory(http: HttpClient): TranslateHttpLoader {
     })
   ],
   providers: [
-    { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true }
+    { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },
+    PanelRouteReuseStrategy,
+    { provide: RouteReuseStrategy, useExisting: PanelRouteReuseStrategy }
   ],
   bootstrap: [AppComponent]
 })

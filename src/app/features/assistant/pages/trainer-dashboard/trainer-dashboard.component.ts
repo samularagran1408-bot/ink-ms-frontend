@@ -1,13 +1,18 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
+import { Router, RouterModule } from '@angular/router';
 import { of, Subscription } from 'rxjs';
 
 import { Disability, Routine } from '@features/sports-disabilities/models/sports';
 import { SessionService } from '@core/services/session.service';
 import { ReportsService } from '@features/reports/services/reports.service';
 import { LiveSyncService } from '@features/accessibility/services/live-sync.service';
+import { SharedModule } from '@shared/shared.module';
 
 @Component({
+  standalone: true,
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, SharedModule],
   selector: 'app-trainer-dashboard',
   templateUrl: './trainer-dashboard.component.html',
   styleUrl: './trainer-dashboard.component.scss'

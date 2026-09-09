@@ -1,9 +1,13 @@
 import { Component, OnInit } from '@angular/core';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
+import { CommonModule } from '@angular/common';
 import { TranslateService } from '@ngx-translate/core';
 
 import { AdminAuditLog, UserProfile } from '@core/models/user-profile';
 import { DashboardResponse } from '@features/reports/models/reports';
 import { ReportsService } from '@features/reports/services/reports.service';
+import { SharedModule } from '@shared/shared.module';
 
 interface ChartBar {
   label: string;
@@ -20,6 +24,8 @@ interface DonutSlice {
 }
 
 @Component({
+  standalone: true,
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, SharedModule],
   selector: 'app-admin-audit',
   templateUrl: './admin-audit.component.html',
   styleUrl: './admin-audit.component.scss'

@@ -1,6 +1,9 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
+import { Router, RouterModule } from '@angular/router';
 import { Subscription, of } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
 import { TranslateService } from '@ngx-translate/core';
 
 import { EventItem, Registration, Routine, RoutineRegistration, Sport, Disability, SportDisability, CalendarEvent } from '@features/sports-disabilities/models/sports';
@@ -17,10 +20,13 @@ import { CompetitionModeState } from '@features/assistant/models/competition';
 import { resolveEventImage } from '@features/sports-disabilities/utils/event-image.util';
 import { eventDateTimeMs } from '@core/utils/qr-attendance.util';
 import { isEventVisible } from '@features/sports-disabilities/utils/event-visibility.util';
+import { SharedModule } from '@shared/shared.module';
 
 type CatalogFilter = 'all' | 'sports' | 'disabilities' | 'associations' | 'routines';
 
 @Component({
+  standalone: true,
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, SharedModule],
   selector: 'app-user-interface',
   templateUrl: './user-interface.component.html',
   styleUrl: './user-interface.component.scss'
@@ -102,38 +108,38 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
       ? of(this.session.getProfile())
       : this.session.loadProfile();
 
-    profile$.subscribe((profile) => {
-      this.reportsService.getHomePanel(profile?.id).subscribe({
-        next: (panel) => {
-          const rawEvents = panel.events || [];
-          const events = rawEvents.filter((event) => isEventVisible(event));
-          const registrations = (panel.registrations || []).filter((reg) => {
-            const event = rawEvents.find((item) => item.id === reg.eventId);
-            return !event || isEventVisible(event);
-          });
-          this.allEvents = this.sortEvents(events);
-          this.events = this.resolveFeaturedEvents(this.allEvents, registrations);
-          this.registrations = this.sortRegistrations(registrations);
-          this.nextEvent = this.resolveNextEvent(events, registrations);
-          this.applyEventsToCalendar(this.allEvents);
-          this.sports = panel.sports || [];
-          this.disabilities = panel.disabilities || [];
-          this.associations = panel.associations || [];
-          this.routines = panel.routines || [];
-          this.routineRegistrations = panel.routineRegistrations || [];
-          this.sportsLoaded = true;
-          this.disabilitiesLoaded = true;
-          this.associationsLoaded = true;
-          this.routinesLoaded = true;
+    profile$.pipe(
+      switchMap((profile) => this.reportsService.getHomePanel(profile?.id))
+    ).subscribe({
+      next: (panel) => {
+        const rawEvents = panel.events || [];
+        const events = rawEvents.filter((event) => isEventVisible(event));
+        const registrations = (panel.registrations || []).filter((reg) => {
+          const event = rawEvents.find((item) => item.id === reg.eventId);
+          return !event || isEventVisible(event);
+        });
+        this.allEvents = this.sortEvents(events);
+        this.events = this.resolveFeaturedEvents(this.allEvents, registrations);
+        this.registrations = this.sortRegistrations(registrations);
+        this.nextEvent = this.resolveNextEvent(events, registrations);
+        this.applyEventsToCalendar(this.allEvents);
+        this.sports = panel.sports || [];
+        this.disabilities = panel.disabilities || [];
+        this.associations = panel.associations || [];
+        this.routines = panel.routines || [];
+        this.routineRegistrations = panel.routineRegistrations || [];
+        this.sportsLoaded = true;
+        this.disabilitiesLoaded = true;
+        this.associationsLoaded = true;
+        this.routinesLoaded = true;
+        this.loading = false;
+      },
+      error: () => {
+        if (!silent) {
+          this.errorMessage = this.translate.instant('HOME.LOAD_ERROR');
           this.loading = false;
-        },
-        error: () => {
-          if (!silent) {
-            this.errorMessage = this.translate.instant('HOME.LOAD_ERROR');
-            this.loading = false;
-          }
         }
-      });
+      }
     });
   }
 

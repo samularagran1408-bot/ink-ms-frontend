@@ -1,4 +1,4 @@
-import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
 import { TranslateService } from '@ngx-translate/core';
 import { Subscription } from 'rxjs';
@@ -10,6 +10,7 @@ import { UnreadNotificationsService } from '@features/accessibility/services/unr
 import { LiveSyncService } from '@features/accessibility/services/live-sync.service';
 import { ConfirmDialogService } from '@shared/services/confirm-dialog.service';
 import { HeroIconName } from '../../icons/heroicons-outline';
+import { preloadNavRoute, preloadNavRoutes } from './nav-preload';
 
 export interface SidebarNavItem {
   labelKey: string;
@@ -23,7 +24,8 @@ export interface SidebarNavItem {
 @Component({
   selector: 'app-sidebar-nav',
   templateUrl: './sidebar-nav.component.html',
-  styleUrl: './sidebar-nav.component.scss'
+  styleUrl: './sidebar-nav.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class SidebarNavComponent implements OnInit, OnDestroy {
   private static readonly MOBILE_BREAKPOINT = 700;
@@ -41,9 +43,15 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
   secondaryItems: SidebarNavItem[] = [];
   unreadCount = 0;
   badgePulse = false;
+  sessionHome = '/home';
+  notificationsRoute = '/home/notifications';
 
   private subs = new Subscription();
   private pulseTimer: ReturnType<typeof setTimeout> | null = null;
+  private preloadTimer: ReturnType<typeof setTimeout> | null = null;
+  private activeUrl = '';
+  private activeVista: string | undefined;
+  readonly emptyQuery: Record<string, string> = {};
 
   constructor(
     private router: Router,
@@ -51,7 +59,8 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
     private translate: TranslateService,
     private unreadNotifications: UnreadNotificationsService,
     private liveSync: LiveSyncService,
-    private confirm: ConfirmDialogService
+    private confirm: ConfirmDialogService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   /** En móvil el staff también usa drawer + hamburguesa. */
@@ -79,15 +88,20 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
         this.pulseTimer = setTimeout(() => {
           this.badgePulse = false;
           this.pulseTimer = null;
+          this.cdr.markForCheck();
         }, 1800);
       }
       this.unreadCount = count;
+      this.cdr.markForCheck();
     }));
+    this.cacheActiveUrl(this.router.url);
     this.subs.add(
       this.router.events
         .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
-        .subscribe(() => {
+        .subscribe((event) => {
           this.sidebarOpen = false;
+          this.cacheActiveUrl(event.urlAfterRedirects);
+          this.cdr.markForCheck();
         })
     );
 
@@ -100,12 +114,20 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
     if (this.pulseTimer) {
       clearTimeout(this.pulseTimer);
     }
+    if (this.preloadTimer) {
+      clearTimeout(this.preloadTimer);
+    }
     this.subs.unsubscribe();
   }
 
   @HostListener('window:resize')
   onWindowResize(): void {
     this.updateViewport();
+    this.cdr.markForCheck();
+  }
+
+  trackByNav(_index: number, item: SidebarNavItem): string {
+    return `${item.route || ''}:${item.queryParams?.['vista'] || ''}:${item.labelKey}`;
   }
 
   openSidebar(): void {
@@ -114,6 +136,10 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
 
   closeSidebar(): void {
     this.sidebarOpen = false;
+  }
+
+  prefetchNav(item: SidebarNavItem): void {
+    preloadNavRoute(item.route);
   }
 
   handleLogout(): void {
@@ -131,6 +157,7 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
     if (ok) {
       this.session.logout();
     }
+    this.cdr.markForCheck();
   }
 
   get initials(): string {
@@ -163,39 +190,34 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
     this.profilePicture = this.session.getProfile()?.profilePicture || null;
     this.preferredLayout = this.role === 'USUARIO' ? 'drawer' : 'fixed';
     this.brandTitle = this.role === 'ADMIN' ? 'INKLUSPORT ADMIN' : 'INKLUSPORT';
+    this.sessionHome = this.session.homeForCurrentUser();
+    this.notificationsRoute = `${this.sessionHome}/notifications`;
     this.applyMenuByRole();
-  }
-
-  get sessionHome(): string {
-    return this.session.homeForCurrentUser();
-  }
-
-  get notificationsRoute(): string {
-    return `${this.sessionHome}/notifications`;
+    this.scheduleMenuPreload();
+    this.cdr.markForCheck();
   }
 
   isNavActive(item: SidebarNavItem): boolean {
     if (!item.route) {
       return false;
     }
-    const pathActive = this.router.isActive(
-      this.router.createUrlTree([item.route]),
-      {
-        paths: item.exact ? 'exact' : 'subset',
-        queryParams: 'ignored',
-        fragment: 'ignored',
-        matrixParams: 'ignored'
-      }
-    );
+    const pathActive = item.exact
+      ? this.activeUrl === item.route
+      : this.activeUrl === item.route || this.activeUrl.startsWith(`${item.route}/`);
     if (!pathActive) {
       return false;
     }
-    const currentVista = this.router.parseUrl(this.router.url).queryParams['vista'];
     const wantedVista = item.queryParams?.['vista'];
     if (wantedVista) {
-      return currentVista === wantedVista;
+      return this.activeVista === wantedVista;
     }
-    return !currentVista;
+    return !this.activeVista;
+  }
+
+  private cacheActiveUrl(url: string): void {
+    const clean = (url || this.router.url || '').split('#')[0];
+    this.activeUrl = clean.split('?')[0] || '/';
+    this.activeVista = this.router.parseUrl(clean).queryParams['vista'];
   }
 
   private commonAccountItems(base: string): SidebarNavItem[] {
@@ -256,5 +278,17 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
         this.secondaryItems = [];
         break;
     }
+  }
+
+  private scheduleMenuPreload(): void {
+    if (this.preloadTimer) {
+      clearTimeout(this.preloadTimer);
+    }
+    this.preloadTimer = setTimeout(() => {
+      preloadNavRoutes([
+        ...this.navItems.map((item) => item.route),
+        ...this.secondaryItems.map((item) => item.route)
+      ]);
+    }, 400);
   }
 }

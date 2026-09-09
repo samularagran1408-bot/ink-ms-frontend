@@ -1,5 +1,7 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { RouterModule } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { of, Subscription } from 'rxjs';
 
 import { Routine, Sport } from '@features/sports-disabilities/models/sports';
@@ -9,8 +11,11 @@ import { ReportsService } from '@features/reports/services/reports.service';
 import { ConfirmDialogService } from '@shared/services/confirm-dialog.service';
 import { LiveSyncService } from '@features/accessibility/services/live-sync.service';
 import { matchesQuery } from '@core/utils/search.util';
+import { SharedModule } from '@shared/shared.module';
 
 @Component({
+  standalone: true,
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, SharedModule],
   selector: 'app-sessions-page',
   templateUrl: './sessions-page.component.html',
   styleUrl: './sessions-page.component.scss'

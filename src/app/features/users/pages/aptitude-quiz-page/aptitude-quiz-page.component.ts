@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { of } from 'rxjs';
 
@@ -14,6 +15,7 @@ import {
 } from '@features/users/services/quiz.service';
 import { SessionService } from '@core/services/session.service';
 import { ReportsService } from '@features/reports/services/reports.service';
+import { SharedModule } from '@shared/shared.module';
 
 /**
  * Pasos del flujo de quiz en la UI.
@@ -24,6 +26,8 @@ type Step = 'prep' | 'quiz' | 'result';
  * Pantalla de aptitud: prep (experiencia + disciplinas) → quiz → resultado.
  */
 @Component({
+  standalone: true,
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, SharedModule],
   selector: 'app-aptitude-quiz-page',
   templateUrl: './aptitude-quiz-page.component.html',
   styleUrl: './aptitude-quiz-page.component.scss'

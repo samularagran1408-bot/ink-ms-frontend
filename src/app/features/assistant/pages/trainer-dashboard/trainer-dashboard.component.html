@@ -1,5 +1,4 @@
-<app-panel-shell>
-  <h1 class="page-title">{{ 'TRAINER.TITLE' | translate }}</h1>
+<h1 class="page-title">{{ 'TRAINER.TITLE' | translate }}</h1>
   <p class="page-subtitle">{{ 'TRAINER.SUBTITLE' | translate }}</p>
   <p *ngIf="loading" class="empty-text">{{ 'COMMON.LOADING' | translate }}</p>
   <p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
@@ -80,4 +79,3 @@
       <p *ngIf="!disabilities.length" class="empty-text">Sin discapacidades activas.</p>
     </div>
   </div>
-</app-panel-shell>

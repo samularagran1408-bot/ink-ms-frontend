@@ -1,8 +1,8 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
-import QRCode from 'qrcode';
-import { Html5Qrcode } from 'html5-qrcode';
+import { CommonModule } from '@angular/common';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import type { Html5Qrcode } from 'html5-qrcode';
 import { Subscription, of } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 
@@ -26,6 +26,7 @@ import { buildAttendanceCheckinUrl, extractQrCode, eventDateTimeMs } from '@core
 import { userInitials } from '@core/utils/avatar.util';
 import { matchesQuery } from '@core/utils/search.util';
 import { isEventVisible } from '@features/sports-disabilities/utils/event-visibility.util';
+import { SharedModule } from '@shared/shared.module';
 
 interface EventManageRow {
   event: EventItem;
@@ -44,6 +45,8 @@ interface MyPassRow {
 }
 
 @Component({
+  standalone: true,
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, SharedModule],
   selector: 'app-events-page',
   templateUrl: './events-page.component.html',
   styleUrl: './events-page.component.scss'
@@ -1036,7 +1039,7 @@ export class EventsPageComponent implements OnInit, OnDestroy {
     this.scannerError = null;
     try {
       await this.stopScanner();
-      this.html5Qr = new Html5Qrcode(this.scannerElementId);
+      this.html5Qr = new (await import('html5-qrcode')).Html5Qrcode(this.scannerElementId);
       await this.html5Qr.start(
         { facingMode: 'environment' },
         { fps: 8, qrbox: { width: 220, height: 220 } },
@@ -1084,6 +1087,7 @@ export class EventsPageComponent implements OnInit, OnDestroy {
 
     try {
       await this.stopScanner();
+      const { Html5Qrcode } = await import('html5-qrcode');
       const scanner = new Html5Qrcode(this.scannerElementId);
       this.html5Qr = scanner;
       const decoded = await scanner.scanFile(file, true);
@@ -1234,6 +1238,7 @@ export class EventsPageComponent implements OnInit, OnDestroy {
     }
     pass.loadingQr = true;
     try {
+      const { default: QRCode } = await import('qrcode');
       pass.qrDataUrl = await QRCode.toDataURL(buildAttendanceCheckinUrl(code as string, pass.event?.id), {
         width: 220,
         margin: 1,
