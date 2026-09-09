@@ -40,7 +40,6 @@ export class AssistantPageComponent implements OnInit, OnDestroy {
   mcpNota: string | null = null;
   hilos: ChatHilo[] = [];
   hilosVisibles: ChatHilo[] = [];
-  busquedaHistorial = '';
   cargandoHilos = false;
   cargandoHilo = false;
   errorHistorial: string | null = null;
@@ -102,6 +101,13 @@ export class AssistantPageComponent implements OnInit, OnDestroy {
         this.detenerCicloLocal();
         this.pasosAgente = [];
         this.error = err?.error?.detail || err?.message || 'No se pudo contactar al asistente.';
+        if (typeof this.error !== 'string') {
+          this.error = 'No se pudo contactar al asistente.';
+        }
+        if (err?.status === 429) {
+          this.error = (typeof err?.error?.detail === 'string' && err.error.detail)
+            || 'Ya hay una respuesta en curso. Espera un momento.';
+        }
         this.estadoA11y = this.error || '';
         this.cdr.markForCheck();
       }
@@ -138,10 +144,7 @@ export class AssistantPageComponent implements OnInit, OnDestroy {
   }
 
   filtrarHistorial(): void {
-    const q = this.busquedaHistorial.trim().toLowerCase();
-    this.hilosVisibles = q
-      ? this.hilos.filter((h) => (this.tituloDeHilo(h) || '').toLowerCase().includes(q))
-      : [...this.hilos];
+    this.hilosVisibles = [...this.hilos];
     this.cdr.markForCheck();
   }
 
@@ -194,17 +197,6 @@ export class AssistantPageComponent implements OnInit, OnDestroy {
   tituloHiloActual(): string {
     const actual = this.hilos.find((h) => this.chat.idDeHilo(h) === this.conversacionId);
     return this.tituloDeHilo(actual) || this.translate.instant('CHAT.NEW');
-  }
-
-  textoHistorial(): string {
-    const n = this.hilosVisibles.length;
-    if (n > 0) {
-      return n === 1 ? '1 conversación' : `${n} conversaciones`;
-    }
-    if (this.hilos.length) {
-      return this.translate.instant('CHAT.NO_RESULTS');
-    }
-    return this.translate.instant('CHAT.HISTORY_EMPTY');
   }
 
   abrirHilo(hilo: ChatHilo): void {

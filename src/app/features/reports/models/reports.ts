@@ -40,6 +40,14 @@ export interface PanelDashboardResponse {
   athleteCount?: number;
   attendanceRatePercent?: number | null;
   attendanceSampledEvents?: number;
+  eventsTotal?: number;
+  eventsPage?: number;
+  eventsSize?: number;
+  eventsTotalPages?: number;
+  usersTotal?: number;
+  usersPage?: number;
+  usersSize?: number;
+  usersTotalPages?: number;
 }
 
 export interface DashboardFilters {

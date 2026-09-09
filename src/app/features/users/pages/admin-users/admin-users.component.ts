@@ -1,10 +1,10 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, HostListener, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { TranslateService } from '@ngx-translate/core';
-import { of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { Subject, Subscription, of } from 'rxjs';
+import { catchError, debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
 import { AdminUserActivityItem, UserProfile } from '@core/models/user-profile';
 import { UsersService } from '@features/users/services/users.service';
@@ -21,7 +21,7 @@ import { SharedModule } from '@shared/shared.module';
   styleUrl: './admin-users.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class AdminUsersComponent implements OnInit {
+export class AdminUsersComponent implements OnInit, OnDestroy {
   users: UserProfile[] = [];
   filteredUsers: UserProfile[] = [];
   pagedUsers: UserProfile[] = [];
@@ -44,6 +44,8 @@ export class AdminUsersComponent implements OnInit {
   activityItems: AdminUserActivityItem[] = [];
   activityLastLogin: string | null = null;
   activityLoading = false;
+  private readonly search$ = new Subject<string>();
+  private searchSub?: Subscription;
 
   readonly disabilityOptions = [
     { value: '', labelKey: 'ADMIN_USERS.ALL_DISABILITIES' },
@@ -66,7 +68,18 @@ export class AdminUsersComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.searchSub = this.search$.pipe(
+      debounceTime(400),
+      distinctUntilChanged()
+    ).subscribe(() => {
+      this.currentPage = 1;
+      this.reload();
+    });
     this.reload();
+  }
+
+  ngOnDestroy(): void {
+    this.searchSub?.unsubscribe();
   }
 
   get selectedCount(): number {
@@ -90,13 +103,29 @@ export class AdminUsersComponent implements OnInit {
       this.loading = true;
     }
     this.errorMessage = null;
-    this.reportsService.getUsersPanel('all').subscribe({
+    this.reportsService.getUsersPanel(
+      this.filter,
+      this.currentPage - 1,
+      this.pageSize,
+      this.nameQuery,
+      this.disabilityQuery
+    ).subscribe({
       next: (panel) => {
         this.users = panel.users || [];
-        this.selected.clear();
-        this.currentPage = 1;
+        this.filteredUsers = this.users;
+        this.pagedUsers = this.users;
+        this.totalPages = Math.max(1, panel.usersTotalPages || 1);
+        this.currentPage = Math.min(Math.max(1, this.currentPage), this.totalPages);
+        const total = panel.usersTotal ?? this.users.length;
+        const start = total ? (this.currentPage - 1) * this.pageSize : 0;
+        this.showingFrom = total ? start + 1 : 0;
+        this.showingTo = Math.min(start + this.users.length, total);
+        if (!silent) {
+          this.selected.clear();
+        }
         this.loading = false;
-        this.applyView();
+        this.syncSelectionFlags();
+        this.cdr.markForCheck();
       },
       error: (error) => {
         this.errorMessage = error?.error?.message || this.translate.instant('ADMIN_USERS.LOAD_LIST_ERROR');
@@ -112,12 +141,11 @@ export class AdminUsersComponent implements OnInit {
     }
     this.filter = filter;
     this.currentPage = 1;
-    this.applyView();
+    this.reload();
   }
 
   onSearchChange(): void {
-    this.currentPage = 1;
-    this.applyView();
+    this.search$.next(`${this.nameQuery}|${this.disabilityQuery}`);
   }
 
   goToPage(page: number): void {
@@ -125,7 +153,7 @@ export class AdminUsersComponent implements OnInit {
       return;
     }
     this.currentPage = page;
-    this.applyView();
+    this.reload(true);
   }
 
   toggleOne(email: string, checked: boolean): void {
@@ -144,35 +172,6 @@ export class AdminUsersComponent implements OnInit {
     } else {
       this.pagedUsers.forEach((u) => this.selected.delete(u.email));
     }
-    this.syncSelectionFlags();
-    this.cdr.markForCheck();
-  }
-
-  private applyView(): void {
-    const name = this.nameQuery.trim().toLowerCase();
-    const disability = this.disabilityQuery.trim().toLowerCase();
-    let list = this.users;
-    if (this.filter === 'active') {
-      list = list.filter((user) => !this.isInactive(user));
-    } else if (this.filter === 'inactive') {
-      list = list.filter((user) => this.isInactive(user));
-    }
-    if (name) {
-      list = list.filter((user) =>
-        (user.fullName || '').toLowerCase().includes(name)
-        || (user.email || '').toLowerCase().includes(name)
-      );
-    }
-    if (disability) {
-      list = list.filter((user) => (user.disability || '').toLowerCase().includes(disability));
-    }
-    this.filteredUsers = list;
-    this.totalPages = Math.max(1, Math.ceil(list.length / this.pageSize));
-    this.currentPage = Math.min(Math.max(1, this.currentPage), this.totalPages);
-    const start = (this.currentPage - 1) * this.pageSize;
-    this.pagedUsers = list.slice(start, start + this.pageSize);
-    this.showingFrom = list.length ? start + 1 : 0;
-    this.showingTo = Math.min(start + this.pageSize, list.length);
     this.syncSelectionFlags();
     this.cdr.markForCheck();
   }

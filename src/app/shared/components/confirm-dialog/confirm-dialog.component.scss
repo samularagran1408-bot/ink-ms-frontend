@@ -1,12 +1,12 @@
 :host {
   position: relative;
-  z-index: 200000;
+  z-index: 1000100;
 }
 
 .confirm-overlay {
   position: fixed;
   inset: 0;
-  z-index: 200000;
+  z-index: 1000100;
   display: grid;
   place-items: center;
   padding: 20px;

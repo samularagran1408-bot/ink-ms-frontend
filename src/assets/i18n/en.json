@@ -25,6 +25,8 @@
     "STATUS": "Status",
     "DESCRIPTION": "Description",
     "ALL": "All",
+    "PREV": "Previous",
+    "NEXT": "Next",
     "LOGOUT_CONFIRM": "Do you want to log out now?"
   },
   "WIDGET": {
@@ -777,7 +779,9 @@
     "SEE_HISTORY": "View history",
     "SEE_CATALOG": "View catalog",
     "QR_HINT": "Show this QR to check in.",
-    "OTHER_PASSES": "Other pending passes"
+    "OTHER_PASSES": "Other pending passes",
+    "PAGE": "Page {{page}} of {{pages}}",
+    "WAITLIST_LOADING": "Loading waitlist..."
   },
   "CHAT": {
     "TITLE": "InkluSport assistant",
@@ -789,8 +793,10 @@
     "PLACEHOLDER": "Ask me about events, a routine or the quiz…",
     "SEND": "Send",
     "HISTORY": "History",
+    "HISTORY_TITLE": "Chat history",
     "HISTORY_EMPTY": "No saved conversations yet.",
-    "HISTORY_HINT": "Threads are stored on your account. The agent only uses the latest turns.",
+    "HISTORY_HINT": "Each conversation is saved. You can delete one or all of the history.",
+    "CLEAR": "Delete history",
     "HISTORY_TOGGLE": "Show chat history",
     "SEARCH": "Search history",
     "SEARCH_PH": "Search chats",

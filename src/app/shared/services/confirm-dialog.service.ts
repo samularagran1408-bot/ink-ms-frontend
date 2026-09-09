@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, NgZone } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 
 export interface ConfirmOptions {
@@ -20,6 +20,8 @@ export class ConfirmDialogService {
   private pending: ((value: boolean) => void) | null = null;
   readonly state$ = new BehaviorSubject<ConfirmState | null>(null);
 
+  constructor(private zone: NgZone) {}
+
   ask(options: ConfirmOptions): Promise<boolean> {
     if (this.pending) {
       this.pending(false);
@@ -27,21 +29,25 @@ export class ConfirmDialogService {
     }
 
     return new Promise((resolve) => {
-      this.pending = resolve;
-      this.state$.next({
-        title: options.title,
-        message: options.message,
-        confirmLabel: options.confirmLabel || 'Confirmar',
-        cancelLabel: options.cancelLabel || 'Cancelar',
-        tone: options.tone || 'primary'
+      this.zone.run(() => {
+        this.pending = resolve;
+        this.state$.next({
+          title: options.title,
+          message: options.message,
+          confirmLabel: options.confirmLabel || 'Confirmar',
+          cancelLabel: options.cancelLabel || 'Cancelar',
+          tone: options.tone || 'primary'
+        });
       });
     });
   }
 
   resolve(result: boolean): void {
-    const pending = this.pending;
-    this.pending = null;
-    this.state$.next(null);
-    pending?.(result);
+    this.zone.run(() => {
+      const pending = this.pending;
+      this.pending = null;
+      this.state$.next(null);
+      pending?.(result);
+    });
   }
 }
