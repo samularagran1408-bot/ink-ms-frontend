@@ -196,7 +196,10 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
           { labelKey: 'NAV.EVENTS', route: '/organizer', exact: true, icon: 'calendar-days' },
           { labelKey: 'NAV.QUIZ', route: '/organizer/quiz', icon: 'academic-cap' },
           { labelKey: 'NAV.MANAGE_EVENTS', route: '/organizer/events', icon: 'cog-6-tooth' },
-          { labelKey: 'NAV.ATHLETES_WAITLIST', route: '/organizer/athletes', icon: 'user-group' }
+          { labelKey: 'NAV.ATHLETES_WAITLIST', route: '/organizer/athletes', icon: 'user-group' },
+          { labelKey: 'NAV.PLANS', route: '/organizer/plans', icon: 'sparkles' },
+          { labelKey: 'NAV.MY_SUBSCRIPTION', route: '/organizer/subscription', icon: 'chart-bar' },
+          { labelKey: 'NAV.PAYMENT_HISTORY', route: '/organizer/payments', icon: 'clipboard-document-list' }
         ];
         this.secondaryItems = this.commonAccountItems('/organizer');
         break;

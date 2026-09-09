@@ -27,6 +27,9 @@ import { AssistantPageComponent } from '@features/assistant/pages/assistant-page
 import { TrainerDashboardComponent } from '@features/assistant/pages/trainer-dashboard/trainer-dashboard.component';
 import { SessionsPageComponent } from '@features/assistant/pages/sessions-page/sessions-page.component';
 import { OrganizerPlansComponent } from '@features/subscriptions/pages/organizer-plans/organizer-plans.component';
+import { SubscriptionComponent } from '@features/subscriptions/pages/subscription/subscription.component';
+import { PaymentHistoryComponent } from '@features/subscriptions/pages/payment-history/payment-history.component';
+import { ProofOfPaymentComponent } from '@features/subscriptions/pages/proof-of-payment/proof-of-payment.component';
 
 const accountChildren = [
   { path: 'profile', component: ProfilePageComponent },
@@ -134,6 +137,10 @@ const routes: Routes = [
         canActivate: [QuizCompletedGuard],
         data: { quizRole: 'ORGANIZADOR' }
       },
+      { path: 'plans', component: OrganizerPlansComponent },
+      { path: 'subscription', component: SubscriptionComponent },
+      { path: 'payments', component: PaymentHistoryComponent },
+      { path: 'payments/receipt', component: ProofOfPaymentComponent },
       ...accountChildren
     ]
   }

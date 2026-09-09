@@ -97,7 +97,10 @@
     "QUIZ": "Quiz de aptitud",
     "HOME": "Inicio",
     "HISTORY": "Historial",
-    "ASSISTANT": "Asistente"
+    "ASSISTANT": "Asistente",
+    "PLANS": "Planes",
+    "MY_SUBSCRIPTION": "Mi suscripción",
+    "PAYMENT_HISTORY": "Historial de pagos"
   },
   "AI_WIDGET": {
     "TOGGLE": "Abrir asistente InkluSport",

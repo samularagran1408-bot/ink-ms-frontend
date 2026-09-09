@@ -4,6 +4,9 @@ import { RouterModule } from '@angular/router';
 
 import { SharedModule } from '@shared/shared.module';
 import { OrganizerPlansComponent } from './pages/organizer-plans/organizer-plans.component';
+import { PaymentHistoryComponent } from './pages/payment-history/payment-history.component';
+import { SubscriptionComponent } from './pages/subscription/subscription.component';
+import { ProofOfPaymentComponent } from './pages/proof-of-payment/proof-of-payment.component';
 
 /**
  * M09 - Suscripciones.
@@ -14,7 +17,10 @@ import { OrganizerPlansComponent } from './pages/organizer-plans/organizer-plans
  */
 @NgModule({
   declarations: [
-    OrganizerPlansComponent
+    OrganizerPlansComponent,
+    PaymentHistoryComponent,
+    SubscriptionComponent,
+    ProofOfPaymentComponent
   ],
   imports: [
     CommonModule,
@@ -22,7 +28,10 @@ import { OrganizerPlansComponent } from './pages/organizer-plans/organizer-plans
     SharedModule
   ],
   exports: [
-    OrganizerPlansComponent
+    OrganizerPlansComponent,
+    PaymentHistoryComponent,
+    SubscriptionComponent,
+    ProofOfPaymentComponent
   ]
 })
 export class SubscriptionsModule {}

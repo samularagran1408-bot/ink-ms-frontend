@@ -1,0 +1,154 @@
+<app-panel-shell>
+<div class="payments-page">
+
+  <div class="crumb">RF61 · RF66 · RF67 COMPLIANT <span class="sep">|</span> MÓDULO FINANCIERO SEGURO</div>
+
+  <div class="page-head">
+    <div>
+      <h1>Historial de Pagos y Transacciones</h1>
+      <p>Consulta tus cobros, facturas electrónicas y comprobantes de pago de inscripciones y suscripciones deportivas adaptadas.</p>
+    </div>
+    <div class="pci">🛡<div><b>BÓVEDA ENCRIPTADA</b>PCI-DSS Nivel 1</div></div>
+  </div>
+
+  <!-- KPIs -->
+  <section class="kpis">
+    <div class="kpi">
+      <div class="kpi-top"><span>TOTAL INVERTIDO AÑO</span><span class="ic">💼</span></div>
+      <div class="kpi-value">$599.88<small>USD</small></div>
+      <div class="kpi-note"><span class="up">↗ +12%</span> vs periodo 2022</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-top"><span>ÚLTIMO PAGO REALIZADO</span><span class="ic">✅</span></div>
+      <div class="kpi-value">$49.99<small>USD</small></div>
+      <div class="kpi-note">PLAN ELITE PARA-SPORT<br>15 Nov, 2023</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-top"><span>PRÓXIMA FACTURACIÓN</span><span class="ic">🗓</span></div>
+      <div class="kpi-value date">15 Dic,<br>2023</div>
+      <div class="kpi-note"><span class="dot-live">● RENOVACIÓN AUTOMÁTICA ACTIVA</span></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-top"><span>MÉTODO PREDETERMINADO</span><span class="ic">💳</span></div>
+      <div class="pay-method"><span class="brand">VISA</span><b>•••• 4242</b></div>
+      <div class="kpi-actions"><span>EXP: 09/27</span><span class="link">GESTIONAR BILLETERA</span></div>
+    </div>
+  </section>
+
+  <!-- Filters -->
+  <div class="filters">
+    <div class="f-input">🧾<input type="text" placeholder="Buscar por ID de transacción"></div>
+    <div class="f-input f-select">🗓 01 Nov 2023 - 30 Nov 2023 ▾</div>
+    <div class="f-input f-select">▽ Estado: <b>Todos</b> ▾</div>
+    <div class="f-input f-select">⚙ Concepto: <b>Todos</b> ▾</div>
+    <button class="btn-export">⬇ EXPORTAR CSV / EXCEL</button>
+  </div>
+
+  <!-- Ledger -->
+  <div class="ledger-head">
+    <div class="ledger-title">
+      <h2>Libro Mayor de Facturas</h2>
+      <span class="chip">48 REGISTROS AUDITADOS</span>
+    </div>
+    <span class="sync">⟳ SINCRONIZADO VÍA STRIPE CORE</span>
+  </div>
+
+  <div class="ledger-wrap">
+    <table class="ledger">
+      <thead>
+        <tr><th>ID TRANSACCIÓN</th><th>CONCEPTO &amp; DETALLE</th><th>FECHA Y HORA</th><th>MÉTODO</th><th>MONTO</th><th>ESTADO</th><th></th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="txn-id">#TXN-8892<small>🧾</small></span></td>
+          <td class="concept"><b>Mensualidad Plan Elite</b><small>MEMBRESÍA ATLETA PRO · CICLO MENSUAL</small></td>
+          <td class="date">15 Nov 2023<small>14:30 hrs</small></td>
+          <td class="method">VISA •••• 4242</td>
+          <td class="amount">$49.99<small>USD</small></td>
+          <td><span class="badge b-ok">COMPLETADO</span></td><td></td>
+        </tr>
+        <tr>
+          <td><span class="txn-id">#TXN-8840<small>🧾</small></span></td>
+          <td class="concept"><b>Inscripción Torneo Para-Atletismo</b><small>OPEN NACIONAL ADAPTADO · CATEGORÍA T54</small></td>
+          <td class="date">04 Nov 2023<small>09:12 hrs</small></td>
+          <td class="method">MC •••• 8819</td>
+          <td class="amount">$120.00<small>USD</small></td>
+          <td><span class="badge b-ok">COMPLETADO</span></td><td></td>
+        </tr>
+        <tr>
+          <td><span class="txn-id">#TXN-8765<small>🧾</small></span></td>
+          <td class="concept"><b>Insumos Guantes Para-Wheelchair</b><small>TIENDA OFICIAL · PRO-TRACK KEVLAR</small></td>
+          <td class="date">28 Oct 2023<small>18:45 hrs</small></td>
+          <td class="method">SPEI Transferencia</td>
+          <td class="amount">$85.50<small>USD</small></td>
+          <td><span class="badge b-warn">PENDIENTE</span></td><td></td>
+        </tr>
+        <tr>
+          <td><span class="txn-id">#TXN-8699<small>🧾</small></span></td>
+          <td class="concept"><b>Mensualidad Plan Elite</b><small>MEMBRESÍA ATLETA PRO · CICLO MENSUAL</small></td>
+          <td class="date">15 Oct 2023<small>14:30 hrs</small></td>
+          <td class="method">VISA •••• 4242</td>
+          <td class="amount">$49.99<small>USD</small></td>
+          <td><span class="badge b-ok">COMPLETADO</span></td><td></td>
+        </tr>
+        <tr>
+          <td><span class="txn-id">#TXN-8510<small>🧾</small></span></td>
+          <td class="concept"><b>Renovación K-Engine Coaching AI</b><small>FONDOS INSUFICIENTES · REINTENTO PROGRAMADO</small></td>
+          <td class="date">01 Oct 2023<small>00:01 hrs</small></td>
+          <td class="method">VISA •••• 1109</td>
+          <td class="amount">$29.00<small>USD</small></td>
+          <td><span class="badge b-err">FALLIDO</span><span class="eye">👁</span></td><td></td>
+        </tr>
+        <tr>
+          <td><span class="txn-id">#TXN-8320<small>🧾</small></span></td>
+          <td class="concept"><b>Inscripción Carrera Nocturna 5K</b><small>CANCELACIÓN POR CLIMA EXTREMO · RETORNO A ORIGEN</small></td>
+          <td class="date">18 Sep 2023<small>11:20 hrs</small></td>
+          <td class="method">VISA •••• 4242</td>
+          <td class="amount neg">-$35.00<small>USD</small></td>
+          <td><span class="badge b-ref">REEMBOLSADO</span></td><td></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="ledger-foot">
+    <span>MOSTRANDO 1-6 DE 48 RESULTADOS REGISTRADOS</span>
+    <div class="pager">
+      <span class="nav">‹ ANTERIOR</span>
+      <span class="cur">1</span><span>2</span><span>3</span><span>…</span><span>8</span>
+      <span class="nav">SIGUIENTE ›</span>
+    </div>
+  </div>
+
+  <!-- Bottom row -->
+  <div class="bottom">
+    <section class="b-card">
+      <div class="b-head">
+        <div>
+          <div class="b-kicker">DEDUCCIÓN DEPORTIVA AUTOMATIZADA</div>
+          <div class="b-title">⚡ K-Engine Fiscal Assistant <span class="audit">AUDITORÍA OK</span></div>
+        </div>
+      </div>
+      <p>El 100% de tus inscripciones y cuotas de alto rendimiento adaptado cuentan con CFDI/Invoice válido emitido con RFC deportivo. Puedes descargar tu carpeta consolidada para la declaración anual de rendimientos sin recargo.</p>
+      <div class="ded-row">
+        <div class="ded"><small>TOTAL DEDUCIBLE 2023</small><b>$599.88 USD</b></div>
+        <div class="ded"><small>RETENCIÓN IVA (0%)</small><b class="ex">Exento Para-Deporte</b></div>
+      </div>
+      <button class="btn-pink">🗜 DESCARGAR PAQUETE ANUAL ZIP</button>
+    </section>
+
+    <section class="b-card ghost">
+      <div class="ghost-circle"></div>
+    </section>
+
+    <section class="b-card">
+      <div class="b-kicker">SOPORTE FINANCIERO</div>
+      <div class="b-title" style="margin-top:6px">🎧 ¿Dudas con un Cobro?</div>
+      <p>Nuestro equipo de contabilidad y soporte para atletas responde en menos de 2 horas hábiles ante reclamos de cobro o corrección de facturas fiscales.</p>
+      <button class="btn-red">SOLICITAR ACLARACIÓN O TICKET</button>
+      <div class="support-note">SOPORTE 24/7 · WHATSAPP &amp; CORREO</div>
+    </section>
+  </div>
+
+</div>
+</app-panel-shell>

@@ -1,0 +1,60 @@
+<app-panel-shell>
+<div class="subscription-page">
+
+  <h1>Subscription Management</h1>
+  <p class="sub">Manage your organization's plan, billing, and usage limits.</p>
+
+  <!-- Current plan + capacity -->
+  <div class="grid-top">
+    <section class="card">
+      <div class="kicker">✰ CURRENT PLAN</div>
+      <div class="plan-name">Básico</div>
+      <p class="plan-meta">Active until Oct 24, 2024</p>
+      <div class="plan-actions">
+        <button class="btn btn-solid">RENOVAR</button>
+        <button class="btn btn-outline">CAMBIAR PLAN</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="cap-head"><span class="c-ic blue">👥</span>Athletes Capacity</div>
+      <div class="cap-value"><b>150</b><span>/ 250</span></div>
+      <div class="bar blue"><i></i></div>
+      <div class="cap-note">60% USED</div>
+    </section>
+  </div>
+
+  <div class="grid-mid">
+    <section class="card">
+      <div class="cap-head"><span class="c-ic red">🗓</span>Active Events</div>
+      <div class="cap-value"><b>3</b><span>/ 5</span></div>
+      <div class="bar red"><i></i></div>
+      <div class="cap-note">60% USED</div>
+    </section>
+
+    <section class="card ai-card">
+      <div class="ai-ic">💡</div>
+      <div>
+        <h3>AI Recommendation</h3>
+        <p>Based on your recent growth trajectory, upgrading to the <b>Elite</b> plan will provide the unlimited capacity needed for your upcoming Q4 events.</p>
+      </div>
+      <span class="ai-ghost">💡</span>
+    </section>
+  </div>
+
+  <!-- Compare plans -->
+  <h2 class="compare-title">Compare Plans</h2>
+  <table class="compare">
+    <thead>
+      <tr><th>Features</th><th>Gratuito</th><th class="hl">Básico (Current)</th><th>Elite</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Athletes Capacity</td><td>50</td><td class="hl">250</td><td>Unlimited</td></tr>
+      <tr><td>Active Events</td><td>1</td><td class="hl">5</td><td>Unlimited</td></tr>
+      <tr><td>Advanced Analytics</td><td class="no">✕</td><td class="hl"><span class="ok">✓</span></td><td><span class="ok-blue">✓</span></td></tr>
+      <tr><td>AI Insights</td><td class="no">✕</td><td class="hl"><span class="no">✕</span></td><td><span class="ok-blue">✓</span></td></tr>
+    </tbody>
+  </table>
+
+</div>
+</app-panel-shell>
