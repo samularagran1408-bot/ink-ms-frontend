@@ -32,7 +32,7 @@
 
     <nav class="ai-tabs" aria-label="Apartados del asistente">
       <button
-        *ngFor="let tab of tabs"
+        *ngFor="let tab of tabs; trackBy: trackByTab"
         type="button"
         class="ai-tab"
         [class.ai-tab--active]="section === tab.id"
@@ -102,7 +102,7 @@
               >
                 <span class="ai-hilo-open">
                   <span class="ai-hilo-title">{{ tituloDeHilo(hilo) }}</span>
-                  <small>{{ fechaCorta(hilo.ultima_interaccion || hilo.creada_en) }}</small>
+                  <small>{{ fechaCorta(hilo.ultima_interaccion || hilo.creada_en) }} · {{ hilo.total_mensajes || 0 }} {{ 'CHAT.MESSAGES' | translate }}</small>
                 </span>
                 <span
                   class="ai-hilo-del"
@@ -115,18 +115,23 @@
                 </span>
               </button>
             </div>
+            <div class="ai-history-actions" *ngIf="hilos.length">
+              <button type="button" class="ai-history-clear" (click)="borrarTodoHistorial($event)">
+                {{ 'CHAT.DELETE_ALL' | translate }}
+              </button>
+            </div>
           </div>
         </div>
         <div #timeline class="ai-timeline" role="log" aria-live="polite" *ngIf="!historialAbierto">
           <p *ngIf="cargandoHilo" class="ai-empty">{{ 'COMMON.LOADING' | translate }}</p>
           <p *ngIf="!mensajes.length && !cargandoHilo" class="ai-empty">{{ 'CHAT.EMPTY' | translate }}</p>
           <div class="ai-chips" *ngIf="!mensajes.length && !cargandoHilo">
-            <button *ngFor="let s of sugerenciasRol()" type="button" class="ai-chip" (click)="usarSugerencia(s)">
+            <button *ngFor="let s of sugerenciasRol(); trackBy: trackBySugerencia" type="button" class="ai-chip" (click)="usarSugerencia(s)">
               {{ s }}
             </button>
           </div>
           <article
-            *ngFor="let msg of mensajes"
+            *ngFor="let msg of mensajes; trackBy: trackByMensaje"
             class="ai-bubble ai-bubble--in"
             [class.ai-bubble--user]="msg.remitente === 'usuario'"
             [class.ai-bubble--bot]="msg.remitente === 'asistente'"
@@ -135,7 +140,7 @@
             <app-body-map *ngIf="msg.cuerpo" [mapa]="msg.cuerpo" [compact]="true"></app-body-map>
             <div class="ai-cards" *ngIf="msg.cards?.length">
               <button
-                *ngFor="let card of msg.cards"
+                *ngFor="let card of msg.cards; trackBy: trackByCard"
                 type="button"
                 class="ai-card"
                 (click)="irACard(card)"
@@ -150,12 +155,12 @@
               </button>
             </div>
             <div class="ai-chips" *ngIf="msg.sugerencias?.length">
-              <button *ngFor="let s of msg.sugerencias" type="button" class="ai-chip" (click)="usarSugerencia(s)">
+              <button *ngFor="let s of msg.sugerencias; trackBy: trackBySugerencia" type="button" class="ai-chip" (click)="usarSugerencia(s)">
                 {{ s }}
               </button>
             </div>
             <div class="ai-tools-used" *ngIf="msg.herramientas?.length">
-              <span *ngFor="let t of msg.herramientas">{{ labelTool(t) }}</span>
+              <span *ngFor="let t of msg.herramientas; trackBy: trackBySugerencia">{{ labelTool(t) }}</span>
             </div>
           </article>
           <article class="ai-bubble ai-bubble--bot ai-bubble--thinking" *ngIf="enviando">
@@ -163,7 +168,7 @@
             <p>{{ 'AI_WIDGET.WORKING' | translate }}</p>
             <ul class="ai-activity" *ngIf="pasosAgente.length">
               <li
-                *ngFor="let paso of pasosAgente"
+                *ngFor="let paso of pasosAgente; trackBy: trackByPaso"
                 [class.ai-activity--run]="paso.estado === 'ejecutando'"
                 [class.ai-activity--done]="paso.estado === 'listo'"
               >
@@ -173,8 +178,8 @@
             </ul>
           </article>
         </div>
-        <p *ngIf="errorChat" class="ai-error" role="alert">{{ errorChat }}</p>
-        <div class="ai-composer">
+        <p *ngIf="errorChat && !historialAbierto" class="ai-error" role="alert">{{ errorChat }}</p>
+        <div class="ai-composer" *ngIf="!historialAbierto">
           <label class="ai-limit">
             Limitación
             <input

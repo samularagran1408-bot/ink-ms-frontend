@@ -1,5 +1,4 @@
-<app-panel-shell [fixedSidebar]="fixedSidebar">
-  <h1 class="page-title">{{ 'PROFILE.TITLE' | translate }}</h1>
+<h1 class="page-title">{{ 'PROFILE.TITLE' | translate }}</h1>
   <p class="page-subtitle">{{ 'PROFILE.SUBTITLE' | translate:{ roles: rolesLabel } }}</p>
   <p *ngIf="message" class="empty-text success-text">{{ message }}</p>
   <p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
@@ -76,4 +75,3 @@
       </div>
     </form>
   </div>
-</app-panel-shell>

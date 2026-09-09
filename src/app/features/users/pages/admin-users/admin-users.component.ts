@@ -1,5 +1,7 @@
-import { Component, HostListener, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, HostListener, OnInit } from '@angular/core';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
+import { Router, RouterModule } from '@angular/router';
 import { TranslateService } from '@ngx-translate/core';
 import { of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
@@ -9,14 +11,20 @@ import { UsersService } from '@features/users/services/users.service';
 import { SessionService } from '@core/services/session.service';
 import { ReportsService } from '@features/reports/services/reports.service';
 import { ConfirmDialogService } from '@shared/services/confirm-dialog.service';
+import { SharedModule } from '@shared/shared.module';
 
 @Component({
+  standalone: true,
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, SharedModule],
   selector: 'app-admin-users',
   templateUrl: './admin-users.component.html',
-  styleUrl: './admin-users.component.scss'
+  styleUrl: './admin-users.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AdminUsersComponent implements OnInit {
   users: UserProfile[] = [];
+  filteredUsers: UserProfile[] = [];
+  pagedUsers: UserProfile[] = [];
   loading = true;
   errorMessage: string | null = null;
   successMessage: string | null = null;
@@ -28,6 +36,10 @@ export class AdminUsersComponent implements OnInit {
   disabilityQuery = '';
   readonly pageSize = 6;
   currentPage = 1;
+  totalPages = 1;
+  showingFrom = 0;
+  showingTo = 0;
+  allVisibleSelected = false;
   activityUser: UserProfile | null = null;
   activityItems: AdminUserActivityItem[] = [];
   activityLastLogin: string | null = null;
@@ -49,7 +61,8 @@ export class AdminUsersComponent implements OnInit {
     private session: SessionService,
     private confirm: ConfirmDialogService,
     private router: Router,
-    private translate: TranslateService
+    private translate: TranslateService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -60,61 +73,35 @@ export class AdminUsersComponent implements OnInit {
     return this.selected.size;
   }
 
-  get allVisibleSelected(): boolean {
-    return this.pagedUsers.length > 0 && this.pagedUsers.every((u) => this.selected.has(u.email));
-  }
-
-  get filteredUsers(): UserProfile[] {
-    const name = this.nameQuery.trim().toLowerCase();
-    const disability = this.disabilityQuery.trim().toLowerCase();
-    return this.users.filter((user) => {
-      const matchesName = !name
-        || (user.fullName || '').toLowerCase().includes(name)
-        || (user.email || '').toLowerCase().includes(name);
-      const matchesDisability = !disability
-        || (user.disability || '').toLowerCase().includes(disability);
-      return matchesName && matchesDisability;
-    });
-  }
-
-  get totalPages(): number {
-    return Math.max(1, Math.ceil(this.filteredUsers.length / this.pageSize));
-  }
-
   get pageNumbers(): number[] {
     return Array.from({ length: this.totalPages }, (_, i) => i + 1);
   }
 
-  get pagedUsers(): UserProfile[] {
-    const page = Math.min(Math.max(1, this.currentPage), this.totalPages);
-    const start = (page - 1) * this.pageSize;
-    return this.filteredUsers.slice(start, start + this.pageSize);
+  trackByUser(_index: number, user: UserProfile): string {
+    return user.id || user.email;
   }
 
-  get showingFrom(): number {
-    if (!this.filteredUsers.length) {
-      return 0;
+  trackByActivity(_index: number, item: AdminUserActivityItem): string {
+    return `${item.createdAt || ''}-${item.action || ''}-${item.source || ''}-${_index}`;
+  }
+
+  reload(silent = false): void {
+    if (!silent) {
+      this.loading = true;
     }
-    return (Math.min(this.currentPage, this.totalPages) - 1) * this.pageSize + 1;
-  }
-
-  get showingTo(): number {
-    return Math.min(this.showingFrom + this.pageSize - 1, this.filteredUsers.length);
-  }
-
-  reload(): void {
-    this.loading = true;
     this.errorMessage = null;
-    this.reportsService.getUsersPanel(this.filter).subscribe({
+    this.reportsService.getUsersPanel('all').subscribe({
       next: (panel) => {
         this.users = panel.users || [];
         this.selected.clear();
         this.currentPage = 1;
         this.loading = false;
+        this.applyView();
       },
       error: (error) => {
         this.errorMessage = error?.error?.message || this.translate.instant('ADMIN_USERS.LOAD_LIST_ERROR');
         this.loading = false;
+        this.cdr.markForCheck();
       }
     });
   }
@@ -125,11 +112,12 @@ export class AdminUsersComponent implements OnInit {
     }
     this.filter = filter;
     this.currentPage = 1;
-    this.reload();
+    this.applyView();
   }
 
   onSearchChange(): void {
     this.currentPage = 1;
+    this.applyView();
   }
 
   goToPage(page: number): void {
@@ -137,6 +125,7 @@ export class AdminUsersComponent implements OnInit {
       return;
     }
     this.currentPage = page;
+    this.applyView();
   }
 
   toggleOne(email: string, checked: boolean): void {
@@ -145,6 +134,8 @@ export class AdminUsersComponent implements OnInit {
     } else {
       this.selected.delete(email);
     }
+    this.syncSelectionFlags();
+    this.cdr.markForCheck();
   }
 
   toggleAll(checked: boolean): void {
@@ -153,6 +144,42 @@ export class AdminUsersComponent implements OnInit {
     } else {
       this.pagedUsers.forEach((u) => this.selected.delete(u.email));
     }
+    this.syncSelectionFlags();
+    this.cdr.markForCheck();
+  }
+
+  private applyView(): void {
+    const name = this.nameQuery.trim().toLowerCase();
+    const disability = this.disabilityQuery.trim().toLowerCase();
+    let list = this.users;
+    if (this.filter === 'active') {
+      list = list.filter((user) => !this.isInactive(user));
+    } else if (this.filter === 'inactive') {
+      list = list.filter((user) => this.isInactive(user));
+    }
+    if (name) {
+      list = list.filter((user) =>
+        (user.fullName || '').toLowerCase().includes(name)
+        || (user.email || '').toLowerCase().includes(name)
+      );
+    }
+    if (disability) {
+      list = list.filter((user) => (user.disability || '').toLowerCase().includes(disability));
+    }
+    this.filteredUsers = list;
+    this.totalPages = Math.max(1, Math.ceil(list.length / this.pageSize));
+    this.currentPage = Math.min(Math.max(1, this.currentPage), this.totalPages);
+    const start = (this.currentPage - 1) * this.pageSize;
+    this.pagedUsers = list.slice(start, start + this.pageSize);
+    this.showingFrom = list.length ? start + 1 : 0;
+    this.showingTo = Math.min(start + this.pageSize, list.length);
+    this.syncSelectionFlags();
+    this.cdr.markForCheck();
+  }
+
+  private syncSelectionFlags(): void {
+    this.allVisibleSelected = this.pagedUsers.length > 0
+      && this.pagedUsers.every((user) => this.selected.has(user.email));
   }
 
   isSelected(email: string): boolean {
@@ -195,11 +222,12 @@ export class AdminUsersComponent implements OnInit {
     this.usersService.blockUser(user.email, { reason: this.translate.instant('ADMIN_USERS.BLOCK_TITLE'), permanent: false }).subscribe({
       next: () => {
         this.actionEmail = null;
-        this.reload();
+        this.reload(true);
       },
       error: (error) => {
         this.actionEmail = null;
         this.errorMessage = error?.error?.message || this.translate.instant('ADMIN_USERS.BLOCK_ERROR');
+        this.cdr.markForCheck();
       }
     });
   }
@@ -222,11 +250,12 @@ export class AdminUsersComponent implements OnInit {
     this.usersService.activateUser(user.email).subscribe({
       next: () => {
         this.actionEmail = null;
-        this.reload();
+        this.reload(true);
       },
       error: (error) => {
         this.actionEmail = null;
         this.errorMessage = error?.error?.message || this.translate.instant('ADMIN_USERS.ACTIVATE_ERROR');
+        this.cdr.markForCheck();
       }
     });
   }
@@ -258,12 +287,13 @@ export class AdminUsersComponent implements OnInit {
       next: (result) => {
         this.actionEmail = null;
         this.successMessage = result?.message || this.translate.instant('ADMIN_USERS.DELETED_OK', { name: user.fullName || user.email });
-        this.reload();
+        this.reload(true);
       },
       error: (error) => {
         this.actionEmail = null;
         this.errorMessage = error?.error?.message
           || this.translate.instant('ADMIN_USERS.DELETE_BLOCKED_EVENTS');
+        this.cdr.markForCheck();
       }
     });
   }
@@ -298,6 +328,7 @@ export class AdminUsersComponent implements OnInit {
     this.bulkLoading = true;
     this.errorMessage = null;
     this.successMessage = null;
+    this.cdr.markForCheck();
     this.usersService.bulkDeleteUsers(filtered).subscribe({
       next: (result) => {
         this.bulkLoading = false;
@@ -308,11 +339,12 @@ export class AdminUsersComponent implements OnInit {
         if (result.errors?.length) {
           this.errorMessage = result.errors.join(' · ');
         }
-        this.reload();
+        this.reload(true);
       },
       error: (error) => {
         this.bulkLoading = false;
         this.errorMessage = error?.error?.message || this.translate.instant('ADMIN_USERS.DELETE_SELECTION_ERROR');
+        this.cdr.markForCheck();
       }
     });
   }
@@ -358,6 +390,7 @@ export class AdminUsersComponent implements OnInit {
         this.activityLastLogin = response.lastLoginAt || user.lastLoginAt || null;
         this.activityItems = response.items || [];
         this.activityLoading = false;
+        this.cdr.markForCheck();
       }
     });
   }
@@ -367,6 +400,7 @@ export class AdminUsersComponent implements OnInit {
     this.activityItems = [];
     this.activityLastLogin = null;
     this.activityLoading = false;
+    this.cdr.markForCheck();
   }
 
   @HostListener('document:keydown.escape')

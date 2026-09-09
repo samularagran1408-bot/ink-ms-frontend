@@ -1,4 +1,7 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
+import { CommonModule } from '@angular/common';
 import { of, Subscription } from 'rxjs';
 
 import { AttendanceReport, EventItem, Registration } from '@features/sports-disabilities/models/sports';
@@ -8,6 +11,7 @@ import { LiveSyncService } from '@features/accessibility/services/live-sync.serv
 import { userInitials } from '@core/utils/avatar.util';
 import { matchesQuery } from '@core/utils/search.util';
 import { isEventVisible } from '@features/sports-disabilities/utils/event-visibility.util';
+import { SharedModule } from '@shared/shared.module';
 
 type AttendanceFilter = 'all' | 'attended' | 'absent';
 
@@ -27,16 +31,23 @@ interface EventAthleteSummary {
   occupied: number;
   waitlist: Registration[];
   enrolled: EnrolledUserRow[];
+  visibleEnrolled: EnrolledUserRow[];
+  attendedCount: number;
+  absentCount: number;
   filter: AttendanceFilter;
 }
 
 @Component({
+  standalone: true,
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, SharedModule],
   selector: 'app-athletes-page',
   templateUrl: './athletes-page.component.html',
-  styleUrl: './athletes-page.component.scss'
+  styleUrl: './athletes-page.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AthletesPageComponent implements OnInit, OnDestroy {
   summaries: EventAthleteSummary[] = [];
+  visibleSummaries: EventAthleteSummary[] = [];
   searchQuery = '';
   loading = true;
   errorMessage: string | null = null;
@@ -45,7 +56,8 @@ export class AthletesPageComponent implements OnInit, OnDestroy {
   constructor(
     private session: SessionService,
     private reportsService: ReportsService,
-    private liveSync: LiveSyncService
+    private liveSync: LiveSyncService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -79,12 +91,15 @@ export class AthletesPageComponent implements OnInit, OnDestroy {
               return summary;
             })
             .filter((summary) => isEventVisible(summary.event));
+          this.applyView();
           this.loading = false;
+          this.cdr.markForCheck();
         },
         error: (error) => {
           if (!silent) {
             this.errorMessage = error?.error?.message || 'No se pudieron cargar eventos.';
             this.loading = false;
+            this.cdr.markForCheck();
           }
         }
       });
@@ -93,9 +108,41 @@ export class AthletesPageComponent implements OnInit, OnDestroy {
 
   setFilter(summary: EventAthleteSummary, filter: AttendanceFilter): void {
     summary.filter = filter;
+    this.applyView();
   }
 
-  filteredEnrolled(summary: EventAthleteSummary): EnrolledUserRow[] {
+  onSearchChange(): void {
+    this.applyView();
+  }
+
+  trackBySummary(_index: number, summary: EventAthleteSummary): string {
+    return summary.event.id;
+  }
+
+  trackByEnrolled(_index: number, row: EnrolledUserRow): string {
+    return row.registrationId || row.email || String(_index);
+  }
+
+  private applyView(): void {
+    const q = this.searchQuery.trim();
+    this.summaries.forEach((summary) => {
+      summary.attendedCount = summary.enrolled.filter((row) => row.attended).length;
+      summary.absentCount = summary.enrolled.length - summary.attendedCount;
+      summary.visibleEnrolled = this.computeEnrolled(summary);
+    });
+    this.visibleSummaries = !q
+      ? this.summaries
+      : this.summaries.filter((summary) =>
+        matchesQuery(q, summary.event.name, summary.event.sportName)
+        || summary.visibleEnrolled.length > 0
+        || summary.waitlist.some((item) =>
+          matchesQuery(q, item.userFullName, item.userEmail)
+        )
+      );
+    this.cdr.markForCheck();
+  }
+
+  private computeEnrolled(summary: EventAthleteSummary): EnrolledUserRow[] {
     let rows = summary.enrolled;
     if (summary.filter === 'attended') {
       rows = rows.filter((row) => row.attended);
@@ -105,30 +152,9 @@ export class AthletesPageComponent implements OnInit, OnDestroy {
     return rows.filter((row) => matchesQuery(this.searchQuery, row.fullName, row.email, row.notes));
   }
 
-  visibleSummaries(): EventAthleteSummary[] {
-    const q = this.searchQuery.trim();
-    if (!q) {
-      return this.summaries;
-    }
-    return this.summaries.filter((summary) =>
-      matchesQuery(q, summary.event.name, summary.event.sportName)
-      || this.filteredEnrolled(summary).length > 0
-      || summary.waitlist.some((item) =>
-        matchesQuery(q, item.userFullName, item.userEmail)
-      )
-    );
-  }
-
   clearSearch(): void {
     this.searchQuery = '';
-  }
-
-  attendedCount(summary: EventAthleteSummary): number {
-    return summary.enrolled.filter((row) => row.attended).length;
-  }
-
-  absentCount(summary: EventAthleteSummary): number {
-    return summary.enrolled.filter((row) => !row.attended).length;
+    this.applyView();
   }
 
   initials(name?: string | null): string {
@@ -170,6 +196,9 @@ export class AthletesPageComponent implements OnInit, OnDestroy {
       ),
       waitlist: row.waitlist || [],
       enrolled,
+      visibleEnrolled: enrolled,
+      attendedCount: enrolled.filter((row) => row.attended).length,
+      absentCount: enrolled.filter((row) => !row.attended).length,
       filter: 'all'
     };
   }

@@ -1,5 +1,4 @@
-<app-panel-shell [fixedSidebar]="mode !== 'user'">
-  <h1 class="page-title">
+<h1 class="page-title">
     {{ mode === 'user'
       ? ((userView === 'history' ? 'EVENTS_PAGE.TITLE_HISTORY' : 'EVENTS_PAGE.TITLE_USER') | translate)
       : ('EVENTS_PAGE.TITLE_MANAGE' | translate) }}
@@ -676,4 +675,3 @@
       </ng-container>
     </div>
   </div>
-</app-panel-shell>

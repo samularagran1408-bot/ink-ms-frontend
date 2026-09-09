@@ -4,7 +4,14 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 import { API_BASE_URL } from '@core/config/api.config';
-import { ChatHilo, ChatHiloDetalle, ChatResponse, ChatStreamEvent } from '../models/chat';
+import {
+  ChatHilo,
+  ChatHiloDetalle,
+  ChatMensajeGuardado,
+  ChatMensajeUi,
+  ChatResponse,
+  ChatStreamEvent
+} from '../models/chat';
 import { SessionService } from '@core/services/session.service';
 
 @Injectable({ providedIn: 'root' })
@@ -68,42 +75,148 @@ export class ChatService {
 
   listarHilos(): Observable<{ conversaciones: ChatHilo[] }> {
     return this.http.get<unknown>(`${this.base}/conversaciones`, { params: { limite: 50 } }).pipe(
-      map((res) => ({ conversaciones: this.extraerHilos(res) }))
+      map((res) => ({
+        conversaciones: this.extraerHilos(res)
+          .map((hilo) => this.normalizarHilo(hilo))
+          .filter((hilo) => !!this.idDeHilo(hilo))
+      }))
     );
-  }
-
-  private extraerHilos(res: unknown): ChatHilo[] {
-    if (Array.isArray(res)) {
-      return res.filter((item): item is ChatHilo => !!item && typeof item === 'object');
-    }
-    if (!res || typeof res !== 'object') {
-      return [];
-    }
-    const row = res as Record<string, unknown>;
-    const nested = row['data'];
-    if (Array.isArray(nested)) {
-      return nested.filter((item): item is ChatHilo => !!item && typeof item === 'object');
-    }
-    const fuente = nested && typeof nested === 'object' ? { ...row, ...(nested as object) } : row;
-    const raw =
-      (fuente as Record<string, unknown>)['conversaciones'] ??
-      (fuente as Record<string, unknown>)['sessions'] ??
-      (fuente as Record<string, unknown>)['hilos'] ??
-      (fuente as Record<string, unknown>)['items'];
-    return Array.isArray(raw)
-      ? raw.filter((item): item is ChatHilo => !!item && typeof item === 'object')
-      : [];
   }
 
   obtenerHilo(conversacionId: string): Observable<ChatHiloDetalle> {
-    return this.http.get<ChatHiloDetalle>(
+    return this.http.get<unknown>(
       `${this.base}/conversaciones/${encodeURIComponent(conversacionId)}`
-    );
+    ).pipe(map((res) => this.normalizarDetalle(res, conversacionId)));
+  }
+
+  idDeHilo(hilo: ChatHilo | Record<string, unknown> | null | undefined): string {
+    if (!hilo || typeof hilo !== 'object') {
+      return '';
+    }
+    const row = hilo as Record<string, unknown>;
+    const raw =
+      row['conversacion_id'] ??
+      row['session_id'] ??
+      row['conversacionId'] ??
+      row['sessionId'] ??
+      row['id'];
+    return raw == null ? '' : String(raw).trim();
+  }
+
+  normalizarHilo(hilo: ChatHilo): ChatHilo {
+    const id = this.idDeHilo(hilo);
+    return {
+      ...hilo,
+      conversacion_id: id || hilo.conversacion_id,
+      session_id: hilo.session_id || id
+    };
+  }
+
+  mapearMensajes(detalle: ChatHiloDetalle | unknown): ChatMensajeUi[] {
+    return this.extraerMensajes(detalle).map((m) => ({
+      remitente: m.remitente === 'usuario' ? 'usuario' : 'asistente',
+      texto: m.mensaje || '',
+      cards: Array.isArray(m.cards) ? m.cards : [],
+      sugerencias: Array.isArray(m.sugerencias) ? m.sugerencias : [],
+      fuente: m.fuente,
+      cuerpo: m.cuerpo || null
+    }));
+  }
+
+  idNuevo(): string {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      return crypto.randomUUID();
+    }
+    return `local-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  }
+
+  private extraerHilos(res: unknown): ChatHilo[] {
+    const candidatos = this.listasCandidatas(res);
+    return candidatos.filter((item): item is ChatHilo => !!item && typeof item === 'object');
+  }
+
+  private listasCandidatas(res: unknown): unknown[] {
+    if (Array.isArray(res)) {
+      return res;
+    }
+    const fuente = this.desenvolver(res);
+    if (!fuente) {
+      return [];
+    }
+    if (Array.isArray(fuente)) {
+      return fuente;
+    }
+    for (const clave of ['conversaciones', 'sessions', 'hilos', 'items', 'data']) {
+      const valor = fuente[clave];
+      if (Array.isArray(valor)) {
+        return valor;
+      }
+      if (valor && typeof valor === 'object') {
+        const anidado = valor as Record<string, unknown>;
+        for (const sub of ['conversaciones', 'sessions', 'hilos', 'items']) {
+          if (Array.isArray(anidado[sub])) {
+            return anidado[sub] as unknown[];
+          }
+        }
+      }
+    }
+    return [];
+  }
+
+  private extraerMensajes(detalle: unknown): ChatMensajeGuardado[] {
+    const fuente = this.desenvolver(detalle);
+    if (!fuente) {
+      return [];
+    }
+    if (Array.isArray(fuente)) {
+      return fuente.filter((item): item is ChatMensajeGuardado => !!item && typeof item === 'object');
+    }
+    const raw = fuente['mensajes'] ?? fuente['messages'] ?? fuente['historial'];
+    return Array.isArray(raw)
+      ? raw.filter((item): item is ChatMensajeGuardado => !!item && typeof item === 'object')
+      : [];
+  }
+
+  private normalizarDetalle(res: unknown, fallbackId: string): ChatHiloDetalle {
+    const fuente = this.desenvolver(res);
+    const base = (fuente && !Array.isArray(fuente) ? fuente : {}) as unknown as ChatHiloDetalle;
+    const hilo = this.normalizarHilo(base);
+    const id = this.idDeHilo(hilo) || fallbackId;
+    return {
+      ...hilo,
+      conversacion_id: id,
+      session_id: hilo.session_id || id,
+      titulo: hilo.titulo || 'Conversación',
+      estado: hilo.estado || 'activa',
+      mensajes: this.extraerMensajes(fuente ?? res)
+    };
+  }
+
+  private desenvolver(res: unknown): Record<string, unknown> | unknown[] | null {
+    if (!res || typeof res !== 'object') {
+      return null;
+    }
+    if (Array.isArray(res)) {
+      return res;
+    }
+    const row = res as Record<string, unknown>;
+    const nested = row['data'];
+    if (nested && typeof nested === 'object' && !Array.isArray(nested)) {
+      return { ...row, ...(nested as Record<string, unknown>) };
+    }
+    return row;
   }
 
   borrarHilo(conversacionId: string): Observable<{ ok: boolean }> {
     return this.http.delete<{ ok: boolean }>(
       `${this.base}/conversaciones/${encodeURIComponent(conversacionId)}`
+    );
+  }
+
+  borrarTodos(): Observable<{ ok: boolean; borradas?: number }> {
+    return this.http.delete<{ ok: boolean; borradas?: number }>(
+      `${this.base}/conversaciones`,
+      { params: { confirmar: 'true' } }
     );
   }
 

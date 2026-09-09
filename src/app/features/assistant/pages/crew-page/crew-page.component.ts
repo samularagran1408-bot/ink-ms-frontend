@@ -1,10 +1,14 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
+import { CommonModule } from '@angular/common';
 import { TimeoutError } from 'rxjs';
 
 import { CrewDominio, CrewErrorBody, CrewRunResponse } from '@core/models/crew';
 import { AssistantUiService } from '@features/assistant/services/assistant-ui.service';
 import { CrewService } from '@core/services/crew.service';
+import { SharedModule } from '@shared/shared.module';
 
 const EJEMPLOS_POR_DOMINIO: Record<string, string[]> = {
   quiz: ['¿Cuál es el umbral del quiz de organizador?'],
@@ -15,6 +19,8 @@ const EJEMPLOS_POR_DOMINIO: Record<string, string[]> = {
 };
 
 @Component({
+  standalone: true,
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, SharedModule],
   selector: 'app-crew-page',
   templateUrl: './crew-page.component.html',
   styleUrl: './crew-page.component.scss'

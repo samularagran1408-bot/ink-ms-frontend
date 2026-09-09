@@ -1,4 +1,5 @@
 .panel-shell {
+  display: block;
   min-height: 100vh;
   background:
     radial-gradient(920px 420px at 100% -8%, rgba(163, 13, 17, 0.07), transparent 52%),
@@ -28,6 +29,7 @@
 }
 
 @media (max-width: 700px) {
+  .panel-main,
   .panel-shell--fixed .panel-main {
     margin-left: 0;
     padding: 16px 16px 112px;

@@ -1,6 +1,7 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { TranslateService } from '@ngx-translate/core';
 import { forkJoin, Observable, Subscription, of } from 'rxjs';
 import { catchError, switchMap } from 'rxjs/operators';
@@ -12,6 +13,7 @@ import { SportsService } from '@features/sports-disabilities/services/sports.ser
 import { SessionService } from '@core/services/session.service';
 import { ConfirmDialogService } from '@shared/services/confirm-dialog.service';
 import { companionRequirement, hasCompanionData } from '@features/auth/models/register-request';
+import { SharedModule } from '@shared/shared.module';
 
 interface AdminUserEventRow {
   registration: Registration;
@@ -19,6 +21,8 @@ interface AdminUserEventRow {
 }
 
 @Component({
+  standalone: true,
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, SharedModule],
   selector: 'app-admin-user-detail',
   templateUrl: './admin-user-detail.component.html',
   styleUrl: './admin-user-detail.component.scss'
