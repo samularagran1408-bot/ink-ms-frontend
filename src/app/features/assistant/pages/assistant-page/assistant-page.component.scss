@@ -1,12 +1,12 @@
 @import '../../../../shared/styles/panel-common.scss';
 
 .mcp-banner {
-  background: #F8FAFC;
-  border: 1px solid #E2E8F0;
+  background: var(--ink-surface-alt);
+  border: 1px solid var(--ink-line);
   border-radius: 12px;
   padding: 12px 14px;
   font-size: 13px;
-  color: #475569;
+  color: var(--ink-muted);
   margin: 0 0 16px;
   line-height: 1.45;
 }
@@ -24,8 +24,9 @@
   flex-direction: column;
   gap: 10px;
   min-width: 0;
-  background: #fff;
-  border: 1px solid #e2e8f0;
+  background: var(--ink-surface);
+  border: 1px solid var(--ink-line);
+  color: var(--ink-ink);
   border-radius: 16px;
   padding: 12px;
 }
@@ -41,13 +42,13 @@
   margin: 0;
   font-size: 16px;
   font-weight: 800;
-  color: #0f172a;
+  color: var(--ink-ink);
 }
 
 .chat-history-clear {
   border: 0;
   background: transparent;
-  color: #a30d11;
+  color: var(--ink-link);
   font: inherit;
   font-size: 12px;
   font-weight: 700;
@@ -59,7 +60,7 @@
 .chat-history-hint {
   margin: 0;
   font-size: 12px;
-  color: #64748b;
+  color: var(--ink-muted);
   line-height: 1.4;
 }
 
@@ -89,11 +90,11 @@
 }
 
 .chat-hilo:hover {
-  background: #f8fafc;
+  background: var(--ink-surface-alt);
 }
 
 .chat-hilo--active {
-  background: #fef2f2;
+  background: var(--ink-red-soft);
 }
 
 .chat-hilo-body {
@@ -105,7 +106,7 @@
   display: block;
   font-size: 14px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--ink-ink);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -115,13 +116,13 @@
   display: block;
   margin-top: 2px;
   font-size: 12px;
-  color: #64748b;
+  color: var(--ink-muted);
 }
 
 .chat-hilo-del {
   border: 0;
   background: transparent;
-  color: #94a3b8;
+  color: var(--ink-subtle);
   cursor: pointer;
   display: grid;
   place-items: center;
@@ -172,13 +173,14 @@
   max-width: min(720px, 100%);
   border-radius: 14px;
   padding: 12px 14px;
-  border: 1px solid #E2E8F0;
-  background: #fff;
+  border: 1px solid var(--ink-line);
+  background: var(--ink-surface);
+  color: var(--ink-ink);
 }
 
 .chat-bubble--user {
   align-self: flex-end;
-  background: #F1F5F9;
+  background: var(--ink-surface-alt);
 }
 
 .chat-bubble--bot {
@@ -188,7 +190,7 @@
 .chat-text {
   margin: 0;
   white-space: pre-wrap;
-  color: #0F172A;
+  color: var(--ink-ink);
   font-size: 15px;
   line-height: 1.45;
 }
@@ -199,7 +201,7 @@
   font-weight: 700;
   letter-spacing: 0.3px;
   text-transform: uppercase;
-  color: #64748B;
+  color: var(--ink-muted);
 }
 
 .card-grid {
@@ -210,13 +212,14 @@
 }
 
 .action-card {
-  border: 1px solid #E2E8F0;
+  border: 1px solid var(--ink-line);
   border-radius: 12px;
   padding: 12px;
   display: flex;
   flex-direction: column;
   gap: 6px;
-  background: #F8FAFC;
+  background: var(--ink-surface-alt);
+  color: var(--ink-ink);
 }
 
 .action-card-type {
@@ -224,7 +227,7 @@
   font-weight: 800;
   letter-spacing: 0.6px;
   text-transform: uppercase;
-  color: #A30D11;
+  color: var(--ink-red);
 }
 
 .chips {
@@ -235,9 +238,9 @@
 }
 
 .chip {
-  border: 1px solid #A30D11;
-  background: #fff;
-  color: #A30D11;
+  border: 1px solid var(--ink-red);
+  background: var(--ink-surface);
+  color: var(--ink-red);
   border-radius: 999px;
   padding: 6px 12px;
   font-size: 12px;
@@ -255,19 +258,23 @@
 
 .chat-composer input {
   grid-column: 1 / -1;
-  border: 1px solid #E2E8F0;
+  border: 1px solid var(--ink-line);
   border-radius: 12px;
   padding: 10px 12px;
   font: inherit;
+  background: var(--ink-surface);
+  color: var(--ink-ink);
 }
 
 .chat-composer textarea {
-  border: 1px solid #E2E8F0;
+  border: 1px solid var(--ink-line);
   border-radius: 12px;
   padding: 10px 12px;
   font: inherit;
   resize: vertical;
   min-height: 52px;
+  background: var(--ink-surface);
+  color: var(--ink-ink);
 }
 
 .sr-only {
@@ -300,11 +307,11 @@
   align-items: center;
   gap: 8px;
   font-size: 12px;
-  color: #475569;
+  color: var(--ink-muted);
 }
 
 .chat-activity--run {
-  color: #a30d11;
+  color: var(--ink-red);
   font-weight: 700;
 }
 
@@ -313,7 +320,7 @@
 }
 
 .chat-activity--done {
-  color: #166534;
+  color: var(--ink-success);
 }
 
 @keyframes chatStepSpin {

@@ -5,7 +5,8 @@
 }
 
 .clickable-row:hover {
-  background: #FFF8F8;
+  background: var(--ink-red-soft, #FFF8F8);
+  color: #000;
 }
 
 .user-cell {
