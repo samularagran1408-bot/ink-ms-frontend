@@ -496,40 +496,27 @@
 
 .ai-composer {
   display: flex;
-  flex-wrap: wrap;
   gap: 8px;
   align-items: flex-end;
   flex-shrink: 0;
 }
 
-.ai-section--chat > .ai-error {
+.ai-section--chat > .ai-error,
+.ai-section--chat > .ai-aviso {
   flex-shrink: 0;
-}
-
-.ai-limit {
-  flex: 1 1 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--ink-muted);
-}
-
-.ai-limit input {
-  border: 1px solid var(--ink-line);
-  border-radius: 8px;
-  padding: 8px 10px;
-  font: inherit;
-  color: var(--ink-ink);
-  background: var(--ink-surface);
 }
 
 .ai-composer textarea {
   flex: 1;
-  min-height: 44px;
-  max-height: 88px;
+  min-height: 52px;
+  max-height: 96px;
   resize: none;
+}
+
+.ai-composer .ai-send {
+  min-height: 52px;
+  flex-shrink: 0;
+  align-self: stretch;
 }
 
 .ai-result {
@@ -576,12 +563,21 @@
 }
 
 .ai-empty,
-.ai-error {
+.ai-error,
+.ai-aviso {
   font-size: 13px;
 }
 
 .ai-error {
   color: var(--ink-danger-text);
+}
+
+.ai-aviso {
+  margin: 0 16px 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #fff7ed;
+  color: #9a3412;
 }
 
 .ai-json {

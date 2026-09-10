@@ -16,8 +16,8 @@
         {{ 'CHAT.CLEAR' | translate }}
       </button>
     </div>
-    <p class="chat-history-hint">{{ 'CHAT.HISTORY_HINT' | translate:{ maxMensajes: limites.maxMensajesPorChat, maxChats: limites.maxChatsActivos } }}</p>
-    <p class="chat-quota">{{ 'CHAT.QUOTA' | translate:{ usados: mensajes.length, max: limites.maxMensajesPorChat } }}</p>
+    <p class="chat-history-hint">{{ 'CHAT.RATE_HINT' | translate:{ max: limites.maxMensajesPorHora, espera: limites.esperaHoras } }}</p>
+    <p class="chat-quota">{{ 'CHAT.RATE_QUOTA' | translate:{ usados: limites.usadosHora, max: limites.maxMensajesPorHora } }}</p>
     <p class="empty-text" *ngIf="cargandoHilos">{{ 'COMMON.LOADING' | translate }}</p>
     <p class="error-text" *ngIf="!cargandoHilos && errorHistorial">{{ errorHistorial }}</p>
     <p class="empty-text" *ngIf="!cargandoHilos && !errorHistorial && !hilos.length">
@@ -125,18 +125,13 @@
   </div>
 
   <p class="sr-only" aria-live="polite">{{ estadoA11y }}</p>
-  <p *ngIf="error" class="error-text" role="alert">{{ error }}</p>
+  <p *ngIf="aviso && !error" class="chat-aviso" role="status">{{ aviso }}</p>
+  <p *ngIf="error" class="error-text" role="alert">
+    {{ error }}
+    <span *ngIf="chatBloqueado && esperaLabel"> ({{ esperaLabel }})</span>
+  </p>
 
   <div class="chat-composer">
-    <label class="sr-only" for="chat-limitacion">Limitación</label>
-    <input
-      id="chat-limitacion"
-      type="text"
-      [(ngModel)]="limitacion"
-      [disabled]="enviando || cargandoHilo"
-      placeholder="Limitación (ej. dolor en rodilla izquierda)"
-      maxlength="240"
-    />
     <label class="sr-only" for="chat-input">{{ 'CHAT.INPUT' | translate }}</label>
     <textarea
       #inputEl
@@ -144,10 +139,10 @@
       rows="2"
       [(ngModel)]="borrador"
       (keydown)="onKeydown($event)"
-      [disabled]="enviando || cargandoHilo"
-      [placeholder]="'CHAT.PLACEHOLDER' | translate"
+      [disabled]="enviando || cargandoHilo || chatBloqueado"
+      [placeholder]="(chatBloqueado ? 'CHAT.RATE_WAIT_PH' : 'CHAT.PLACEHOLDER') | translate"
     ></textarea>
-    <button class="btn-primary" type="button" (click)="enviar()" [disabled]="enviando || cargandoHilo || !borrador.trim()">
+    <button class="btn-primary" type="button" (click)="enviar()" [disabled]="enviando || cargandoHilo || chatBloqueado || !borrador.trim()">
       {{ 'CHAT.SEND' | translate }}
     </button>
   </div>

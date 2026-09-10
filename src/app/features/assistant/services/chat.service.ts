@@ -5,6 +5,8 @@ import { map } from 'rxjs/operators';
 
 import { API_BASE_URL } from '@core/config/api.config';
 import {
+  ChatCupoHora,
+  ChatErrorInfo,
   ChatHilo,
   ChatHiloDetalle,
   ChatLimites,
@@ -209,10 +211,71 @@ export class ChatService {
       raw['max_mensajes_por_conversacion'] ?? raw['max_mensajes_guardados'] ?? 40
     );
     const maxChats = Number(raw['max_conversaciones_activas'] ?? 10);
+    const maxHora = Number(raw['max_mensajes_por_hora'] ?? 20);
+    const esperaSeg = Number(raw['espera_limite_segundos'] ?? 3600);
+    const usadosHora = Number(raw['usados_hora'] ?? 0);
     return {
       maxMensajesPorChat: maxMensajes > 0 ? maxMensajes : 40,
-      maxChatsActivos: maxChats > 0 ? maxChats : 10
+      maxChatsActivos: maxChats > 0 ? maxChats : 10,
+      maxMensajesPorHora: maxHora > 0 ? maxHora : 20,
+      esperaMinutos: esperaSeg > 0 ? Math.round(esperaSeg / 60) : 60,
+      esperaHoras: esperaSeg > 0 ? Math.max(1, Math.round(esperaSeg / 3600)) : 1,
+      usadosHora: usadosHora >= 0 ? usadosHora : 0,
+      aviso: typeof raw['aviso'] === 'string' ? raw['aviso'] : null
     };
+  }
+
+  extraerCupo(res: ChatResponse | unknown): ChatCupoHora | null {
+    const raw =
+      res && typeof res === 'object'
+        ? ((res as ChatResponse).cupo
+          || ((res as ChatResponse).datos && (res as ChatResponse).datos!['cupo']))
+        : null;
+    if (!raw || typeof raw !== 'object') {
+      return null;
+    }
+    const row = raw as Record<string, unknown>;
+    const maximo = Number(row['maximo'] ?? 20);
+    const usados = Number(row['usados'] ?? 0);
+    const restantes = Number(row['restantes'] ?? Math.max(0, maximo - usados));
+    const aviso = typeof row['aviso'] === 'string' ? row['aviso'] : null;
+    const retry = row['retry_after_segundos'];
+    return {
+      usados,
+      maximo: maximo > 0 ? maximo : 20,
+      restantes: restantes >= 0 ? restantes : 0,
+      esperaSegundos: Number(row['espera_segundos'] ?? 3600),
+      aviso,
+      retryAfterSegundos: typeof retry === 'number' ? retry : null
+    };
+  }
+
+  parsearError(err: unknown): ChatErrorInfo {
+    const http = err as { status?: number; error?: { detail?: unknown }; message?: string };
+    const detail = http?.error?.detail;
+    if (detail && typeof detail === 'object') {
+      const row = detail as Record<string, unknown>;
+      const mensaje =
+        (typeof row['mensaje'] === 'string' && row['mensaje'].trim())
+        || (typeof row['detail'] === 'string' && row['detail'].trim())
+        || '';
+      const retry = Number(row['retry_after_segundos'] ?? 0);
+      const codigo = typeof row['codigo'] === 'string' ? row['codigo'] : '';
+      if (mensaje) {
+        return { mensaje, codigo, retryAfterSegundos: retry > 0 ? retry : 0 };
+      }
+    }
+    if (typeof detail === 'string' && detail.trim()) {
+      return {
+        mensaje: detail,
+        codigo: http?.status === 429 ? 'chat_ocupado' : '',
+        retryAfterSegundos: 0
+      };
+    }
+    if (typeof http?.message === 'string' && http.message.trim()) {
+      return { mensaje: http.message, codigo: '', retryAfterSegundos: 0 };
+    }
+    return { mensaje: 'No se pudo contactar al asistente.', codigo: '', retryAfterSegundos: 0 };
   }
 
   private desenvolver(res: unknown): Record<string, unknown> | unknown[] | null {
@@ -278,16 +341,18 @@ export class ChatService {
     });
     if (!response.ok || !response.body) {
       if (response.status === 429) {
-        let detail = 'Ya hay una respuesta en curso. Espera un momento.';
+        let payload: { detail?: unknown } | undefined;
         try {
-          const body = await response.json() as { detail?: unknown };
-          if (typeof body?.detail === 'string' && body.detail.trim()) {
-            detail = body.detail;
-          }
+          payload = await response.json() as { detail?: unknown };
         } catch {
-          /* cuerpo no JSON */
+          payload = undefined;
         }
-        throw new Error(detail);
+        const info = this.parsearError({ status: 429, error: payload });
+        throw Object.assign(new Error(info.mensaje), {
+          status: 429,
+          error: payload,
+          retryAfterSegundos: info.retryAfterSegundos
+        });
       }
       throw new Error(`stream ${response.status}`);
     }

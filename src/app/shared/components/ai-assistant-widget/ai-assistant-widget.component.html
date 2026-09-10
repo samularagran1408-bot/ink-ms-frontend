@@ -48,7 +48,7 @@
       <section *ngIf="section === 'chat'" class="ai-section ai-section--chat">
         <div class="ai-history-bar">
           <span class="ai-history-title">{{ tituloHiloActual() }}</span>
-          <span class="ai-quota ai-quota--bar">{{ 'CHAT.QUOTA' | translate:{ usados: mensajes.length, max: limites.maxMensajesPorChat } }}</span>
+          <span class="ai-quota ai-quota--bar">{{ 'CHAT.RATE_QUOTA' | translate:{ usados: limites.usadosHora, max: limites.maxMensajesPorHora } }}</span>
           <button
             type="button"
             class="ai-history-new"
@@ -114,27 +114,21 @@
             </ul>
           </article>
         </div>
-        <p *ngIf="errorChat" class="ai-error" role="alert">{{ errorChat }}</p>
+        <p *ngIf="avisoChat && !errorChat" class="ai-aviso" role="status">{{ avisoChat }}</p>
+        <p *ngIf="errorChat" class="ai-error" role="alert">
+          {{ errorChat }}
+          <span *ngIf="chatBloqueado && esperaLabel"> ({{ esperaLabel }})</span>
+        </p>
         <div class="ai-composer">
-          <label class="ai-limit">
-            Limitación
-            <input
-              type="text"
-              [(ngModel)]="limitacion"
-              [disabled]="enviando || cargandoHilo"
-              placeholder="Ej. dolor en rodilla izquierda"
-              maxlength="240"
-            />
-          </label>
           <textarea
             #inputEl
             rows="2"
             [(ngModel)]="borrador"
             (keydown)="onChatKey($event)"
-            [disabled]="enviando || cargandoHilo"
-            [placeholder]="'CHAT.PLACEHOLDER' | translate"
+            [disabled]="enviando || cargandoHilo || chatBloqueado"
+            [placeholder]="(chatBloqueado ? 'CHAT.RATE_WAIT_PH' : 'CHAT.PLACEHOLDER') | translate"
           ></textarea>
-          <button type="button" class="ai-send" (click)="enviarChat()" [disabled]="enviando || cargandoHilo || !borrador.trim()">
+          <button type="button" class="ai-send" (click)="enviarChat()" [disabled]="enviando || cargandoHilo || chatBloqueado || !borrador.trim()">
             {{ 'CHAT.SEND' | translate }}
           </button>
         </div>
@@ -150,8 +144,8 @@
               {{ 'CHAT.CLEAR' | translate }}
             </button>
           </div>
-          <p class="ai-lead">{{ 'CHAT.HISTORY_HINT' | translate:{ maxMensajes: limites.maxMensajesPorChat, maxChats: limites.maxChatsActivos } }}</p>
-          <p class="ai-quota">{{ 'CHAT.QUOTA' | translate:{ usados: mensajes.length, max: limites.maxMensajesPorChat } }}</p>
+          <p class="ai-lead">{{ 'CHAT.RATE_HINT' | translate:{ max: limites.maxMensajesPorHora, espera: limites.esperaHoras } }}</p>
+          <p class="ai-quota">{{ 'CHAT.RATE_QUOTA' | translate:{ usados: limites.usadosHora, max: limites.maxMensajesPorHora } }}</p>
           <p *ngIf="cargandoHilos" class="ai-empty">{{ 'COMMON.LOADING' | translate }}</p>
           <p *ngIf="errorHistorial" class="ai-error">{{ errorHistorial }}</p>
           <p *ngIf="!cargandoHilos && !errorHistorial && !hilos.length" class="ai-empty">
