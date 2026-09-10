@@ -6,7 +6,7 @@ import { filter } from 'rxjs/operators';
 import { TranslateService } from '@ngx-translate/core';
 
 import { AppRole } from '@core/models/app-role';
-import { ChatCard, ChatCtaAccion, ChatHilo, ChatMensajeUi, ChatPasoActividad, ChatResponse, ChatStreamEvent } from '@features/assistant/models/chat';
+import { ChatCard, ChatCtaAccion, ChatHilo, ChatLimites, ChatMensajeUi, ChatPasoActividad, ChatResponse, ChatStreamEvent } from '@features/assistant/models/chat';
 import { BodyMapData } from '@features/assistant/models/body-map';
 import { UserProfile } from '@core/models/user-profile';
 import { AiAssistantService } from '@features/assistant/services/ai-assistant.service';
@@ -59,6 +59,7 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
   cargandoHilos = false;
   cargandoHilo = false;
   errorHistorial: string | null = null;
+  limites: ChatLimites = { maxMensajesPorChat: 40, maxChatsActivos: 10 };
   private chatSub?: Subscription;
   private cicloLocal?: ReturnType<typeof setInterval>;
   private actividadReal = false;
@@ -1307,9 +1308,15 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
       next: (res) => {
         this.cdr.markForCheck();
         this.cargandoHilos = false;
-        this.hilos = (res.conversaciones || [])
+        const delServidor = (res.conversaciones || [])
           .filter((hilo): hilo is ChatHilo => !!hilo && typeof hilo === 'object')
           .map((hilo) => this.normalizarHilo(hilo));
+        if (res.limites) {
+          this.limites = res.limites;
+        }
+        if (delServidor.length) {
+          this.hilos = delServidor;
+        }
         this.filtrarHistorial();
         if (!abrirActual || this.mensajes.length) {
           return;
@@ -1340,6 +1347,9 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
         this.conversacionId = cid;
         sessionStorage.setItem(STORAGE_KEY, cid);
         this.mensajes = this.chat.mapearMensajes(detalle);
+        if (detalle.limites) {
+          this.limites = detalle.limites;
+        }
         this.scrollChat();
       },
       error: () => {
@@ -1457,6 +1467,7 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
       cuerpo: this.cuerpoDe(res)
     });
     this.upsertHiloLocal(res);
+    this.cargarHilos();
     this.scrollChat();
     this.cdr.markForCheck();
   }
@@ -1480,7 +1491,7 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
       this.hilos = [
         {
           conversacion_id: cid,
-          titulo: '',
+          titulo: this.tituloDesdeMensajes() || this.translate.instant('CHAT.NEW'),
           estado: 'activa',
           ultima_interaccion: now,
           total_mensajes: this.mensajes.length
@@ -1489,6 +1500,11 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
       ];
     }
     this.filtrarHistorial();
+  }
+
+  private tituloDesdeMensajes(): string {
+    const primero = this.mensajes.find((m) => m.remitente === 'usuario' && m.texto.trim());
+    return (primero?.texto || '').trim().slice(0, 60);
   }
 
   private scrollChat(): void {

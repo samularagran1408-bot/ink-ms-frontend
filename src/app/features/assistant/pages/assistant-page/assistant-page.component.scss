@@ -64,6 +64,13 @@
   line-height: 1.4;
 }
 
+.chat-quota {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-ink);
+}
+
 .chat-history-scroll {
   flex: 1 1 auto;
   min-height: 160px;

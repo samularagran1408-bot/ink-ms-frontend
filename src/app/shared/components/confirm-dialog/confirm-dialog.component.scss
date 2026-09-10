@@ -32,10 +32,21 @@
   border-radius: 14px;
   display: grid;
   place-items: center;
-  background: #FEE2E2;
-  color: #A30D11;
+  background: #DCFCE7;
+  color: #15803D;
   font-size: 24px;
   font-weight: 800;
+}
+
+.confirm-icon--primary {
+  background: #DCFCE7;
+  color: #15803D;
+}
+
+.confirm-icon--success {
+  background: #BBF7D0;
+  color: #166534;
+  box-shadow: 0 0 0 6px rgba(22, 101, 52, 0.08);
 }
 
 .confirm-icon--danger {
@@ -64,6 +75,10 @@
   gap: 10px;
 }
 
+.confirm-actions--single {
+  grid-template-columns: 1fr;
+}
+
 .confirm-btn {
   border: none;
   border-radius: 11px;
@@ -88,4 +103,10 @@
 .confirm-btn--danger {
   background: #B91C1C;
   color: #fff;
+}
+
+.confirm-btn--success {
+  background: #15803D;
+  color: #fff;
+  box-shadow: 0 8px 16px rgba(21, 128, 61, 0.22);
 }

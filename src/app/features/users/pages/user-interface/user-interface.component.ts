@@ -406,10 +406,21 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
 
       this.registeringId = event.id;
       this.sportsService.registerToEvent(userId, event.id).subscribe({
-        next: () => {
+        next: (registration) => {
           this.registeringId = null;
           this.errorMessage = null;
           this.loadHomeData();
+          const onWaitlist = registration?.waitlistPosition != null;
+          void this.confirm.ack({
+            title: this.translate.instant(
+              onWaitlist ? 'EVENTS_PAGE.SUCCESS_WAITLIST_TITLE' : 'EVENTS_PAGE.SUCCESS_REGISTER_TITLE'
+            ),
+            message: registration?.message || this.translate.instant(
+              onWaitlist ? 'EVENTS_PAGE.SUCCESS_WAITLIST_MSG' : 'EVENTS_PAGE.SUCCESS_REGISTER_MSG',
+              { name: event.name, position: registration?.waitlistPosition }
+            ),
+            confirmLabel: this.translate.instant('COMMON.GOT_IT')
+          });
         },
         error: (error) => {
           this.registeringId = null;
@@ -502,11 +513,18 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
       next: () => {
         this.cancellingRegistrationId = null;
         this.errorMessage = null;
-        this.successMessage = this.translate.instant(
-          onWaitlist ? 'HOME.LEAVE_WAITLIST_OK' : 'HOME.CANCEL_REGISTRATION_OK',
-          { name: eventName }
-        );
+        this.successMessage = null;
         this.loadHomeData();
+        void this.confirm.ack({
+          title: this.translate.instant(
+            onWaitlist ? 'EVENTS_PAGE.SUCCESS_LEAVE_WAITLIST_TITLE' : 'EVENTS_PAGE.SUCCESS_CANCEL_REG_TITLE'
+          ),
+          message: this.translate.instant(
+            onWaitlist ? 'HOME.LEAVE_WAITLIST_OK' : 'HOME.CANCEL_REGISTRATION_OK',
+            { name: eventName }
+          ),
+          confirmLabel: this.translate.instant('COMMON.GOT_IT')
+        });
       },
       error: (error) => {
         this.cancellingRegistrationId = null;

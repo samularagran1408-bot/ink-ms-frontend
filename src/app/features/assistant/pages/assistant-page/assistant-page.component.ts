@@ -6,7 +6,7 @@ import { Subscription } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 
 import { AppRole } from '@core/models/app-role';
-import { ChatCard, ChatCtaAccion, ChatHilo, ChatMensajeUi, ChatPasoActividad, ChatResponse, ChatStreamEvent } from '@features/assistant/models/chat';
+import { ChatCard, ChatCtaAccion, ChatHilo, ChatLimites, ChatMensajeUi, ChatPasoActividad, ChatResponse, ChatStreamEvent } from '@features/assistant/models/chat';
 import { BodyMapData } from '@features/assistant/models/body-map';
 import { ChatService } from '@features/assistant/services/chat.service';
 import { ReportsService } from '@features/reports/services/reports.service';
@@ -43,6 +43,7 @@ export class AssistantPageComponent implements OnInit, OnDestroy {
   cargandoHilos = false;
   cargandoHilo = false;
   errorHistorial: string | null = null;
+  limites: ChatLimites = { maxMensajesPorChat: 40, maxChatsActivos: 10 };
 
   private chatSub?: Subscription;
   private cicloLocal?: ReturnType<typeof setInterval>;
@@ -332,7 +333,13 @@ export class AssistantPageComponent implements OnInit, OnDestroy {
     this.chat.listarHilos().subscribe({
       next: (res) => {
         this.cargandoHilos = false;
-        this.hilos = res.conversaciones || [];
+        const delServidor = res.conversaciones || [];
+        if (res.limites) {
+          this.limites = res.limites;
+        }
+        if (delServidor.length) {
+          this.hilos = delServidor;
+        }
         this.filtrarHistorial();
         if (!abrirActual || this.mensajes.length) {
           return;
@@ -363,6 +370,9 @@ export class AssistantPageComponent implements OnInit, OnDestroy {
         this.conversacionId = cid;
         sessionStorage.setItem(STORAGE_KEY, cid);
         this.mensajes = this.chat.mapearMensajes(detalle);
+        if (detalle.limites) {
+          this.limites = detalle.limites;
+        }
         this.scrollAlFinal();
         this.cdr.markForCheck();
       },
@@ -380,7 +390,6 @@ export class AssistantPageComponent implements OnInit, OnDestroy {
     this.pasosAgente = [];
     this.conversacionId = res.conversacion_id;
     sessionStorage.setItem(STORAGE_KEY, res.conversacion_id);
-    this.upsertHiloLocal(res);
     const cards = res.cards?.length ? res.cards : [];
     this.mensajes.push({
       remitente: 'asistente',
@@ -394,6 +403,8 @@ export class AssistantPageComponent implements OnInit, OnDestroy {
         : res.herramientas_usadas,
       cuerpo: this.cuerpoDe(res)
     });
+    this.upsertHiloLocal(res);
+    this.cargarHilos();
     const tools = res.mcp?.llm_eligio_tools
       ? `Tools MCP: ${(res.mcp.tools_usadas || []).join(', ') || 'ninguna'}`
       : res.fuente === 'motor_local'
@@ -423,7 +434,8 @@ export class AssistantPageComponent implements OnInit, OnDestroy {
       this.hilos = [
         {
           conversacion_id: cid,
-          titulo: '',
+          titulo: (this.mensajes.find((m) => m.remitente === 'usuario')?.texto || '').trim().slice(0, 60)
+            || this.translate.instant('CHAT.NEW'),
           estado: 'activa',
           ultima_interaccion: now,
           total_mensajes: this.mensajes.length + 1

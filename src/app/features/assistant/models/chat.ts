@@ -99,6 +99,12 @@ export interface ChatMensajeGuardado {
 export interface ChatHiloDetalle extends ChatHilo {
   resumen?: string | null;
   mensajes: ChatMensajeGuardado[];
+  limites?: ChatLimites;
+}
+
+export interface ChatLimites {
+  maxMensajesPorChat: number;
+  maxChatsActivos: number;
 }
 
 export interface ChatMensajeUi {

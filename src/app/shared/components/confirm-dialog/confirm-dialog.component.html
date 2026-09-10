@@ -6,19 +6,30 @@
     [attr.aria-labelledby]="'confirm-title'"
     (click)="$event.stopPropagation()"
   >
-    <div class="confirm-icon" [class.confirm-icon--danger]="dialog.tone === 'danger'">
-      <span aria-hidden="true">!</span>
+    <div
+      class="confirm-icon"
+      [class.confirm-icon--danger]="dialog.tone === 'danger'"
+      [class.confirm-icon--success]="dialog.tone === 'success'"
+      [class.confirm-icon--primary]="dialog.tone === 'primary'"
+    >
+      <span aria-hidden="true">{{ dialog.tone === 'danger' ? '!' : '✓' }}</span>
     </div>
     <h2 id="confirm-title" class="confirm-title">{{ dialog.title }}</h2>
     <p class="confirm-message">{{ dialog.message }}</p>
-    <div class="confirm-actions">
-      <button class="confirm-btn confirm-btn--ghost" type="button" (click)="cancel()">
+    <div class="confirm-actions" [class.confirm-actions--single]="dialog.variant === 'ack'">
+      <button
+        *ngIf="dialog.variant !== 'ack'"
+        class="confirm-btn confirm-btn--ghost"
+        type="button"
+        (click)="cancel()"
+      >
         {{ dialog.cancelLabel }}
       </button>
       <button
         class="confirm-btn"
         [class.confirm-btn--danger]="dialog.tone === 'danger'"
-        [class.confirm-btn--primary]="dialog.tone !== 'danger'"
+        [class.confirm-btn--primary]="dialog.tone === 'primary'"
+        [class.confirm-btn--success]="dialog.tone === 'success'"
         type="button"
         (click)="confirmAction()"
       >

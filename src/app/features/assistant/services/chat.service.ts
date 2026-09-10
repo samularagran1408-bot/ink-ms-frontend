@@ -7,6 +7,7 @@ import { API_BASE_URL } from '@core/config/api.config';
 import {
   ChatHilo,
   ChatHiloDetalle,
+  ChatLimites,
   ChatMensajeGuardado,
   ChatMensajeUi,
   ChatResponse,
@@ -54,7 +55,11 @@ export class ChatService {
             return;
           }
           const msg = err instanceof Error ? err.message : '';
-          const streamCaido = err instanceof TypeError || /^stream \d+/.test(msg);
+          const streamCaido =
+            err instanceof TypeError ||
+            /^stream \d+/.test(msg) ||
+            msg === 'stream incompleto' ||
+            /failed to fetch|networkerror|load failed|fetch failed/i.test(msg);
           if (!streamCaido) {
             subscriber.error(err);
             return;
@@ -73,12 +78,13 @@ export class ChatService {
     return this.http.get<Record<string, unknown>>(`${this.base}/mcp`);
   }
 
-  listarHilos(): Observable<{ conversaciones: ChatHilo[] }> {
+  listarHilos(): Observable<{ conversaciones: ChatHilo[]; limites: ChatLimites }> {
     return this.http.get<unknown>(`${this.base}/conversaciones`, { params: { limite: 50 } }).pipe(
       map((res) => ({
         conversaciones: this.extraerHilos(res)
           .map((hilo) => this.normalizarHilo(hilo))
-          .filter((hilo) => !!this.idDeHilo(hilo))
+          .filter((hilo) => !!this.idDeHilo(hilo)),
+        limites: this.extraerLimites(res)
       }))
     );
   }
@@ -188,7 +194,24 @@ export class ChatService {
       session_id: hilo.session_id || id,
       titulo: hilo.titulo || 'Conversación',
       estado: hilo.estado || 'activa',
-      mensajes: this.extraerMensajes(fuente ?? res)
+      mensajes: this.extraerMensajes(fuente ?? res),
+      limites: this.extraerLimites(fuente ?? res)
+    };
+  }
+
+  extraerLimites(res: unknown): ChatLimites {
+    const fuente = this.desenvolver(res);
+    const raw =
+      fuente && !Array.isArray(fuente) && fuente['limites'] && typeof fuente['limites'] === 'object'
+        ? (fuente['limites'] as Record<string, unknown>)
+        : {};
+    const maxMensajes = Number(
+      raw['max_mensajes_por_conversacion'] ?? raw['max_mensajes_guardados'] ?? 40
+    );
+    const maxChats = Number(raw['max_conversaciones_activas'] ?? 10);
+    return {
+      maxMensajesPorChat: maxMensajes > 0 ? maxMensajes : 40,
+      maxChatsActivos: maxChats > 0 ? maxChats : 10
     };
   }
 

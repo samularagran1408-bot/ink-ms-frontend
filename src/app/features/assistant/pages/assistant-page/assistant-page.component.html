@@ -16,7 +16,8 @@
         {{ 'CHAT.CLEAR' | translate }}
       </button>
     </div>
-    <p class="chat-history-hint">{{ 'CHAT.HISTORY_HINT' | translate }}</p>
+    <p class="chat-history-hint">{{ 'CHAT.HISTORY_HINT' | translate:{ maxMensajes: limites.maxMensajesPorChat, maxChats: limites.maxChatsActivos } }}</p>
+    <p class="chat-quota">{{ 'CHAT.QUOTA' | translate:{ usados: mensajes.length, max: limites.maxMensajesPorChat } }}</p>
     <p class="empty-text" *ngIf="cargandoHilos">{{ 'COMMON.LOADING' | translate }}</p>
     <p class="error-text" *ngIf="!cargandoHilos && errorHistorial">{{ errorHistorial }}</p>
     <p class="empty-text" *ngIf="!cargandoHilos && !errorHistorial && !hilos.length">

@@ -2,6 +2,7 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { TranslateService } from '@ngx-translate/core';
 import type { Html5Qrcode } from 'html5-qrcode';
 import { Subscription, Subject, of } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
@@ -17,6 +18,7 @@ import { SessionService } from '@core/services/session.service';
 import { SportsService } from '@features/sports-disabilities/services/sports.service';
 import { ReportsService } from '@features/reports/services/reports.service';
 import { PreferencesApiService } from '@features/accessibility/services/preferences-api.service';
+import { LanguageService } from '@features/accessibility/services/language.service';
 import { LiveSyncService } from '@features/accessibility/services/live-sync.service';
 import { ConfirmDialogService } from '@shared/services/confirm-dialog.service';
 import { AttendanceCheckInMethod, normalizeAttendanceCheckInMethod } from '@features/accessibility/models/accessibility-api';
@@ -45,6 +47,11 @@ interface MyPassRow {
   qrDataUrl: string | null;
   loadingQr: boolean;
 }
+
+type CapacityEvent = {
+  maxCapacity?: number | null;
+  availableCapacity?: number | null;
+} | null | undefined;
 
 @Component({
   standalone: true,
@@ -128,7 +135,9 @@ export class EventsPageComponent implements OnInit, OnDestroy {
     private preferencesApi: PreferencesApiService,
     private liveSync: LiveSyncService,
     private fb: FormBuilder,
-    private confirm: ConfirmDialogService
+    private confirm: ConfirmDialogService,
+    private translate: TranslateService,
+    private language: LanguageService
   ) {
     this.form = this.fb.group({
       sportId: [null, Validators.required],
@@ -363,10 +372,10 @@ export class EventsPageComponent implements OnInit, OnDestroy {
 
   private async confirmCreateEvent(): Promise<void> {
     const ok = await this.confirm.ask({
-      title: 'Crear evento',
-      message: `¿Confirmas la creación de "${this.form.value.name}"?`,
-      confirmLabel: 'Confirmar',
-      cancelLabel: 'Cancelar'
+      title: this.translate.instant('EVENTS_PAGE.CONFIRM_CREATE_TITLE'),
+      message: this.translate.instant('EVENTS_PAGE.CONFIRM_CREATE_MSG', { name: this.form.value.name }),
+      confirmLabel: this.translate.instant('COMMON.CONFIRM'),
+      cancelLabel: this.translate.instant('COMMON.CANCEL')
     });
     if (!ok) {
       return;
@@ -393,7 +402,7 @@ export class EventsPageComponent implements OnInit, OnDestroy {
       this.sportsService.createEvent(payload).subscribe({
         next: () => {
           this.creating = false;
-          this.successMessage = 'Evento creado.';
+          this.successMessage = null;
           this.errorMessage = null;
           this.form.patchValue({
             name: '',
@@ -404,6 +413,10 @@ export class EventsPageComponent implements OnInit, OnDestroy {
           });
           this.catalogPage = 0;
           this.reload();
+          this.notifySuccess(
+            'EVENTS_PAGE.SUCCESS_CREATE_TITLE',
+            this.translate.instant('EVENTS_PAGE.SUCCESS_CREATE_MSG', { name: payload.name })
+          );
         },
         error: (error) => {
           this.creating = false;
@@ -462,10 +475,10 @@ export class EventsPageComponent implements OnInit, OnDestroy {
 
   private async confirmSaveEvent(row: EventManageRow): Promise<void> {
     const ok = await this.confirm.ask({
-      title: 'Guardar cambios',
-      message: `¿Confirmas actualizar "${row.event.name}"? Se notificará a los inscritos si cambia fecha o lugar.`,
-      confirmLabel: 'Confirmar',
-      cancelLabel: 'Cancelar'
+      title: this.translate.instant('EVENTS_PAGE.CONFIRM_SAVE_TITLE'),
+      message: this.translate.instant('EVENTS_PAGE.CONFIRM_SAVE_MSG', { name: row.event.name }),
+      confirmLabel: this.translate.instant('COMMON.CONFIRM'),
+      cancelLabel: this.translate.instant('COMMON.CANCEL')
     });
     if (!ok) {
       return;
@@ -486,9 +499,13 @@ export class EventsPageComponent implements OnInit, OnDestroy {
       next: () => {
         row.saving = false;
         row.editing = false;
-        this.successMessage = 'Evento actualizado. Se notificó a los inscritos si cambió fecha o lugar.';
+        this.successMessage = null;
         this.errorMessage = null;
         this.reload();
+        this.notifySuccess(
+          'EVENTS_PAGE.SUCCESS_UPDATE_TITLE',
+          this.translate.instant('EVENTS_PAGE.SUCCESS_UPDATE_MSG', { name: payload.name })
+        );
       },
       error: (error) => {
         row.saving = false;
@@ -585,10 +602,10 @@ export class EventsPageComponent implements OnInit, OnDestroy {
 
   private async confirmCancelEvent(event: EventItem): Promise<void> {
     const ok = await this.confirm.ask({
-      title: 'Cancelar evento',
-      message: `¿Confirmas cancelar "${event.name}"? Esta acción no se puede deshacer.`,
-      confirmLabel: 'Confirmar',
-      cancelLabel: 'Cancelar',
+      title: this.translate.instant('EVENTS_PAGE.CONFIRM_CANCEL_EVENT_TITLE'),
+      message: this.translate.instant('EVENTS_PAGE.CONFIRM_CANCEL_EVENT_MSG', { name: event.name }),
+      confirmLabel: this.translate.instant('COMMON.CONFIRM'),
+      cancelLabel: this.translate.instant('COMMON.CANCEL'),
       tone: 'danger'
     });
     if (!ok) {
@@ -599,10 +616,14 @@ export class EventsPageComponent implements OnInit, OnDestroy {
     this.sportsService.cancelEvent(event.id).subscribe({
       next: () => {
         this.cancellingId = null;
-        this.successMessage = `Evento "${event.name}" cancelado.`;
+        this.successMessage = null;
         this.errorMessage = null;
         this.reload();
         this.loadCalendar();
+        this.notifySuccess(
+          'EVENTS_PAGE.SUCCESS_CANCEL_EVENT_TITLE',
+          this.translate.instant('EVENTS_PAGE.SUCCESS_CANCEL_EVENT_MSG', { name: event.name })
+        );
       },
       error: (error) => {
         this.cancellingId = null;
@@ -619,12 +640,15 @@ export class EventsPageComponent implements OnInit, OnDestroy {
   private async confirmRegister(event: EventItem): Promise<void> {
     const waitlist = (event.availableCapacity ?? 0) <= 0;
     const ok = await this.confirm.ask({
-      title: waitlist ? 'Lista de espera' : 'Inscribirse',
-      message: waitlist
-        ? `El evento "${event.name}" está lleno. ¿Quieres unirte a la lista de espera?`
-        : `¿Confirmas tu inscripción a "${event.name}"?`,
-      confirmLabel: 'Confirmar',
-      cancelLabel: 'Cancelar'
+      title: waitlist
+        ? this.translate.instant('EVENTS_PAGE.CONFIRM_WAITLIST_TITLE')
+        : this.translate.instant('EVENTS_PAGE.CONFIRM_REGISTER_TITLE'),
+      message: this.translate.instant(
+        waitlist ? 'EVENTS_PAGE.CONFIRM_WAITLIST_MSG' : 'EVENTS_PAGE.CONFIRM_REGISTER_MSG',
+        { name: event.name }
+      ),
+      confirmLabel: this.translate.instant('COMMON.CONFIRM'),
+      cancelLabel: this.translate.instant('COMMON.CANCEL')
     });
     if (!ok) {
       return;
@@ -645,12 +669,17 @@ export class EventsPageComponent implements OnInit, OnDestroy {
       this.sportsService.registerToEvent(userId, event.id).subscribe({
         next: (registration) => {
           this.registeringId = null;
-          this.successMessage = registration?.message
-            || (registration?.waitlistPosition != null
-              ? `El evento está lleno. Quedaste en lista de espera (posición ${registration.waitlistPosition}).`
-              : `Inscripción a ${event.name} realizada.`);
+          this.successMessage = null;
           this.errorMessage = null;
           this.reload();
+          const onWaitlist = registration?.waitlistPosition != null;
+          this.notifySuccess(
+            onWaitlist ? 'EVENTS_PAGE.SUCCESS_WAITLIST_TITLE' : 'EVENTS_PAGE.SUCCESS_REGISTER_TITLE',
+            registration?.message || this.translate.instant(
+              onWaitlist ? 'EVENTS_PAGE.SUCCESS_WAITLIST_MSG' : 'EVENTS_PAGE.SUCCESS_REGISTER_MSG',
+              { name: event.name, position: registration?.waitlistPosition }
+            )
+          );
         },
         error: (error) => {
           this.registeringId = null;
@@ -789,14 +818,6 @@ export class EventsPageComponent implements OnInit, OnDestroy {
     }).length;
   }
 
-  get nextOccupancyPercent(): number {
-    const event = this.nextRegisteredEvent;
-    if (!event?.maxCapacity) {
-      return 0;
-    }
-    return Math.round((this.occupied(event) * 100) / event.maxCapacity);
-  }
-
   eventForRegistration(reg: Registration): EventItem | null {
     return this.events.find((item) => item.id === reg.eventId)
       || this.eventFromRegistration(reg);
@@ -809,9 +830,9 @@ export class EventsPageComponent implements OnInit, OnDestroy {
 
   historyDateLabel(reg: Registration): string {
     if (reg.eventDate) {
-      return `${reg.eventDate} ${((reg.eventTime || '').substring(0, 5))}`;
+      return this.eventWhenLabel({ eventDate: reg.eventDate, eventTime: reg.eventTime });
     }
-    return reg.registrationDate || 'Sin fecha';
+    return this.formatEventDate(reg.registrationDate);
   }
 
   isHighlighted(eventId: string | number | undefined): boolean {
@@ -877,12 +898,15 @@ export class EventsPageComponent implements OnInit, OnDestroy {
 
     const onWaitlist = registration.waitlistPosition != null;
     const ok = await this.confirm.ask({
-      title: onWaitlist ? 'Salir de lista de espera' : 'Cancelar inscripción',
-      message: onWaitlist
-        ? `¿Confirmas salir de la lista de espera de "${eventName}"?`
-        : `¿Confirmas cancelar tu inscripción a "${eventName}"? Si hay lista de espera, la persona en la posición 1 quedará inscrita automáticamente.`,
-      confirmLabel: 'Confirmar',
-      cancelLabel: 'Volver',
+      title: onWaitlist
+        ? this.translate.instant('EVENTS_PAGE.CONFIRM_LEAVE_WAITLIST_TITLE')
+        : this.translate.instant('EVENTS_PAGE.CONFIRM_CANCEL_REG_TITLE'),
+      message: this.translate.instant(
+        onWaitlist ? 'EVENTS_PAGE.CONFIRM_LEAVE_WAITLIST_MSG' : 'EVENTS_PAGE.CONFIRM_CANCEL_REG_MSG',
+        { name: eventName }
+      ),
+      confirmLabel: this.translate.instant('COMMON.CONFIRM'),
+      cancelLabel: this.translate.instant('COMMON.CANCEL'),
       tone: 'danger'
     });
     if (!ok) {
@@ -893,11 +917,16 @@ export class EventsPageComponent implements OnInit, OnDestroy {
     this.sportsService.cancelRegistration(registration.id).subscribe({
       next: () => {
         this.cancellingRegistrationId = null;
-        this.successMessage = onWaitlist
-          ? `Saliste de la lista de espera de "${eventName}".`
-          : `Inscripción a "${eventName}" cancelada. Si había lista de espera, el primero fue inscrito automáticamente.`;
+        this.successMessage = null;
         this.errorMessage = null;
         this.reload();
+        this.notifySuccess(
+          onWaitlist ? 'EVENTS_PAGE.SUCCESS_LEAVE_WAITLIST_TITLE' : 'EVENTS_PAGE.SUCCESS_CANCEL_REG_TITLE',
+          this.translate.instant(
+            onWaitlist ? 'EVENTS_PAGE.SUCCESS_LEAVE_WAITLIST_MSG' : 'EVENTS_PAGE.SUCCESS_CANCEL_REG_MSG',
+            { name: eventName }
+          )
+        );
       },
       error: (error) => {
         this.cancellingRegistrationId = null;
@@ -1028,12 +1057,87 @@ export class EventsPageComponent implements OnInit, OnDestroy {
     });
   }
 
-  occupied(event: { maxCapacity?: number | null; availableCapacity?: number | null } | null | undefined): number {
+  occupied(event: CapacityEvent): number {
     if (!event) {
       return 0;
     }
     const max = event.maxCapacity || 0;
     return Math.max(max - (event.availableCapacity ?? max), 0);
+  }
+
+  spotsLeft(event: CapacityEvent): number {
+    if (!event) {
+      return 0;
+    }
+    if (event.availableCapacity != null) {
+      return Math.max(event.availableCapacity, 0);
+    }
+    return Math.max((event.maxCapacity || 0) - this.occupied(event), 0);
+  }
+
+  occupancyPercent(event: CapacityEvent): number {
+    const max = event?.maxCapacity || 0;
+    if (!max) {
+      return 0;
+    }
+    return Math.min(100, Math.round((this.occupied(event) * 100) / max));
+  }
+
+  occupancyTone(event: CapacityEvent): 'ok' | 'warn' | 'full' {
+    if (this.spotsLeft(event) <= 0 && (event?.maxCapacity || 0) > 0) {
+      return 'full';
+    }
+    const percent = this.occupancyPercent(event);
+    if (percent >= 75) {
+      return 'warn';
+    }
+    return 'ok';
+  }
+
+  spotsHint(event: CapacityEvent): string {
+    if (this.occupancyTone(event) === 'full') {
+      return this.translate.instant('EVENTS_PAGE.SPOTS_FULL');
+    }
+    return this.translate.instant('EVENTS_PAGE.SPOTS_LEFT', { count: this.spotsLeft(event) });
+  }
+
+  formatEventDate(value?: string | null): string {
+    const date = this.parseLocalDate(value);
+    if (!date) {
+      return value || this.translate.instant('EVENTS_PAGE.NO_DATE');
+    }
+    const today = this.startOfLocalDay(new Date());
+    const target = this.startOfLocalDay(date);
+    const diffDays = Math.round((target.getTime() - today.getTime()) / 86400000);
+    if (diffDays === 0) {
+      return this.translate.instant('EVENTS_PAGE.DATE_TODAY');
+    }
+    if (diffDays === 1) {
+      return this.translate.instant('EVENTS_PAGE.DATE_TOMORROW');
+    }
+    const locale = this.language.currentLang === 'en' ? 'en-US' : 'es-MX';
+    return date.toLocaleDateString(locale, {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    });
+  }
+
+  formatEventTime(value?: string | null): string {
+    if (!value) {
+      return '';
+    }
+    return value.length >= 5 ? value.slice(0, 5) : value;
+  }
+
+  eventWhenLabel(event: { eventDate?: string | null; eventTime?: string | null } | null | undefined): string {
+    if (!event) {
+      return this.translate.instant('EVENTS_PAGE.NO_DATE');
+    }
+    const date = this.formatEventDate(event.eventDate);
+    const time = this.formatEventTime(event.eventTime);
+    return time ? `${date} · ${time}` : date;
   }
 
   eventHasStarted(event: EventItem | null | undefined): boolean {
@@ -1060,16 +1164,9 @@ export class EventsPageComponent implements OnInit, OnDestroy {
 
   eventStartLabel(event: EventItem | null | undefined): string {
     if (!event) {
-      return 'hora del evento';
+      return this.translate.instant('EVENTS_PAGE.EVENT_TIME_FALLBACK');
     }
-    const start = this.eventStartMs(event);
-    if (start == null) {
-      return 'hora del evento';
-    }
-    const parsed = new Date(start);
-    const date = `${parsed.getFullYear()}-${String(parsed.getMonth() + 1).padStart(2, '0')}-${String(parsed.getDate()).padStart(2, '0')}`;
-    const time = `${String(parsed.getHours()).padStart(2, '0')}:${String(parsed.getMinutes()).padStart(2, '0')}`;
-    return `${date} ${time}`;
+    return this.eventWhenLabel(event);
   }
 
   openCheckIn(event: EventItem): void {
@@ -1251,11 +1348,15 @@ export class EventsPageComponent implements OnInit, OnDestroy {
     this.sportsService.markAttendanceByQr(qrCode, verifiedBy, this.checkInNotes).subscribe({
       next: (response) => {
         this.checkInBusy = false;
-        this.checkInMessage = response?.message || 'Asistencia registrada.';
+        this.checkInMessage = response?.message || this.translate.instant('EVENTS_PAGE.SUCCESS_CHECKIN_MSG');
         this.manualQrCode = '';
         this.checkInNotes = '';
         void this.stopScanner();
         this.reload(true);
+        this.notifySuccess(
+          'EVENTS_PAGE.SUCCESS_CHECKIN_TITLE',
+          response?.message || this.translate.instant('EVENTS_PAGE.SUCCESS_CHECKIN_MSG')
+        );
         if (this.reportOpen && this.reportEventId) {
           this.fetchAttendanceReport(this.reportEventId, true);
         }
@@ -1432,5 +1533,30 @@ export class EventsPageComponent implements OnInit, OnDestroy {
       };
     });
     this.loading = false;
+  }
+
+  private notifySuccess(titleKey: string, message: string): void {
+    void this.confirm.ack({
+      title: this.translate.instant(titleKey),
+      message,
+      confirmLabel: this.translate.instant('COMMON.GOT_IT')
+    });
+  }
+
+  private parseLocalDate(value?: string | null): Date | null {
+    if (!value) {
+      return null;
+    }
+    const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value.trim());
+    if (match) {
+      const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+      return Number.isNaN(date.getTime()) ? null : date;
+    }
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  private startOfLocalDay(date: Date): Date {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
   }
 }

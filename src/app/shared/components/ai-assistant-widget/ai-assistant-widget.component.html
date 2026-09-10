@@ -48,6 +48,7 @@
       <section *ngIf="section === 'chat'" class="ai-section ai-section--chat">
         <div class="ai-history-bar">
           <span class="ai-history-title">{{ tituloHiloActual() }}</span>
+          <span class="ai-quota ai-quota--bar">{{ 'CHAT.QUOTA' | translate:{ usados: mensajes.length, max: limites.maxMensajesPorChat } }}</span>
           <button
             type="button"
             class="ai-history-new"
@@ -149,7 +150,8 @@
               {{ 'CHAT.CLEAR' | translate }}
             </button>
           </div>
-          <p class="ai-lead">{{ 'CHAT.HISTORY_HINT' | translate }}</p>
+          <p class="ai-lead">{{ 'CHAT.HISTORY_HINT' | translate:{ maxMensajes: limites.maxMensajesPorChat, maxChats: limites.maxChatsActivos } }}</p>
+          <p class="ai-quota">{{ 'CHAT.QUOTA' | translate:{ usados: mensajes.length, max: limites.maxMensajesPorChat } }}</p>
           <p *ngIf="cargandoHilos" class="ai-empty">{{ 'COMMON.LOADING' | translate }}</p>
           <p *ngIf="errorHistorial" class="ai-error">{{ errorHistorial }}</p>
           <p *ngIf="!cargandoHilos && !errorHistorial && !hilos.length" class="ai-empty">
