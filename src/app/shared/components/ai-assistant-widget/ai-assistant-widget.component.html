@@ -46,83 +46,18 @@
     <div class="ai-body">
       <!-- Chat / agente -->
       <section *ngIf="section === 'chat'" class="ai-section ai-section--chat">
-        <div class="ai-history" #historyWrap [class.ai-history--open]="historialAbierto">
-          <div class="ai-history-bar">
-            <button
-              type="button"
-              class="ai-history-trigger"
-              (click)="toggleHistorial($event)"
-              [attr.aria-expanded]="historialAbierto"
-              aria-haspopup="listbox"
-            >
-              <app-icon name="clock" [size]="16"></app-icon>
-              <span class="ai-history-title">{{ tituloHiloActual() }}</span>
-              <span class="ai-chevron" [class.ai-chevron--open]="historialAbierto" aria-hidden="true">
-                <app-icon name="chevron-down" [size]="16"></app-icon>
-              </span>
-            </button>
-            <button
-              type="button"
-              class="ai-history-new"
-              (click)="nuevaConversacion()"
-              [attr.aria-label]="'CHAT.NEW' | translate"
-            >
-              <app-icon name="plus" [size]="16"></app-icon>
-            </button>
-          </div>
-          <div
-            class="ai-history-menu"
-            *ngIf="historialAbierto"
-            role="listbox"
-            [attr.aria-label]="'CHAT.HISTORY' | translate"
+        <div class="ai-history-bar">
+          <span class="ai-history-title">{{ tituloHiloActual() }}</span>
+          <button
+            type="button"
+            class="ai-history-new"
+            (click)="nuevaConversacion()"
+            [attr.aria-label]="'CHAT.NEW' | translate"
           >
-            <label class="ai-history-search">
-              <app-icon name="magnifying-glass" [size]="16"></app-icon>
-              <span class="sr-only">{{ 'CHAT.SEARCH' | translate }}</span>
-              <input
-                type="search"
-                [(ngModel)]="busquedaHistorial"
-                (ngModelChange)="filtrarHistorial()"
-                [placeholder]="'CHAT.SEARCH_PH' | translate"
-                autocomplete="off"
-              />
-            </label>
-            <p class="ai-history-status" *ngIf="cargandoHilos">Cargando conversaciones…</p>
-            <p class="ai-error" *ngIf="!cargandoHilos && errorHistorial">{{ errorHistorial }}</p>
-            <p class="ai-history-status" *ngIf="!cargandoHilos && !errorHistorial">
-              {{ textoHistorial() }}
-            </p>
-            <div class="ai-history-scroll">
-              <button
-                *ngFor="let hilo of hilosVisibles; trackBy: trackByHilo"
-                type="button"
-                class="ai-hilo"
-                [class.ai-hilo--active]="idDeHilo(hilo) === conversacionId"
-                (click)="abrirHilo($event, hilo)"
-              >
-                <span class="ai-hilo-open">
-                  <span class="ai-hilo-title">{{ tituloDeHilo(hilo) }}</span>
-                  <small>{{ fechaCorta(hilo.ultima_interaccion || hilo.creada_en) }} · {{ hilo.total_mensajes || 0 }} {{ 'CHAT.MESSAGES' | translate }}</small>
-                </span>
-                <span
-                  class="ai-hilo-del"
-                  role="button"
-                  tabindex="0"
-                  (click)="borrarHilo($event, hilo)"
-                  [attr.aria-label]="'CHAT.DELETE' | translate"
-                >
-                  <app-icon name="trash" [size]="14"></app-icon>
-                </span>
-              </button>
-            </div>
-            <div class="ai-history-actions" *ngIf="hilos.length">
-              <button type="button" class="ai-history-clear" (click)="borrarTodoHistorial($event)">
-                {{ 'CHAT.DELETE_ALL' | translate }}
-              </button>
-            </div>
-          </div>
+            <app-icon name="plus" [size]="16"></app-icon>
+          </button>
         </div>
-        <div #timeline class="ai-timeline" role="log" aria-live="polite" *ngIf="!historialAbierto">
+        <div #timeline class="ai-timeline" role="log" aria-live="polite">
           <p *ngIf="cargandoHilo" class="ai-empty">{{ 'COMMON.LOADING' | translate }}</p>
           <p *ngIf="!mensajes.length && !cargandoHilo" class="ai-empty">{{ 'CHAT.EMPTY' | translate }}</p>
           <div class="ai-chips" *ngIf="!mensajes.length && !cargandoHilo">
@@ -136,7 +71,7 @@
             [class.ai-bubble--user]="msg.remitente === 'usuario'"
             [class.ai-bubble--bot]="msg.remitente === 'asistente'"
           >
-            <p>{{ textoBurbuja(msg.texto) }}</p>
+            <p *ngFor="let linea of lineasBurbuja(msg.texto)">{{ linea }}</p>
             <app-body-map *ngIf="msg.cuerpo" [mapa]="msg.cuerpo" [compact]="true"></app-body-map>
             <div class="ai-cards" *ngIf="msg.cards?.length">
               <button
@@ -178,8 +113,8 @@
             </ul>
           </article>
         </div>
-        <p *ngIf="errorChat && !historialAbierto" class="ai-error" role="alert">{{ errorChat }}</p>
-        <div class="ai-composer" *ngIf="!historialAbierto">
+        <p *ngIf="errorChat" class="ai-error" role="alert">{{ errorChat }}</p>
+        <div class="ai-composer">
           <label class="ai-limit">
             Limitación
             <input
@@ -201,6 +136,47 @@
           <button type="button" class="ai-send" (click)="enviarChat()" [disabled]="enviando || cargandoHilo || !borrador.trim()">
             {{ 'CHAT.SEND' | translate }}
           </button>
+        </div>
+        <div class="ai-history-block" [attr.aria-label]="'CHAT.HISTORY_TITLE' | translate">
+          <div class="ai-toolbar">
+            <h4>{{ 'CHAT.HISTORY_TITLE' | translate }}</h4>
+            <button
+              type="button"
+              class="ai-link"
+              *ngIf="hilos.length"
+              (click)="borrarTodoHistorial($event)"
+            >
+              {{ 'CHAT.CLEAR' | translate }}
+            </button>
+          </div>
+          <p class="ai-lead">{{ 'CHAT.HISTORY_HINT' | translate }}</p>
+          <p *ngIf="cargandoHilos" class="ai-empty">{{ 'COMMON.LOADING' | translate }}</p>
+          <p *ngIf="errorHistorial" class="ai-error">{{ errorHistorial }}</p>
+          <p *ngIf="!cargandoHilos && !errorHistorial && !hilos.length" class="ai-empty">
+            {{ 'CHAT.HISTORY_EMPTY' | translate }}
+          </p>
+          <ul class="ai-list" *ngIf="hilosVisibles.length">
+            <li
+              *ngFor="let hilo of hilosVisibles; trackBy: trackByHilo"
+              [class.ai-hilo--active]="idDeHilo(hilo) === conversacionId"
+            >
+              <button type="button" class="ai-hilo-open" (click)="abrirHilo($event, hilo)">
+                <strong>{{ tituloDeHilo(hilo) }}</strong>
+                <small>
+                  {{ fechaCorta(hilo.ultima_interaccion || hilo.creada_en) }}
+                  · {{ hilo.total_mensajes || 0 }} {{ 'CHAT.MESSAGES' | translate }}
+                </small>
+              </button>
+              <button
+                type="button"
+                class="ai-hilo-del"
+                (click)="borrarHilo($event, hilo)"
+                [attr.aria-label]="'CHAT.DELETE' | translate"
+              >
+                <app-icon name="trash" [size]="14"></app-icon>
+              </button>
+            </li>
+          </ul>
         </div>
       </section>
 

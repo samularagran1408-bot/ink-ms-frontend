@@ -25,6 +25,8 @@
     "STATUS": "Estado",
     "DESCRIPTION": "Descripción",
     "ALL": "Todos",
+    "PREV": "Anterior",
+    "NEXT": "Siguiente",
     "LOGOUT_CONFIRM": "¿Quieres cerrar tu sesión ahora?"
   },
   "WIDGET": {
@@ -779,7 +781,9 @@
     "SEE_HISTORY": "Ver historial",
     "SEE_CATALOG": "Ver catálogo",
     "QR_HINT": "Muestra este QR para registrar asistencia.",
-    "OTHER_PASSES": "Otros pases pendientes"
+    "OTHER_PASSES": "Otros pases pendientes",
+    "PAGE": "Página {{page}} de {{pages}}",
+    "WAITLIST_LOADING": "Cargando lista de espera..."
   },
   "CHAT": {
     "TITLE": "Asistente InkluSport",
@@ -791,8 +795,10 @@
     "PLACEHOLDER": "Pregúntame por eventos, una rutina o el quiz…",
     "SEND": "Enviar",
     "HISTORY": "Historial",
+    "HISTORY_TITLE": "Historial de chats",
     "HISTORY_EMPTY": "Aún no hay conversaciones guardadas.",
-    "HISTORY_HINT": "Tus hilos se guardan en tu cuenta. El agente solo usa los últimos turnos.",
+    "HISTORY_HINT": "Cada conversación se guarda. Puedes borrar una o todo el historial.",
+    "CLEAR": "Borrar historial",
     "HISTORY_TOGGLE": "Mostrar historial de chats",
     "SEARCH": "Buscar en el historial",
     "SEARCH_PH": "Buscar chats",

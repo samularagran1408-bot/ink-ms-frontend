@@ -1,4 +1,4 @@
-import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { Subscription } from 'rxjs';
 
 import { ConfirmDialogService, ConfirmState } from '@shared/services/confirm-dialog.service';
@@ -12,11 +12,15 @@ export class ConfirmDialogComponent implements OnInit, OnDestroy {
   state: ConfirmState | null = null;
   private sub: Subscription | null = null;
 
-  constructor(private confirm: ConfirmDialogService) {}
+  constructor(
+    private confirm: ConfirmDialogService,
+    private cdr: ChangeDetectorRef
+  ) {}
 
   ngOnInit(): void {
     this.sub = this.confirm.state$.subscribe((state) => {
       this.state = state;
+      this.cdr.detectChanges();
     });
   }
 

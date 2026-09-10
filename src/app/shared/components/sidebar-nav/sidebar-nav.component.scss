@@ -74,14 +74,14 @@
   display: block;
   font-size: 10px;
   font-weight: 700;
-  color: #94A3B8;
+  color: var(--ink-subtle);
   letter-spacing: 0.6px;
 }
 
 .user-name-text {
   font-size: 13px;
   font-weight: 700;
-  color: #0F172A;
+  color: var(--ink-ink);
 }
 
 .nav-bell-btn {
@@ -185,7 +185,7 @@
   width: 320px;
   max-width: 85vw;
   height: 100vh;
-  background-color: #FFFFFF;
+  background-color: var(--ink-surface);
   z-index: 1000;
   box-shadow: 16px 0 40px rgba(11, 18, 32, 0.16);
   display: flex;
@@ -281,8 +281,8 @@
 }
 
 .sidebar-nav-item:hover {
-  background-color: #F8FAFC;
-  color: #0F172A;
+  background-color: var(--ink-surface-alt, #F8FAFC);
+  color: var(--ink-ink, #0F172A);
 }
 
 .sidebar-nav-item--active {
@@ -377,7 +377,7 @@
 
 .role-profile-sub {
   font-size: 11px;
-  color: #94A3B8;
+  color: var(--ink-on-dark-muted);
   text-transform: uppercase;
   letter-spacing: 0.4px;
 }

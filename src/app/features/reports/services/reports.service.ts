@@ -42,10 +42,13 @@ export class ReportsService {
     });
   }
 
-  getEventsPanel(userId?: string, mode: 'user' | 'manage' = 'user'): Observable<PanelDashboardResponse> {
-    const params: Record<string, string> = { mode };
+  getEventsPanel(userId?: string, mode: 'user' | 'manage' = 'user', page = 0, size = 20, q?: string): Observable<PanelDashboardResponse> {
+    const params: Record<string, string> = { mode, page: String(page), size: String(size) };
     if (userId) {
       params['userId'] = userId;
+    }
+    if (q?.trim()) {
+      params['q'] = q.trim();
     }
     return this.http.get<PanelDashboardResponse>(`${this.dashboardUrl}/events`, { params });
   }
@@ -76,10 +79,21 @@ export class ReportsService {
     return this.http.get<PanelDashboardResponse>(`${this.dashboardUrl}/disabilities`);
   }
 
-  getUsersPanel(filter: 'active' | 'all' | 'inactive' = 'active'): Observable<PanelDashboardResponse> {
-    return this.http.get<PanelDashboardResponse>(`${this.dashboardUrl}/users`, {
-      params: { filter }
-    });
+  getUsersPanel(
+    filter: 'active' | 'all' | 'inactive' = 'active',
+    page = 0,
+    size = 20,
+    name?: string,
+    disability?: string
+  ): Observable<PanelDashboardResponse> {
+    const params: Record<string, string> = { filter, page: String(page), size: String(size) };
+    if (name?.trim()) {
+      params['name'] = name.trim();
+    }
+    if (disability?.trim()) {
+      params['disability'] = disability.trim();
+    }
+    return this.http.get<PanelDashboardResponse>(`${this.dashboardUrl}/users`, { params });
   }
 
   getRolesPanel(): Observable<PanelDashboardResponse> {

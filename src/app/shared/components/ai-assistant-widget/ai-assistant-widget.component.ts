@@ -32,7 +32,6 @@ const PUBLIC_PATHS = new Set(['/', '', '/login', '/register', '/guest', '/forgot
 export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
   @ViewChild('timeline') timeline?: ElementRef<HTMLElement>;
   @ViewChild('inputEl') inputEl?: ElementRef<HTMLTextAreaElement>;
-  @ViewChild('historyWrap') historyWrap?: ElementRef<HTMLElement>;
 
   visible = false;
   open = false;
@@ -57,8 +56,6 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
   conversacionId: string | null = null;
   hilos: ChatHilo[] = [];
   hilosVisibles: ChatHilo[] = [];
-  historialAbierto = false;
-  busquedaHistorial = '';
   cargandoHilos = false;
   cargandoHilo = false;
   errorHistorial: string | null = null;
@@ -155,6 +152,9 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
       if (id === 'riesgo' && !this.cargandoHistorialRiesgo) {
         this.cargarHistorialRiesgo();
       }
+      if (id === 'chat') {
+        this.cargarHilos();
+      }
       this.cdr.markForCheck();
     }));
     this.subs.add(this.competitionProgress.raw$.subscribe((raw) => {
@@ -181,10 +181,6 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     if (this.confirm.state$.value) {
       return;
     }
-    if (this.historialAbierto) {
-      this.cerrarHistorial();
-      return;
-    }
     if (this.open) {
       this.closePanel();
     }
@@ -199,8 +195,10 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
   }
 
   selectSection(id: AssistantSection): void {
-    this.cerrarHistorial();
     this.section = id;
+    if (id === 'chat') {
+      this.cargarHilos();
+    }
     if (id === 'estadisticas' && !this.cargandoStats) {
       this.cargarEstadisticas(this.statsObjetivoId || undefined, this.statsNombre || undefined);
     }
@@ -213,6 +211,7 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     if (id === 'riesgo') {
       this.cargarHistorialRiesgo();
     }
+    this.cdr.markForCheck();
   }
 
   enviarChat(): void {
@@ -245,7 +244,6 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
   }
 
   nuevaConversacion(): void {
-    this.cerrarHistorial();
     this.conversacionId = this.chat.idNuevo();
     sessionStorage.setItem(STORAGE_KEY, this.conversacionId);
     this.mensajes = [];
@@ -268,38 +266,9 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     });
   }
 
-  toggleHistorial(event?: Event): void {
-    event?.preventDefault();
-    event?.stopPropagation();
-    this.historialAbierto = !this.historialAbierto;
-    if (this.historialAbierto) {
-      this.busquedaHistorial = '';
-      this.cargarHilos();
-    }
-  }
-
-  cerrarHistorial(): void {
-    this.historialAbierto = false;
-    this.busquedaHistorial = '';
-    this.filtrarHistorial();
-  }
-
   filtrarHistorial(): void {
-    const q = this.busquedaHistorial.trim().toLowerCase();
-    this.hilosVisibles = q
-      ? this.hilos.filter((h) => (this.tituloDeHilo(h) || '').toLowerCase().includes(q))
-      : [...this.hilos];
-  }
-
-  textoHistorial(): string {
-    const n = this.hilosVisibles.length;
-    if (n > 0) {
-      return n === 1 ? '1 conversación' : `${n} conversaciones`;
-    }
-    if (this.hilos.length) {
-      return this.translate.instant('CHAT.NO_RESULTS');
-    }
-    return 'Aún no hay conversaciones guardadas.';
+    this.hilosVisibles = [...this.hilos];
+    this.cdr.markForCheck();
   }
 
   trackByHilo(_index: number, hilo: ChatHilo): string {
@@ -401,7 +370,6 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
         this.conversacionId = this.chat.idNuevo();
         sessionStorage.setItem(STORAGE_KEY, this.conversacionId);
         this.errorHistorial = null;
-        this.cerrarHistorial();
       },
       error: () => {
         this.cdr.markForCheck();
@@ -958,6 +926,22 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     return texto;
   }
 
+  lineasBurbuja(texto: string): string[] {
+    const t = this.textoBurbuja(texto).replace(/\r\n/g, '\n').trim();
+    if (!t) {
+      return [];
+    }
+    const porSalto = t.split(/\n+/).map((linea) => linea.trim()).filter(Boolean);
+    if (porSalto.length > 1) {
+      return porSalto;
+    }
+    const oraciones = porSalto[0].split(/(?<=[.!?])\s+(?=[A-ZÁÉÍÓÚÑ¿¡0-9])/);
+    if (oraciones.length >= 3) {
+      return oraciones.map((linea) => linea.trim()).filter(Boolean);
+    }
+    return porSalto;
+  }
+
   sugerenciasRol(): string[] {
     if (this.esAdmin()) {
       return [
@@ -1356,7 +1340,6 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
         this.conversacionId = cid;
         sessionStorage.setItem(STORAGE_KEY, cid);
         this.mensajes = this.chat.mapearMensajes(detalle);
-        this.cerrarHistorial();
         this.scrollChat();
       },
       error: () => {
@@ -1368,7 +1351,6 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
   }
 
   private closePanel(): void {
-    this.cerrarHistorial();
     this.closing = true;
     this.closeTimeout = setTimeout(() => {
       this.open = false;

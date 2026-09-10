@@ -1,16 +1,32 @@
+@use './styles/contrast';
+
 /* Inklusport — tokens y base visual. No altera lógica de negocio. */
 
 :root {
+  color-scheme: light;
   --ink-red: #A30D11;
   --ink-red-hover: #890A0D;
   --ink-red-soft: #FEF2F2;
   --ink-navy: #0B1220;
   --ink-ink: #0F172A;
-  --ink-muted: #64748B;
-  --ink-subtle: #94A3B8;
+  --ink-muted: #475569;
+  --ink-subtle: #64748B;
   --ink-line: #E8EEF5;
   --ink-surface: #FFFFFF;
+  --ink-surface-alt: #F8FAFC;
   --ink-canvas: #F3F5F8;
+  --ink-on-accent: #FFFFFF;
+  --ink-on-dark: #F8FAFC;
+  --ink-on-dark-muted: #CBD5E1;
+  --ink-link: #9F1239;
+  --ink-focus: #A30D11;
+  --ink-danger: #B91C1C;
+  --ink-danger-text: #991B1B;
+  --ink-danger-bg: #FEE2E2;
+  --ink-success: #166534;
+  --ink-success-bg: #DCFCE7;
+  --ink-warn: #92400E;
+  --ink-warn-bg: #FEF3C7;
   --ink-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
   --ink-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
   --ink-shadow-lg: 0 24px 48px rgba(15, 23, 42, 0.12);
@@ -75,8 +91,18 @@ textarea {
 }
 
 :focus-visible {
-  outline: 2px solid var(--ink-red);
+  outline: 2px solid var(--ink-focus);
   outline-offset: 2px;
+}
+
+::placeholder {
+  color: var(--ink-muted);
+  opacity: 1;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--ink-red) 22%, white);
+  color: var(--ink-ink);
 }
 
 .brand-mark {
@@ -85,8 +111,8 @@ textarea {
   width: 30px;
   height: 30px;
   border-radius: 9px;
-  background: linear-gradient(160deg, #d3181e 0%, #8b0b0e 100%);
-  color: #fff;
+  background: var(--ink-red);
+  color: var(--ink-on-accent);
   font-family: 'Oswald', sans-serif;
   font-size: 15px;
   font-weight: 700;
@@ -134,91 +160,6 @@ body.reduced-motion *::after {
   animation: none !important;
   transition: none !important;
   scroll-behavior: auto !important;
-}
-
-body.high-contrast-mode {
-  background: #000 !important;
-  color: #fff !important;
-}
-
-body.high-contrast-mode .card,
-body.high-contrast-mode .kpi-card,
-body.high-contrast-mode .panel-main,
-body.high-contrast-mode .sidebar-panel,
-body.high-contrast-mode .role-sidebar,
-body.high-contrast-mode .top-nav,
-body.high-contrast-mode .auth-card,
-body.high-contrast-mode .form-panel,
-body.high-contrast-mode .accessibility-menu,
-body.high-contrast-mode .stat-box,
-body.high-contrast-mode .widget-card,
-body.high-contrast-mode .event-card {
-  background: #000 !important;
-  color: #fff !important;
-  border-color: #fff !important;
-  box-shadow: none !important;
-}
-
-body.high-contrast-mode a,
-body.high-contrast-mode .page-title,
-body.high-contrast-mode .page-subtitle,
-body.high-contrast-mode label,
-body.high-contrast-mode .kpi-label,
-body.high-contrast-mode .kpi-value,
-body.high-contrast-mode .section-title,
-body.high-contrast-mode .brand-logo,
-body.high-contrast-mode .role-sidebar-brand,
-body.high-contrast-mode .role-profile-name {
-  color: #fff !important;
-}
-
-body.high-contrast-mode .brand-mark {
-  background: #fff !important;
-  color: #000 !important;
-  box-shadow: none !important;
-}
-
-body.high-contrast-mode .btn-primary,
-body.high-contrast-mode .submit-btn,
-body.high-contrast-mode .accessibility-toggle-btn,
-body.high-contrast-mode .login-button,
-body.high-contrast-mode .register-event-btn,
-body.high-contrast-mode a.btn-primary,
-body.high-contrast-mode a.register-event-btn {
-  background: #fff !important;
-  color: #000 !important;
-  border: 2px solid #fff !important;
-  box-shadow: none !important;
-}
-
-body.high-contrast-mode .btn-secondary,
-body.high-contrast-mode a.btn-secondary,
-body.high-contrast-mode .btn-danger,
-body.high-contrast-mode .register-event-btn--cancel,
-body.high-contrast-mode a.register-event-btn--cancel,
-body.high-contrast-mode .confirm-btn,
-body.high-contrast-mode .talk-ai-btn,
-body.high-contrast-mode .filter-chip {
-  background: #000 !important;
-  color: #fff !important;
-  border: 2px solid #fff !important;
-  box-shadow: none !important;
-}
-
-body.high-contrast-mode .filter-chip--active,
-body.high-contrast-mode .sidebar-nav-item--active,
-body.high-contrast-mode .role-nav-item--active {
-  background: #fff !important;
-  color: #000 !important;
-  border-color: #fff !important;
-}
-
-body.high-contrast-mode input,
-body.high-contrast-mode select,
-body.high-contrast-mode textarea {
-  background: #000 !important;
-  color: #fff !important;
-  border: 2px solid #fff !important;
 }
 
 body.screen-reader-mode .sr-live {

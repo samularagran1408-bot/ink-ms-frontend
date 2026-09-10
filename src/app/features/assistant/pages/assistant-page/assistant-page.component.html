@@ -4,65 +4,54 @@
   <p class="mcp-banner" *ngIf="mcpNota">{{ mcpNota }}</p>
 
   <div class="chat-layout">
-    <aside class="chat-history" [attr.aria-label]="'CHAT.HISTORY' | translate">
-      <div class="chat-history-head">
-        <div>
-          <p class="chat-history-kicker">{{ 'CHAT.HISTORY' | translate }}</p>
-          <strong>{{ tituloHiloActual() }}</strong>
-        </div>
-        <button class="btn-secondary" type="button" (click)="nuevaConversacion()">
-          {{ 'CHAT.NEW' | translate }}
-        </button>
-      </div>
-      <label class="chat-history-search">
-        <span class="sr-only">{{ 'CHAT.SEARCH' | translate }}</span>
-        <input
-          type="search"
-          [(ngModel)]="busquedaHistorial"
-          (ngModelChange)="filtrarHistorial()"
-          [placeholder]="'CHAT.SEARCH_PH' | translate"
-          autocomplete="off"
-        />
-      </label>
-      <p class="empty-text" *ngIf="cargandoHilos">{{ 'COMMON.LOADING' | translate }}</p>
-      <p class="error-text" *ngIf="!cargandoHilos && errorHistorial">{{ errorHistorial }}</p>
-      <p class="empty-text" *ngIf="!cargandoHilos && !errorHistorial">{{ textoHistorial() }}</p>
-      <p class="chat-history-hint">{{ 'CHAT.HISTORY_HINT' | translate }}</p>
-      <div class="chat-history-scroll">
-        <button
-          *ngFor="let hilo of hilosVisibles; trackBy: trackByHilo"
-          type="button"
-          class="chat-hilo"
-          [class.chat-hilo--active]="idDeHilo(hilo) === conversacionId"
-          (click)="abrirHilo(hilo)"
-        >
-          <span class="chat-hilo-body">
-            <span class="chat-hilo-title">{{ tituloDeHilo(hilo) }}</span>
-            <small>
-              {{ fechaCorta(hilo.ultima_interaccion || hilo.creada_en) }}
-              · {{ hilo.total_mensajes || 0 }} {{ 'CHAT.MESSAGES' | translate }}
-            </small>
-          </span>
-          <span
-            class="chat-hilo-del"
-            role="button"
-            tabindex="0"
-            (click)="borrarHilo($event, hilo)"
-            [attr.aria-label]="'CHAT.DELETE' | translate"
-          >
-            <app-icon name="trash" [size]="14"></app-icon>
-          </span>
-        </button>
-      </div>
+    <aside class="chat-history" [attr.aria-label]="'CHAT.HISTORY_TITLE' | translate">
+    <div class="chat-history-toolbar">
+      <h2 class="chat-history-title">{{ 'CHAT.HISTORY_TITLE' | translate }}</h2>
       <button
         *ngIf="hilos.length"
         class="chat-history-clear"
         type="button"
         (click)="borrarTodoHistorial()"
       >
-        {{ 'CHAT.DELETE_ALL' | translate }}
+        {{ 'CHAT.CLEAR' | translate }}
       </button>
-    </aside>
+    </div>
+    <p class="chat-history-hint">{{ 'CHAT.HISTORY_HINT' | translate }}</p>
+    <p class="empty-text" *ngIf="cargandoHilos">{{ 'COMMON.LOADING' | translate }}</p>
+    <p class="error-text" *ngIf="!cargandoHilos && errorHistorial">{{ errorHistorial }}</p>
+    <p class="empty-text" *ngIf="!cargandoHilos && !errorHistorial && !hilos.length">
+      {{ 'CHAT.HISTORY_EMPTY' | translate }}
+    </p>
+    <div class="chat-history-scroll">
+      <button
+        *ngFor="let hilo of hilosVisibles; trackBy: trackByHilo"
+        type="button"
+        class="chat-hilo"
+        [class.chat-hilo--active]="idDeHilo(hilo) === conversacionId"
+        (click)="abrirHilo(hilo)"
+      >
+        <span class="chat-hilo-body">
+          <span class="chat-hilo-title">{{ tituloDeHilo(hilo) }}</span>
+          <small>
+            {{ fechaCorta(hilo.ultima_interaccion || hilo.creada_en) }}
+            · {{ hilo.total_mensajes || 0 }} {{ 'CHAT.MESSAGES' | translate }}
+          </small>
+        </span>
+        <span
+          class="chat-hilo-del"
+          role="button"
+          tabindex="0"
+          (click)="borrarHilo($event, hilo)"
+          [attr.aria-label]="'CHAT.DELETE' | translate"
+        >
+          <app-icon name="trash" [size]="14"></app-icon>
+        </span>
+      </button>
+    </div>
+    <button class="btn-secondary" type="button" (click)="nuevaConversacion()">
+      {{ 'CHAT.NEW' | translate }}
+    </button>
+  </aside>
 
     <div class="chat-main">
   <div

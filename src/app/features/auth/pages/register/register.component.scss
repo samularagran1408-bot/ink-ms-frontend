@@ -405,7 +405,7 @@
 }
 
 .input-field::placeholder {
-  color: #94A3B8;
+  color: var(--ink-subtle);
 }
 
 select.input-field {

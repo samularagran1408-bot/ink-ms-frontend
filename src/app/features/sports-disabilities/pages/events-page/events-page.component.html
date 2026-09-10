@@ -40,12 +40,13 @@
       <input
         type="search"
         name="catalogQuery"
-        [(ngModel)]="catalogQuery"
+        [ngModel]="catalogQuery"
+        (ngModelChange)="onCatalogQueryChange($event)"
         [placeholder]="'EVENTS_PAGE.FILTER_PH' | translate"
       />
     </div>
-    <p class="search-count" *ngIf="catalogQuery.trim()">
-      {{ 'COMMON.RESULTS' | translate:{ count: filteredManageRows.length } }}
+    <p class="search-count" *ngIf="catalogQuery.trim() || eventsTotal">
+      {{ 'COMMON.RESULTS' | translate:{ count: eventsTotal } }}
     </p>
     <div class="list-item" *ngIf="lookupEvent">
       <div>
@@ -331,15 +332,16 @@
       <input
         type="search"
         name="catalogQuery"
-        [(ngModel)]="catalogQuery"
+        [ngModel]="catalogQuery"
+        (ngModelChange)="onCatalogQueryChange($event)"
         [placeholder]="'EVENTS_PAGE.FILTER_PH' | translate"
       />
       <button class="btn-secondary" type="button" *ngIf="catalogQuery.trim()" (click)="clearCatalogQuery()">
         {{ 'COMMON.CLEAR' | translate }}
       </button>
     </div>
-    <p class="search-count" *ngIf="catalogQuery.trim()">
-      {{ 'COMMON.RESULTS' | translate:{ count: filteredEvents.length } }}
+    <p class="search-count" *ngIf="catalogQuery.trim() || eventsTotal">
+      {{ 'COMMON.RESULTS' | translate:{ count: eventsTotal } }}
     </p>
     <div
       class="event-user-row"
@@ -407,6 +409,15 @@
         ? ('EVENTS_PAGE.CATALOG_EMPTY_SEARCH' | translate)
         : ('EVENTS_PAGE.CATALOG_EMPTY' | translate) }}
     </p>
+    <div class="actions-row" *ngIf="eventsTotalPages > 1" style="margin-top: 12px; justify-content: space-between;">
+      <button class="btn-secondary" type="button" [disabled]="catalogPage <= 0" (click)="prevCatalogPage()">
+        {{ 'COMMON.PREV' | translate }}
+      </button>
+      <span class="kpi-sub">{{ 'EVENTS_PAGE.PAGE' | translate:{ page: catalogPage + 1, pages: eventsTotalPages } }}</span>
+      <button class="btn-secondary" type="button" [disabled]="catalogPage + 1 >= eventsTotalPages" (click)="nextCatalogPage()">
+        {{ 'COMMON.NEXT' | translate }}
+      </button>
+    </div>
   </div>
 
   <!-- Vista gestión -->
@@ -419,7 +430,7 @@
           <div class="kpi-sub">
             {{ row.event.sportName || 'Deporte' }} · {{ row.event.eventDate }} {{ row.event.eventTime }} ·
             {{ occupied(row.event) }}/{{ row.event.maxCapacity }} cupos ·
-            Waitlist: {{ row.waitlist.length }}
+            Waitlist: {{ row.waitlistLoaded ? row.waitlist.length : '—' }}
           </div>
           <app-event-location-map
             *ngIf="row.event.location || (row.event.latitude != null && row.event.longitude != null)"
@@ -500,6 +511,7 @@
       </form>
 
       <div *ngIf="row.showWaitlist" style="padding-left: 8px;">
+        <p *ngIf="row.waitlistLoading" class="empty-text">{{ 'EVENTS_PAGE.WAITLIST_LOADING' | translate }}</p>
         <div class="list-item" *ngFor="let item of row.waitlist">
           <div class="user-cell">
             <img *ngIf="item.userProfilePicture" class="table-avatar" [src]="item.userProfilePicture" alt="" />
@@ -510,12 +522,21 @@
             </div>
           </div>
         </div>
-        <p *ngIf="!row.waitlist.length" class="empty-text">Sin personas en waitlist.</p>
+        <p *ngIf="row.waitlistLoaded && !row.waitlist.length" class="empty-text">Sin personas en waitlist.</p>
       </div>
     </div>
     <p *ngIf="!loading && !filteredManageRows.length" class="empty-text">
       {{ catalogQuery.trim() ? 'No hay eventos que coincidan con la búsqueda.' : 'No hay eventos.' }}
     </p>
+    <div class="actions-row" *ngIf="eventsTotalPages > 1" style="margin-top: 12px; justify-content: space-between;">
+      <button class="btn-secondary" type="button" [disabled]="catalogPage <= 0" (click)="prevCatalogPage()">
+        {{ 'COMMON.PREV' | translate }}
+      </button>
+      <span class="kpi-sub">{{ 'EVENTS_PAGE.PAGE' | translate:{ page: catalogPage + 1, pages: eventsTotalPages } }}</span>
+      <button class="btn-secondary" type="button" [disabled]="catalogPage + 1 >= eventsTotalPages" (click)="nextCatalogPage()">
+        {{ 'COMMON.NEXT' | translate }}
+      </button>
+    </div>
   </div>
 
   <!-- Modal check-in organizador -->

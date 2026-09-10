@@ -387,7 +387,7 @@ a.register-event-btn:hover {
 .cal-day-header {
   font-size: 10px;
   font-weight: 700;
-  color: #94A3B8;
+  color: var(--ink-subtle);
   padding-bottom: 6px;
   width: 100%;
 }
@@ -622,7 +622,7 @@ a.register-event-btn:hover {
 
 .kpi-sub {
   font-size: 11px;
-  color: #94A3B8;
+  color: var(--ink-subtle);
 }
 
 .panel-error,

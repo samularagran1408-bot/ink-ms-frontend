@@ -8,10 +8,11 @@ import {
   AttendanceReport,
   CalendarEvent,
   Disability,
-  QrAttendanceInfo,
   DisabilityRequest,
   EventItem,
   EventRequest,
+  PageResponse,
+  QrAttendanceInfo,
   Registration,
   Routine,
   RoutineRegistration,
@@ -79,6 +80,37 @@ export class SportsService {
 
   getAvailableEvents(): Observable<EventItem[]> {
     return this.http.get<EventItem[]>(`${this.eventsUrl}/available`);
+  }
+
+  getEventsPage(options?: {
+    page?: number;
+    size?: number;
+    q?: string;
+    from?: string;
+    to?: string;
+    availableOnly?: boolean;
+    createdBy?: string;
+  }): Observable<PageResponse<EventItem>> {
+    const params: Record<string, string> = {
+      page: String(options?.page ?? 0),
+      size: String(options?.size ?? 20)
+    };
+    if (options?.q) {
+      params['q'] = options.q;
+    }
+    if (options?.from) {
+      params['from'] = options.from;
+    }
+    if (options?.to) {
+      params['to'] = options.to;
+    }
+    if (options?.availableOnly) {
+      params['availableOnly'] = 'true';
+    }
+    if (options?.createdBy) {
+      params['createdBy'] = options.createdBy;
+    }
+    return this.http.get<PageResponse<EventItem>>(`${this.eventsUrl}/page`, { params });
   }
 
   getEvent(id: string): Observable<EventItem> {

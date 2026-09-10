@@ -254,6 +254,18 @@ export class ChatService {
       signal
     });
     if (!response.ok || !response.body) {
+      if (response.status === 429) {
+        let detail = 'Ya hay una respuesta en curso. Espera un momento.';
+        try {
+          const body = await response.json() as { detail?: unknown };
+          if (typeof body?.detail === 'string' && body.detail.trim()) {
+            detail = body.detail;
+          }
+        } catch {
+          /* cuerpo no JSON */
+        }
+        throw new Error(detail);
+      }
       throw new Error(`stream ${response.status}`);
     }
     const reader = response.body.getReader();
