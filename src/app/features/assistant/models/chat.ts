@@ -58,6 +58,21 @@ export interface ChatMcp {
   nota?: string;
 }
 
+export interface ChatCupoHora {
+  usados: number;
+  maximo: number;
+  restantes: number;
+  esperaSegundos: number;
+  aviso: string | null;
+  retryAfterSegundos: number | null;
+}
+
+export interface ChatErrorInfo {
+  mensaje: string;
+  codigo: string;
+  retryAfterSegundos: number;
+}
+
 export interface ChatResponse {
   conversacion_id: string;
   respuesta: string;
@@ -72,6 +87,8 @@ export interface ChatResponse {
   cards: ChatCard[];
   mcp?: ChatMcp | null;
   cuerpo?: BodyMapData | null;
+  aviso?: string | null;
+  cupo?: ChatCupoHora | Record<string, unknown> | null;
 }
 
 export interface ChatHilo {
@@ -99,6 +116,17 @@ export interface ChatMensajeGuardado {
 export interface ChatHiloDetalle extends ChatHilo {
   resumen?: string | null;
   mensajes: ChatMensajeGuardado[];
+  limites?: ChatLimites;
+}
+
+export interface ChatLimites {
+  maxMensajesPorChat: number;
+  maxChatsActivos: number;
+  maxMensajesPorHora: number;
+  esperaMinutos: number;
+  esperaHoras: number;
+  usadosHora: number;
+  aviso?: string | null;
 }
 
 export interface ChatMensajeUi {

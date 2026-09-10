@@ -40,6 +40,6 @@ export class ConfirmDialogComponent implements OnInit, OnDestroy {
   }
 
   cancel(): void {
-    this.confirm.resolve(false);
+    this.confirm.resolve(this.state?.variant === 'ack');
   }
 }

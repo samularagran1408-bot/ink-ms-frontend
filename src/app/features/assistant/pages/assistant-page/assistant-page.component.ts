@@ -6,7 +6,7 @@ import { Subscription } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 
 import { AppRole } from '@core/models/app-role';
-import { ChatCard, ChatCtaAccion, ChatHilo, ChatMensajeUi, ChatPasoActividad, ChatResponse, ChatStreamEvent } from '@features/assistant/models/chat';
+import { ChatCard, ChatCtaAccion, ChatHilo, ChatLimites, ChatMensajeUi, ChatPasoActividad, ChatResponse, ChatStreamEvent } from '@features/assistant/models/chat';
 import { BodyMapData } from '@features/assistant/models/body-map';
 import { ChatService } from '@features/assistant/services/chat.service';
 import { ReportsService } from '@features/reports/services/reports.service';
@@ -31,7 +31,6 @@ export class AssistantPageComponent implements OnInit, OnDestroy {
 
   mensajes: ChatMensajeUi[] = [];
   borrador = '';
-  limitacion = '';
   enviando = false;
   pasosAgente: ChatPasoActividad[] = [];
   error: string | null = null;
@@ -43,6 +42,18 @@ export class AssistantPageComponent implements OnInit, OnDestroy {
   cargandoHilos = false;
   cargandoHilo = false;
   errorHistorial: string | null = null;
+  limites: ChatLimites = {
+    maxMensajesPorChat: 40,
+    maxChatsActivos: 10,
+    maxMensajesPorHora: 20,
+    esperaMinutos: 60,
+    esperaHoras: 1,
+    usadosHora: 0
+  };
+  aviso: string | null = null;
+  bloqueadoHasta = 0;
+  esperaLabel = '';
+  private esperaTimer?: ReturnType<typeof setInterval>;
 
   private chatSub?: Subscription;
   private cicloLocal?: ReturnType<typeof setInterval>;
@@ -78,11 +89,16 @@ export class AssistantPageComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.chatSub?.unsubscribe();
     this.detenerCicloLocal();
+    this.detenerEspera();
+  }
+
+  get chatBloqueado(): boolean {
+    return Date.now() < this.bloqueadoHasta;
   }
 
   enviar(): void {
     const texto = this.borrador.trim();
-    if (!texto || this.enviando || this.cargandoHilo) {
+    if (!texto || this.enviando || this.cargandoHilo || this.chatBloqueado) {
       return;
     }
     this.error = null;
@@ -94,19 +110,21 @@ export class AssistantPageComponent implements OnInit, OnDestroy {
     this.scrollAlFinal();
 
     this.chatSub?.unsubscribe();
-    this.chatSub = this.chat.enviarConProgreso(texto, this.conversacionId, (ev) => this.onChatEvento(ev), this.limitacion).subscribe({
+    this.chatSub = this.chat.enviarConProgreso(texto, this.conversacionId, (ev) => this.onChatEvento(ev)).subscribe({
       next: (res) => this.aplicarRespuesta(res),
       error: (err) => {
         this.enviando = false;
         this.detenerCicloLocal();
         this.pasosAgente = [];
-        this.error = err?.error?.detail || err?.message || 'No se pudo contactar al asistente.';
-        if (typeof this.error !== 'string') {
-          this.error = 'No se pudo contactar al asistente.';
+        const ultimo = this.mensajes[this.mensajes.length - 1];
+        if (ultimo?.remitente === 'usuario' && ultimo.texto === texto) {
+          this.mensajes.pop();
+          this.borrador = texto;
         }
-        if (err?.status === 429) {
-          this.error = (typeof err?.error?.detail === 'string' && err.error.detail)
-            || 'Ya hay una respuesta en curso. Espera un momento.';
+        const info = this.chat.parsearError(err);
+        this.error = info.mensaje;
+        if (info.codigo === 'chat_limite_hora' || info.retryAfterSegundos > 0) {
+          this.iniciarBloqueo(info.retryAfterSegundos || this.limites.esperaMinutos * 60);
         }
         this.estadoA11y = this.error || '';
         this.cdr.markForCheck();
@@ -149,7 +167,7 @@ export class AssistantPageComponent implements OnInit, OnDestroy {
   }
 
   trackByHilo(_index: number, hilo: ChatHilo): string {
-    return this.chat.idDeHilo(hilo) || String(_index);
+    return hilo?.conversacion_id || hilo?.session_id || String(_index);
   }
 
   trackByMensaje(index: number, msg: ChatMensajeUi): string {
@@ -332,7 +350,16 @@ export class AssistantPageComponent implements OnInit, OnDestroy {
     this.chat.listarHilos().subscribe({
       next: (res) => {
         this.cargandoHilos = false;
-        this.hilos = res.conversaciones || [];
+        const delServidor = res.conversaciones || [];
+        if (res.limites) {
+          this.limites = res.limites;
+          if (res.limites.aviso) {
+            this.aviso = res.limites.aviso;
+          }
+        }
+        if (delServidor.length) {
+          this.hilos = delServidor;
+        }
         this.filtrarHistorial();
         if (!abrirActual || this.mensajes.length) {
           return;
@@ -363,6 +390,9 @@ export class AssistantPageComponent implements OnInit, OnDestroy {
         this.conversacionId = cid;
         sessionStorage.setItem(STORAGE_KEY, cid);
         this.mensajes = this.chat.mapearMensajes(detalle);
+        if (detalle.limites) {
+          this.limites = detalle.limites;
+        }
         this.scrollAlFinal();
         this.cdr.markForCheck();
       },
@@ -380,7 +410,7 @@ export class AssistantPageComponent implements OnInit, OnDestroy {
     this.pasosAgente = [];
     this.conversacionId = res.conversacion_id;
     sessionStorage.setItem(STORAGE_KEY, res.conversacion_id);
-    this.upsertHiloLocal(res);
+    this.aplicarCupo(res);
     const cards = res.cards?.length ? res.cards : [];
     this.mensajes.push({
       remitente: 'asistente',
@@ -394,6 +424,8 @@ export class AssistantPageComponent implements OnInit, OnDestroy {
         : res.herramientas_usadas,
       cuerpo: this.cuerpoDe(res)
     });
+    this.upsertHiloLocal(res);
+    this.cargarHilos();
     const tools = res.mcp?.llm_eligio_tools
       ? `Tools MCP: ${(res.mcp.tools_usadas || []).join(', ') || 'ninguna'}`
       : res.fuente === 'motor_local'
@@ -402,6 +434,67 @@ export class AssistantPageComponent implements OnInit, OnDestroy {
     this.estadoA11y = `${tools}. ${res.respuesta}`;
     this.scrollAlFinal();
     this.cdr.markForCheck();
+  }
+
+  private aplicarCupo(res: ChatResponse): void {
+    const cupo = this.chat.extraerCupo(res);
+    if (cupo) {
+      this.limites = {
+        ...this.limites,
+        maxMensajesPorHora: cupo.maximo,
+        usadosHora: cupo.usados,
+        esperaMinutos: Math.max(1, Math.round(cupo.esperaSegundos / 60)),
+        esperaHoras: Math.max(1, Math.round(cupo.esperaSegundos / 3600))
+      };
+      this.aviso = cupo.aviso;
+      if (cupo.retryAfterSegundos && cupo.retryAfterSegundos > 0) {
+        this.iniciarBloqueo(cupo.retryAfterSegundos);
+      }
+      return;
+    }
+    if (res.aviso) {
+      this.aviso = res.aviso;
+    }
+  }
+
+  private iniciarBloqueo(segundos: number): void {
+    const espera = Math.max(1, Math.floor(segundos));
+    this.bloqueadoHasta = Date.now() + espera * 1000;
+    this.aviso = this.error || this.aviso;
+    this.actualizarEsperaLabel();
+    this.detenerEspera();
+    this.esperaTimer = setInterval(() => {
+      if (!this.chatBloqueado) {
+        this.detenerEspera();
+        this.bloqueadoHasta = 0;
+        this.esperaLabel = '';
+        this.error = null;
+        this.aviso = null;
+        this.cdr.markForCheck();
+        return;
+      }
+      this.actualizarEsperaLabel();
+      this.cdr.markForCheck();
+    }, 1000);
+  }
+
+  private actualizarEsperaLabel(): void {
+    const restante = Math.max(0, Math.ceil((this.bloqueadoHasta - Date.now()) / 1000));
+    const horas = Math.floor(restante / 3600);
+    const min = Math.floor((restante % 3600) / 60);
+    const seg = restante % 60;
+    if (horas > 0) {
+      this.esperaLabel = min > 0 ? `${horas} h ${min} min` : `${horas} h`;
+      return;
+    }
+    this.esperaLabel = min > 0 ? `${min} min ${seg.toString().padStart(2, '0')} s` : `${seg} s`;
+  }
+
+  private detenerEspera(): void {
+    if (this.esperaTimer) {
+      clearInterval(this.esperaTimer);
+      this.esperaTimer = undefined;
+    }
   }
 
   private upsertHiloLocal(res: ChatResponse): void {
@@ -423,7 +516,8 @@ export class AssistantPageComponent implements OnInit, OnDestroy {
       this.hilos = [
         {
           conversacion_id: cid,
-          titulo: '',
+          titulo: (this.mensajes.find((m) => m.remitente === 'usuario')?.texto || '').trim().slice(0, 60)
+            || this.translate.instant('CHAT.NEW'),
           estado: 'activa',
           ultima_interaccion: now,
           total_mensajes: this.mensajes.length + 1

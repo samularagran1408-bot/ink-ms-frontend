@@ -1,11 +1,11 @@
 @import '../../../../shared/styles/panel-common.scss';
 
 .event-user-row {
-  padding: 12px 0;
+  padding: 14px 0;
   border-bottom: 1px solid #F1F5F9;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .event-catalog-main {
@@ -42,6 +42,119 @@
   border-radius: 12px;
   padding: 12px;
   outline: 2px solid #A30D11;
+}
+
+.panel-success-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 14px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #ECFDF5;
+  color: #166534;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.panel-success-banner::before {
+  content: '✓';
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: #BBF7D0;
+  color: #166534;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.event-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0 8px;
+}
+
+.event-when {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.event-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #F8FAFC;
+  border: 1px solid #E8EEF5;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.event-chip--date {
+  background: #FFF7ED;
+  border-color: #FED7AA;
+  color: #9A3412;
+}
+
+.event-chip--time {
+  background: #EFF6FF;
+  border-color: #BFDBFE;
+  color: #1D4ED8;
+}
+
+.event-chip--waitlist {
+  background: #FEF3C7;
+  border-color: #FDE68A;
+  color: #92400E;
+}
+
+.event-spots {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 360px;
+  margin: 4px 0 2px;
+}
+
+.event-spots .fill-copy {
+  font-size: 12px;
+}
+
+.event-spots .fill-copy strong {
+  color: #0F172A;
+}
+
+.event-spots[data-tone='ok'] .fill-copy span {
+  color: #0F766E;
+}
+
+.event-spots[data-tone='warn'] .fill-copy span {
+  color: #B45309;
+}
+
+.event-spots[data-tone='full'] .fill-copy span {
+  color: #B91C1C;
+  font-weight: 700;
+}
+
+.progress-fill--ok {
+  background: linear-gradient(90deg, #0D9488, #14B8A6);
+}
+
+.progress-fill--warn {
+  background: linear-gradient(90deg, #D97706, #F59E0B);
+}
+
+.progress-fill--full {
+  background: linear-gradient(90deg, #A30D11, #E11D48);
 }
 
 .pass-row {
