@@ -7,6 +7,13 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
+    "e2e:cypress": "node scripts/run-e2e-with-server.js npx cypress run",
+    "e2e:cypress:open": "node scripts/run-e2e-with-server.js npx cypress open",
+    "cypress:run": "cypress run",
+    "cypress:open": "cypress open",
+    "cypress:install": "cypress install",
+    "e2e:selenium": "node scripts/run-e2e-with-server.js npx mocha --config e2e-selenium/.mocharc.json",
+    "e2e:selenium:run": "mocha --config e2e-selenium/.mocharc.json",
     "icons:generate": "node scripts/generate-heroicons.js"
   },
   "private": true,
@@ -34,13 +41,19 @@
     "@angular/cli": "^17.3.17",
     "@angular/compiler-cli": "^17.3.0",
     "@types/jasmine": "~5.1.0",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^22.20.2",
     "@types/qrcode": "^1.5.6",
+    "chai": "^4.5.0",
+    "cypress": "^15.21.1",
     "jasmine-core": "~5.1.0",
     "karma": "~6.4.0",
     "karma-chrome-launcher": "~3.2.0",
     "karma-coverage": "~2.2.0",
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
+    "mocha": "^10.8.2",
+    "selenium-webdriver": "^4.27.0",
     "typescript": "~5.4.2"
   }
 }
