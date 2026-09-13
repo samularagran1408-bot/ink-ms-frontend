@@ -46,7 +46,7 @@
   </ng-template>
 
   <div class="actions-row" *ngIf="mode === 'user'">
-    <a *ngIf="userView === 'history'" class="btn-secondary" routerLink="/home/events">
+    <a *ngIf="userView === 'history'" class="btn-secondary" routerLink="/home/events" [queryParams]="emptyQuery">
       {{ 'EVENTS_PAGE.SEE_CATALOG' | translate }}
     </a>
     <a *ngIf="userView === 'catalog'" class="btn-secondary" routerLink="/home/events" [queryParams]="{ vista: 'historial' }">
@@ -265,7 +265,7 @@
   <div class="card" *ngIf="mode === 'user' && userView === 'history' && !loading && !nextRegisteredEvent" style="margin-bottom: 16px;">
     <h3 class="section-title">{{ 'EVENTS_PAGE.NEXT_EVENT' | translate }}</h3>
     <p class="empty-text">{{ 'EVENTS_PAGE.NO_NEXT' | translate }}</p>
-    <a class="btn-secondary" routerLink="/home/events">{{ 'EVENTS_PAGE.SEE_CATALOG' | translate }}</a>
+    <a class="btn-secondary" routerLink="/home/events" [queryParams]="emptyQuery">{{ 'EVENTS_PAGE.SEE_CATALOG' | translate }}</a>
   </div>
 
   <div class="card" *ngIf="mode === 'user' && userView === 'history'" id="historial-eventos" style="margin-bottom: 16px;">

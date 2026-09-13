@@ -1,7 +1,7 @@
 import { Injectable, NgZone } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 
-export type ConfirmTone = 'primary' | 'danger' | 'success';
+export type ConfirmTone = 'primary' | 'danger' | 'success' | 'warning' | 'info';
 export type ConfirmVariant = 'confirm' | 'ack';
 
 export interface ConfirmOptions {
@@ -11,11 +11,13 @@ export interface ConfirmOptions {
   cancelLabel?: string;
   tone?: ConfirmTone;
   variant?: ConfirmVariant;
+  kindLabel?: string;
 }
 
-export interface ConfirmState extends Required<Omit<ConfirmOptions, 'tone' | 'variant'>> {
+export interface ConfirmState extends Required<Omit<ConfirmOptions, 'tone' | 'variant' | 'kindLabel'>> {
   tone: ConfirmTone;
   variant: ConfirmVariant;
+  kindLabel: string;
 }
 
 @Injectable({
@@ -45,7 +47,8 @@ export class ConfirmDialogService {
           confirmLabel: options.confirmLabel || (variant === 'ack' ? 'Entendido' : 'Confirmar'),
           cancelLabel: options.cancelLabel || 'Cancelar',
           tone,
-          variant
+          variant,
+          kindLabel: options.kindLabel || this.defaultKindLabel(tone, variant)
         });
       });
     });
@@ -58,6 +61,36 @@ export class ConfirmDialogService {
       tone: options.tone || 'success',
       confirmLabel: options.confirmLabel || 'Entendido'
     });
+  }
+
+  error(options: ConfirmOptions): Promise<boolean> {
+    return this.ack({ ...options, tone: 'danger', kindLabel: options.kindLabel || 'Error' });
+  }
+
+  warning(options: ConfirmOptions): Promise<boolean> {
+    return this.ask({
+      ...options,
+      tone: 'warning',
+      variant: options.variant || 'confirm',
+      kindLabel: options.kindLabel || 'Advertencia'
+    });
+  }
+
+  info(options: ConfirmOptions): Promise<boolean> {
+    return this.ack({ ...options, tone: 'info', kindLabel: options.kindLabel || 'Información' });
+  }
+
+  private defaultKindLabel(tone: ConfirmTone, variant: ConfirmVariant): string {
+    if (tone === 'danger' && variant === 'ack') {
+      return 'Error';
+    }
+    if (tone === 'warning') {
+      return 'Advertencia';
+    }
+    if (tone === 'info' || tone === 'success') {
+      return 'Información';
+    }
+    return 'Confirmación';
   }
 
   resolve(result: boolean): void {

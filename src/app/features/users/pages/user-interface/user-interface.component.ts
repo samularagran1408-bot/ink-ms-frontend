@@ -22,7 +22,7 @@ import { eventDateTimeMs } from '@core/utils/qr-attendance.util';
 import { isEventVisible } from '@features/sports-disabilities/utils/event-visibility.util';
 import { SharedModule } from '@shared/shared.module';
 
-type CatalogFilter = 'all' | 'sports' | 'disabilities' | 'associations' | 'routines';
+type CatalogFilter = 'all' | 'events' | 'sports' | 'disabilities' | 'associations' | 'routines';
 
 @Component({
   standalone: true,
@@ -51,7 +51,7 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
   competition: CompetitionModeState | null = null;
 
   catalogQuery = '';
-  catalogFilter: CatalogFilter = 'all';
+  catalogFilter: CatalogFilter = 'events';
   sports: Sport[] = [];
   disabilities: Disability[] = [];
   associations: SportDisability[] = [];
@@ -593,6 +593,10 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
     return;
   }
 
+  get showEvents(): boolean {
+    return this.catalogFilter === 'all' || this.catalogFilter === 'events';
+  }
+
   get showSports(): boolean {
     return this.catalogFilter === 'all' || this.catalogFilter === 'sports';
   }
@@ -607,6 +611,19 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
 
   get showRoutinesCatalog(): boolean {
     return this.catalogFilter === 'all' || this.catalogFilter === 'routines';
+  }
+
+  get filteredCatalogEvents(): EventItem[] {
+    return this.allEvents.filter((event) =>
+      this.matchesQuery(
+        event.name,
+        event.sportName,
+        event.location,
+        event.description,
+        event.eventDate,
+        String(event.id)
+      )
+    );
   }
 
   get filteredSports(): Sport[] {
@@ -737,8 +754,17 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
   }
 
   private resolveFeaturedEvents(events: EventItem[], registrations: Registration[]): EventItem[] {
+    const upcoming = this.sortEvents(events).filter((event) => {
+      const status = (event.status || '').toLowerCase();
+      if (status === 'cancelled' || status === 'finished') {
+        return false;
+      }
+      const when = eventDateTimeMs(event.eventDate, event.eventTime);
+      return when == null || when >= Date.now();
+    });
     const next = this.resolveNextEvent(events, registrations);
-    return next ? [next] : [];
+    const rest = upcoming.filter((event) => event.id !== next?.id);
+    return [next, ...rest].filter((event): event is EventItem => !!event).slice(0, 4);
   }
 
   get nextRegisteredEvent(): EventItem | null {

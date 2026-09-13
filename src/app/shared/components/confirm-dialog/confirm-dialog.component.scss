@@ -25,6 +25,15 @@
   animation: inkRise 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+.confirm-kind {
+  margin: 0 0 10px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #64748B;
+}
+
 .confirm-icon {
   width: 52px;
   height: 52px;
@@ -52,6 +61,16 @@
 .confirm-icon--danger {
   background: #FEE2E2;
   color: #991B1B;
+}
+
+.confirm-icon--warning {
+  background: #FEF3C7;
+  color: #B45309;
+}
+
+.confirm-icon--info {
+  background: #DBEAFE;
+  color: #1D4ED8;
 }
 
 .confirm-title {
@@ -109,4 +128,14 @@
   background: #15803D;
   color: #fff;
   box-shadow: 0 8px 16px rgba(21, 128, 61, 0.22);
+}
+
+.confirm-btn--warning {
+  background: #D97706;
+  color: #fff;
+}
+
+.confirm-btn--info {
+  background: #2563EB;
+  color: #fff;
 }

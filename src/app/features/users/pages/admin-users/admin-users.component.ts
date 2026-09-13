@@ -11,6 +11,7 @@ import { UsersService } from '@features/users/services/users.service';
 import { SessionService } from '@core/services/session.service';
 import { ReportsService } from '@features/reports/services/reports.service';
 import { ConfirmDialogService } from '@shared/services/confirm-dialog.service';
+import { FlashMessageService } from '@shared/services/flash-message.service';
 import { SharedModule } from '@shared/shared.module';
 
 @Component({
@@ -62,6 +63,7 @@ export class AdminUsersComponent implements OnInit, OnDestroy {
     private reportsService: ReportsService,
     private session: SessionService,
     private confirm: ConfirmDialogService,
+    private flash: FlashMessageService,
     private router: Router,
     private translate: TranslateService,
     private cdr: ChangeDetectorRef
@@ -130,6 +132,7 @@ export class AdminUsersComponent implements OnInit, OnDestroy {
       error: (error) => {
         this.errorMessage = error?.error?.message || this.translate.instant('ADMIN_USERS.LOAD_LIST_ERROR');
         this.loading = false;
+        this.notifyError(this.errorMessage);
         this.cdr.markForCheck();
       }
     });
@@ -207,12 +210,12 @@ export class AdminUsersComponent implements OnInit, OnDestroy {
   }
 
   private async confirmBlock(user: UserProfile): Promise<void> {
-    const ok = await this.confirm.ask({
+    const ok = await this.confirm.warning({
       title: this.translate.instant('ADMIN_USERS.BLOCK_TITLE'),
       message: this.translate.instant('ADMIN_USERS.BLOCK_CONFIRM', { name: user.fullName || user.email }),
       confirmLabel: this.translate.instant('COMMON.CONFIRM'),
       cancelLabel: this.translate.instant('COMMON.CANCEL'),
-      tone: 'danger'
+      kindLabel: this.translate.instant('COMMON.MSG_WARNING')
     });
     if (!ok) {
       return;
@@ -221,11 +224,14 @@ export class AdminUsersComponent implements OnInit, OnDestroy {
     this.usersService.blockUser(user.email, { reason: this.translate.instant('ADMIN_USERS.BLOCK_TITLE'), permanent: false }).subscribe({
       next: () => {
         this.actionEmail = null;
+        this.successMessage = this.translate.instant('ADMIN_USERS.BLOCKED_OK', { name: user.fullName || user.email });
+        this.notifyInfo(this.translate.instant('ADMIN_USERS.BLOCK_TITLE'), this.successMessage);
         this.reload(true);
       },
       error: (error) => {
         this.actionEmail = null;
         this.errorMessage = error?.error?.message || this.translate.instant('ADMIN_USERS.BLOCK_ERROR');
+        this.notifyError(this.errorMessage);
         this.cdr.markForCheck();
       }
     });
@@ -249,11 +255,14 @@ export class AdminUsersComponent implements OnInit, OnDestroy {
     this.usersService.activateUser(user.email).subscribe({
       next: () => {
         this.actionEmail = null;
+        this.successMessage = this.translate.instant('ADMIN_USERS.ACTIVATED_OK', { name: user.fullName || user.email });
+        this.notifyInfo(this.translate.instant('ADMIN_USERS.ACTIVATE_TITLE'), this.successMessage);
         this.reload(true);
       },
       error: (error) => {
         this.actionEmail = null;
         this.errorMessage = error?.error?.message || this.translate.instant('ADMIN_USERS.ACTIVATE_ERROR');
+        this.notifyError(this.errorMessage);
         this.cdr.markForCheck();
       }
     });
@@ -263,6 +272,7 @@ export class AdminUsersComponent implements OnInit, OnDestroy {
     const me = this.session.getProfile()?.email;
     if (me && me.toLowerCase() === user.email.toLowerCase()) {
       this.errorMessage = this.translate.instant('ADMIN_USERS.CANNOT_DELETE_SELF');
+      this.notifyError(this.errorMessage);
       return;
     }
     void this.confirmDeleteOne(user);
@@ -274,7 +284,8 @@ export class AdminUsersComponent implements OnInit, OnDestroy {
       message: this.translate.instant('ADMIN_USERS.DELETE_ONE_CONFIRM', { name: user.fullName || user.email }),
       confirmLabel: this.translate.instant('COMMON.CONFIRM'),
       cancelLabel: this.translate.instant('COMMON.CANCEL'),
-      tone: 'danger'
+      tone: 'danger',
+      kindLabel: this.translate.instant('COMMON.MSG_CONFIRM')
     });
     if (!ok) {
       return;
@@ -286,12 +297,14 @@ export class AdminUsersComponent implements OnInit, OnDestroy {
       next: (result) => {
         this.actionEmail = null;
         this.successMessage = result?.message || this.translate.instant('ADMIN_USERS.DELETED_OK', { name: user.fullName || user.email });
+        this.notifyInfo(this.translate.instant('ADMIN_USERS.DELETE_TITLE'), this.successMessage);
         this.reload(true);
       },
       error: (error) => {
         this.actionEmail = null;
         this.errorMessage = error?.error?.message
           || this.translate.instant('ADMIN_USERS.DELETE_BLOCKED_EVENTS');
+        this.notifyError(this.errorMessage);
         this.cdr.markForCheck();
       }
     });
@@ -308,6 +321,7 @@ export class AdminUsersComponent implements OnInit, OnDestroy {
       : emails;
     if (!filtered.length) {
       this.errorMessage = this.translate.instant('ADMIN_USERS.CANNOT_DELETE_SELF');
+      this.notifyError(this.errorMessage);
       return;
     }
     void this.confirmDeleteSelected(filtered);
@@ -319,7 +333,8 @@ export class AdminUsersComponent implements OnInit, OnDestroy {
       message: this.translate.instant('ADMIN_USERS.DELETE_BULK_CONFIRM', { count: filtered.length }),
       confirmLabel: this.translate.instant('COMMON.CONFIRM'),
       cancelLabel: this.translate.instant('COMMON.CANCEL'),
-      tone: 'danger'
+      tone: 'danger',
+      kindLabel: this.translate.instant('COMMON.MSG_CONFIRM')
     });
     if (!ok) {
       return;
@@ -335,14 +350,17 @@ export class AdminUsersComponent implements OnInit, OnDestroy {
           succeeded: result.succeeded,
           failed: result.failed
         });
+        this.notifyInfo(this.translate.instant('ADMIN_USERS.DELETE_TITLE'), this.successMessage);
         if (result.errors?.length) {
           this.errorMessage = result.errors.join(' · ');
+          this.notifyError(this.errorMessage);
         }
         this.reload(true);
       },
       error: (error) => {
         this.bulkLoading = false;
         this.errorMessage = error?.error?.message || this.translate.instant('ADMIN_USERS.DELETE_SELECTION_ERROR');
+        this.notifyError(this.errorMessage);
         this.cdr.markForCheck();
       }
     });
@@ -443,5 +461,31 @@ export class AdminUsersComponent implements OnInit, OnDestroy {
       return details;
     }
     return details;
+  }
+
+  private notifyError(message: string | null): void {
+    if (!message) {
+      return;
+    }
+    this.flash.error(this.translate.instant('COMMON.MSG_ERROR'), message);
+    void this.confirm.error({
+      title: this.translate.instant('COMMON.MSG_ERROR'),
+      message,
+      confirmLabel: this.translate.instant('COMMON.GOT_IT'),
+      kindLabel: this.translate.instant('COMMON.MSG_ERROR')
+    });
+  }
+
+  private notifyInfo(title: string, message: string | null): void {
+    if (!message) {
+      return;
+    }
+    this.flash.info(title, message);
+    void this.confirm.info({
+      title,
+      message,
+      confirmLabel: this.translate.instant('COMMON.GOT_IT'),
+      kindLabel: this.translate.instant('COMMON.MSG_INFO')
+    });
   }
 }

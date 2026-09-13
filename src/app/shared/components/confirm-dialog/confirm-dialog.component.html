@@ -6,13 +6,16 @@
     [attr.aria-labelledby]="'confirm-title'"
     (click)="$event.stopPropagation()"
   >
+    <p class="confirm-kind" *ngIf="dialog.kindLabel">{{ dialog.kindLabel }}</p>
     <div
       class="confirm-icon"
       [class.confirm-icon--danger]="dialog.tone === 'danger'"
       [class.confirm-icon--success]="dialog.tone === 'success'"
       [class.confirm-icon--primary]="dialog.tone === 'primary'"
+      [class.confirm-icon--warning]="dialog.tone === 'warning'"
+      [class.confirm-icon--info]="dialog.tone === 'info'"
     >
-      <span aria-hidden="true">{{ dialog.tone === 'danger' ? '!' : '✓' }}</span>
+      <span aria-hidden="true">{{ iconFor(dialog.tone) }}</span>
     </div>
     <h2 id="confirm-title" class="confirm-title">{{ dialog.title }}</h2>
     <p class="confirm-message">{{ dialog.message }}</p>
@@ -30,6 +33,8 @@
         [class.confirm-btn--danger]="dialog.tone === 'danger'"
         [class.confirm-btn--primary]="dialog.tone === 'primary'"
         [class.confirm-btn--success]="dialog.tone === 'success'"
+        [class.confirm-btn--warning]="dialog.tone === 'warning'"
+        [class.confirm-btn--info]="dialog.tone === 'info'"
         type="button"
         (click)="confirmAction()"
       >

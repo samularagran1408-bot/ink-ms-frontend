@@ -1,7 +1,7 @@
 import { ChangeDetectorRef, Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { Subscription } from 'rxjs';
 
-import { ConfirmDialogService, ConfirmState } from '@shared/services/confirm-dialog.service';
+import { ConfirmDialogService, ConfirmState, ConfirmTone } from '@shared/services/confirm-dialog.service';
 
 @Component({
   selector: 'app-confirm-dialog',
@@ -33,6 +33,16 @@ export class ConfirmDialogComponent implements OnInit, OnDestroy {
     if (this.state) {
       this.cancel();
     }
+  }
+
+  iconFor(tone: ConfirmTone): string {
+    if (tone === 'danger' || tone === 'warning') {
+      return '!';
+    }
+    if (tone === 'info') {
+      return 'i';
+    }
+    return '✓';
   }
 
   confirmAction(): void {

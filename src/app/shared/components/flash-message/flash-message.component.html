@@ -1,0 +1,17 @@
+<div
+  class="flash"
+  *ngIf="message as flash"
+  [class.flash--error]="flash.kind === 'error'"
+  [class.flash--warning]="flash.kind === 'warning'"
+  [class.flash--info]="flash.kind === 'info'"
+  [class.flash--success]="flash.kind === 'success'"
+  role="status"
+>
+  <div class="flash-copy">
+    <strong>{{ flash.title }}</strong>
+    <span>{{ flash.message }}</span>
+  </div>
+  <button class="flash-close" type="button" (click)="dismiss()" [attr.aria-label]="'COMMON.CLEAR' | translate">
+    ×
+  </button>
+</div>

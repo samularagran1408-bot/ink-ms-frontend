@@ -83,6 +83,7 @@ export class EventsPageComponent implements OnInit, OnDestroy {
   catalogQuery = '';
   catalogPage = 0;
   catalogPageSize = 12;
+  readonly emptyQuery: Record<string, string> = {};
   eventsTotal = 0;
   eventsTotalPages = 0;
   calendarFrom = '';

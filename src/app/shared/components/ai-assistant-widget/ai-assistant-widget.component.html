@@ -154,7 +154,7 @@
           <ul class="ai-list" *ngIf="hilosVisibles.length">
             <li
               *ngFor="let hilo of hilosVisibles; trackBy: trackByHilo"
-              [class.ai-hilo--active]="idDeHilo(hilo) === conversacionId"
+              [class.ai-hilo--active]="(hilo.conversacion_id || hilo.session_id) === conversacionId"
             >
               <button type="button" class="ai-hilo-open" (click)="abrirHilo($event, hilo)">
                 <strong>{{ tituloDeHilo(hilo) }}</strong>
@@ -353,6 +353,12 @@
           </button>
         </div>
         <p class="ai-lead">{{ 'AI_WIDGET.RISK_HISTORY_HINT' | translate }}</p>
+        <p class="ai-lead" *ngIf="historialRiesgo.length">
+          {{ 'AI_WIDGET.RISK_WEEK_COUNT' | translate:{ count: alertasSemana, umbral: umbralSemana } }}
+        </p>
+        <p class="ai-result" *ngIf="avisoUmbral" role="status">
+          {{ 'AI_WIDGET.RISK_WEEK_NOTIFIED' | translate:{ umbral: umbralSemana } }}
+        </p>
         <p *ngIf="cargandoHistorialRiesgo" class="ai-empty">{{ 'COMMON.LOADING' | translate }}</p>
         <p *ngIf="errorHistorialRiesgo" class="ai-error">{{ errorHistorialRiesgo }}</p>
         <p *ngIf="!cargandoHistorialRiesgo && !historialRiesgo.length" class="ai-empty">

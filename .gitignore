@@ -48,3 +48,12 @@ node_modules/
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
+
+# Cypress
+/cypress/videos/
+/cypress/screenshots/
+/cypress/downloads/
+/.cypress-cache/
+
+# Selenium
+/e2e-selenium/screenshots/

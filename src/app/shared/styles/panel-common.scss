@@ -421,6 +421,53 @@ a.btn-secondary {
   color: var(--ink-danger-text);
 }
 
+.sys-msg {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #E8EEF5;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.sys-msg strong {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.sys-msg--error {
+  background: #FEF2F2;
+  border-color: #FECACA;
+}
+
+.sys-msg--error strong {
+  color: #991B1B;
+}
+
+.sys-msg--warning {
+  background: #FFFBEB;
+  border-color: #FDE68A;
+}
+
+.sys-msg--warning strong {
+  color: #92400E;
+}
+
+.sys-msg--info,
+.sys-msg--success {
+  background: #EFF6FF;
+  border-color: #BFDBFE;
+}
+
+.sys-msg--info strong,
+.sys-msg--success strong {
+  color: #1D4ED8;
+}
+
 .field-error {
   font-size: 11px;
   font-weight: 600;

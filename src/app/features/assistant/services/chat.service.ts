@@ -15,7 +15,10 @@ import {
   ChatResponse,
   ChatStreamEvent
 } from '../models/chat';
+import { decodeJwtPayload } from '@core/utils/jwt.util';
 import { SessionService } from '@core/services/session.service';
+
+const HISTORIAL_PREFIX = 'inklusport.chat.conversacion_id';
 
 @Injectable({ providedIn: 'root' })
 export class ChatService {
@@ -136,6 +139,39 @@ export class ChatService {
       return crypto.randomUUID();
     }
     return `local-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  }
+
+  identidadHistorial(): string {
+    const perfil = this.session.getProfile();
+    const token = this.session.getToken();
+    const payload = token ? decodeJwtPayload(token) : null;
+    return String(perfil?.id || perfil?.email || payload?.sub || payload?.email || '')
+      .trim()
+      .toLowerCase();
+  }
+
+  leerConversacionGuardada(): string | null {
+    const scoped = sessionStorage.getItem(this.claveHistorial())?.trim();
+    return scoped || null;
+  }
+
+  guardarConversacion(id: string | null | undefined): void {
+    const cid = (id || '').trim();
+    const clave = this.claveHistorial();
+    if (!cid) {
+      sessionStorage.removeItem(clave);
+      return;
+    }
+    sessionStorage.setItem(clave, cid);
+  }
+
+  olvidarConversacion(): void {
+    sessionStorage.removeItem(this.claveHistorial());
+  }
+
+  private claveHistorial(): string {
+    const id = this.identidadHistorial();
+    return id ? `${HISTORIAL_PREFIX}.${id}` : HISTORIAL_PREFIX;
   }
 
   private extraerHilos(res: unknown): ChatHilo[] {

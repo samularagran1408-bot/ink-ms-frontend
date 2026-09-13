@@ -1,0 +1,90 @@
+:host {
+  pointer-events: none;
+}
+
+.flash {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  z-index: 1000090;
+  pointer-events: auto;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: min(380px, calc(100vw - 32px));
+  padding: 14px 14px 14px 16px;
+  border-radius: 14px;
+  border: 1px solid #E8EEF5;
+  background: #fff;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.16);
+  animation: flashIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.flash-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.flash-copy strong {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.flash-copy span {
+  font-size: 13px;
+  line-height: 1.45;
+  color: #334155;
+}
+
+.flash-close {
+  margin-left: auto;
+  border: 0;
+  background: transparent;
+  color: #64748B;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.flash--error {
+  background: #FEF2F2;
+  border-color: #FECACA;
+}
+
+.flash--error strong {
+  color: #991B1B;
+}
+
+.flash--warning {
+  background: #FFFBEB;
+  border-color: #FDE68A;
+}
+
+.flash--warning strong {
+  color: #92400E;
+}
+
+.flash--info,
+.flash--success {
+  background: #EFF6FF;
+  border-color: #BFDBFE;
+}
+
+.flash--info strong,
+.flash--success strong {
+  color: #1D4ED8;
+}
+
+@keyframes flashIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

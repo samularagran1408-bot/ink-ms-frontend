@@ -15,12 +15,12 @@ import { ChatService } from '@features/assistant/services/chat.service';
 import { ConfirmDialogService } from '@shared/services/confirm-dialog.service';
 import { CompetitionProgressService } from '@features/assistant/services/competition-progress.service';
 import { LiveSyncService } from '@features/accessibility/services/live-sync.service';
+import { UnreadNotificationsService } from '@features/accessibility/services/unread-notifications.service';
 import { ReportsService } from '@features/reports/services/reports.service';
 import { SessionService } from '@core/services/session.service';
 import { UsersService } from '@features/users/services/users.service';
 import { HeroIconName } from '../../icons/heroicons-outline';
 
-const STORAGE_KEY = 'inklusport.chat.conversacion_id';
 const PUBLIC_PATHS = new Set(['/', '', '/login', '/register', '/guest', '/forgot-password']);
 
 @Component({
@@ -54,6 +54,7 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
   pasosAgente: ChatPasoActividad[] = [];
   errorChat: string | null = null;
   conversacionId: string | null = null;
+  private dueñoHistorial = '';
   hilos: ChatHilo[] = [];
   hilosVisibles: ChatHilo[] = [];
   cargandoHilos = false;
@@ -102,6 +103,9 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
   historialRiesgo: Array<Record<string, unknown>> = [];
   cargandoHistorialRiesgo = false;
   errorHistorialRiesgo: string | null = null;
+  alertasSemana = 0;
+  umbralSemana = 3;
+  avisoUmbral = false;
 
   cargandoCompetencia = false;
   errorCompetencia: string | null = null;
@@ -134,13 +138,17 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     private competitionProgress: CompetitionProgressService,
     private assistantUi: AssistantUiService,
     private liveSync: LiveSyncService,
+    private unreadNotifications: UnreadNotificationsService,
     private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
-    this.conversacionId = sessionStorage.getItem(STORAGE_KEY);
+    this.aplicarIdentidadChat();
     this.refreshVisibility();
-    this.subs.add(this.session.profile$.subscribe(() => this.refreshVisibility()));
+    this.subs.add(this.session.profile$.subscribe(() => {
+      this.aplicarIdentidadChat();
+      this.refreshVisibility();
+    }));
     this.subs.add(this.session.roles$.subscribe(() => this.refreshVisibility()));
     this.subs.add(
       this.router.events
@@ -271,7 +279,7 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
 
   nuevaConversacion(): void {
     this.conversacionId = this.chat.idNuevo();
-    sessionStorage.setItem(STORAGE_KEY, this.conversacionId);
+    this.chat.guardarConversacion(this.conversacionId);
     this.mensajes = [];
     this.errorChat = null;
     this.chatSub?.unsubscribe();
@@ -286,7 +294,7 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
           return;
         }
         this.conversacionId = cid;
-        sessionStorage.setItem(STORAGE_KEY, cid);
+        this.chat.guardarConversacion(cid);
         this.cargarHilos();
       }
     });
@@ -297,29 +305,22 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
-  trackByHilo(_index: number, hilo: ChatHilo): string {
-    return hilo?.conversacion_id || hilo?.session_id || String(_index);
-  }
+  readonly trackByHilo = (_index: number, hilo: ChatHilo): string =>
+    hilo?.conversacion_id || hilo?.session_id || String(_index);
 
-  trackByTab(_index: number, tab: { id: AssistantSection }): string {
-    return tab.id;
-  }
+  readonly trackByTab = (_index: number, tab: { id: AssistantSection }): string => tab.id;
 
-  trackByMensaje(index: number, msg: ChatMensajeUi): string {
-    return `${index}:${msg.remitente}:${msg.texto.slice(0, 32)}`;
-  }
+  readonly trackByMensaje = (index: number, msg: ChatMensajeUi): string =>
+    `${index}:${msg.remitente}:${msg.texto.slice(0, 32)}`;
 
-  trackByCard(index: number, card: ChatCard): string {
-    return `${card.tipo}:${card.titulo}:${index}`;
-  }
+  readonly trackByCard = (index: number, card: ChatCard): string =>
+    `${card.tipo}:${card.titulo}:${index}`;
 
-  trackBySugerencia(index: number, texto: string): string {
-    return texto || String(index);
-  }
+  readonly trackBySugerencia = (index: number, texto: string): string =>
+    texto || String(index);
 
-  trackByPaso(index: number, paso: ChatPasoActividad): string {
-    return `${paso.tipo}:${paso.code}:${index}`;
-  }
+  readonly trackByPaso = (index: number, paso: ChatPasoActividad): string =>
+    `${paso.tipo}:${paso.code}:${index}`;
 
   abrirHilo(event: Event, hilo: ChatHilo): void {
     event.preventDefault();
@@ -360,7 +361,7 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
         if (this.conversacionId === cid) {
           this.mensajes = [];
           this.conversacionId = this.chat.idNuevo();
-          sessionStorage.setItem(STORAGE_KEY, this.conversacionId);
+          this.chat.guardarConversacion(this.conversacionId);
         }
         this.cargarHilos();
       },
@@ -394,7 +395,7 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
         this.hilosVisibles = [];
         this.mensajes = [];
         this.conversacionId = this.chat.idNuevo();
-        sessionStorage.setItem(STORAGE_KEY, this.conversacionId);
+        this.chat.guardarConversacion(this.conversacionId);
         this.errorHistorial = null;
       },
       error: () => {
@@ -658,6 +659,11 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
         this.cdr.markForCheck();
         this.cargandoRiesgo = false;
         this.riesgo = res;
+        const umbral = res['umbral_semanal'];
+        this.avisoUmbral = !!(umbral && typeof umbral === 'object' && (umbral as Record<string, unknown>)['notificado']);
+        if (this.avisoUmbral) {
+          this.unreadNotifications.refresh();
+        }
         this.cargarHistorialRiesgo();
         this.cargarEstadisticas(this.statsObjetivoId || undefined, this.statsNombre || undefined, true);
       },
@@ -1014,6 +1020,8 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
         this.cargandoHistorialRiesgo = false;
         const lista = res['evaluaciones'];
         this.historialRiesgo = Array.isArray(lista) ? lista as Array<Record<string, unknown>> : [];
+        this.alertasSemana = Number(res['alertas_semana'] ?? this.historialRiesgo.length) || 0;
+        this.umbralSemana = Number(res['umbral_semana'] || 3) || 3;
       },
       error: () => {
         this.cdr.markForCheck();
@@ -1066,6 +1074,8 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
         this.cdr.markForCheck();
         this.historialRiesgo = [];
         this.riesgo = null;
+        this.avisoUmbral = false;
+        this.alertasSemana = 0;
       },
       error: () => {
         this.cdr.markForCheck();
@@ -1342,14 +1352,17 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
             this.avisoChat = res.limites.aviso;
           }
         }
-        if (delServidor.length) {
-          this.hilos = delServidor;
+        this.hilos = delServidor;
+        const ids = new Set(this.hilos.map((hilo) => this.idDeHilo(hilo)).filter(Boolean));
+        if (this.conversacionId && !ids.has(this.conversacionId)) {
+          this.conversacionId = null;
+          this.chat.olvidarConversacion();
         }
         this.filtrarHistorial();
         if (!abrirActual || this.mensajes.length) {
           return;
         }
-        const guardado = this.conversacionId && this.hilos.some((h) => this.idDeHilo(h) === this.conversacionId)
+        const guardado = this.conversacionId && ids.has(this.conversacionId)
           ? this.conversacionId
           : this.idDeHilo(this.hilos[0]);
         if (guardado) {
@@ -1373,7 +1386,7 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
         this.cargandoHilo = false;
         const cid = this.idDeHilo(detalle) || conversacionId;
         this.conversacionId = cid;
-        sessionStorage.setItem(STORAGE_KEY, cid);
+        this.chat.guardarConversacion(cid);
         this.mensajes = this.chat.mapearMensajes(detalle);
         if (detalle.limites) {
           this.limites = detalle.limites;
@@ -1402,12 +1415,42 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     if (!this.session.isAuthenticated()) {
       this.visible = false;
       this.open = false;
+      this.reiniciarChatLocal();
       this.cdr.markForCheck();
       return;
     }
     const path = (this.router.url || '/').split('?')[0];
     this.visible = !PUBLIC_PATHS.has(path);
     this.cdr.markForCheck();
+  }
+
+  private aplicarIdentidadChat(): void {
+    const dueño = this.session.isAuthenticated() ? this.chat.identidadHistorial() : '';
+    if (dueño === this.dueñoHistorial) {
+      return;
+    }
+    this.dueñoHistorial = dueño;
+    this.reiniciarChatLocal();
+    if (dueño) {
+      this.conversacionId = this.chat.leerConversacionGuardada();
+      this.cargarHilos(true);
+    }
+  }
+
+  private reiniciarChatLocal(): void {
+    this.mensajes = [];
+    this.hilos = [];
+    this.hilosVisibles = [];
+    this.errorHistorial = null;
+    this.errorChat = null;
+    this.avisoChat = null;
+    this.chatSub?.unsubscribe();
+    this.enviando = false;
+    this.detenerCicloLocal();
+    this.pasosAgente = [];
+    if (!this.session.isAuthenticated()) {
+      this.conversacionId = null;
+    }
   }
 
   private onChatEvento(ev: ChatStreamEvent): void {
@@ -1483,7 +1526,7 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     this.detenerCicloLocal();
     this.pasosAgente = [];
     this.conversacionId = res.conversacion_id;
-    sessionStorage.setItem(STORAGE_KEY, res.conversacion_id);
+    this.chat.guardarConversacion(res.conversacion_id);
     this.aplicarCupo(res);
     this.mensajes.push({
       remitente: 'asistente',

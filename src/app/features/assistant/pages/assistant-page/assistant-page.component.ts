@@ -15,8 +15,6 @@ import { ConfirmDialogService } from '@shared/services/confirm-dialog.service';
 import { HeroIconName } from '@shared/icons/heroicons-outline';
 import { SharedModule } from '@shared/shared.module';
 
-const STORAGE_KEY = 'inklusport.chat.conversacion_id';
-
 @Component({
   standalone: true,
   imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, SharedModule],
@@ -70,7 +68,7 @@ export class AssistantPageComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    this.conversacionId = sessionStorage.getItem(STORAGE_KEY);
+    this.conversacionId = this.chat.leerConversacionGuardada();
     this.mcpNota = null;
     this.cargarHilos(true);
     this.chat.describirMcp().subscribe({
@@ -139,7 +137,7 @@ export class AssistantPageComponent implements OnInit, OnDestroy {
 
   nuevaConversacion(): void {
     this.conversacionId = this.chat.idNuevo();
-    sessionStorage.setItem(STORAGE_KEY, this.conversacionId);
+    this.chat.guardarConversacion(this.conversacionId);
     this.mensajes = [];
     this.error = null;
     this.estadoA11y = 'Conversación nueva';
@@ -155,7 +153,7 @@ export class AssistantPageComponent implements OnInit, OnDestroy {
           return;
         }
         this.conversacionId = cid;
-        sessionStorage.setItem(STORAGE_KEY, cid);
+        this.chat.guardarConversacion(cid);
         this.cdr.markForCheck();
       }
     });
@@ -166,25 +164,20 @@ export class AssistantPageComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
-  trackByHilo(_index: number, hilo: ChatHilo): string {
-    return hilo?.conversacion_id || hilo?.session_id || String(_index);
-  }
+  readonly trackByHilo = (_index: number, hilo: ChatHilo): string =>
+    hilo?.conversacion_id || hilo?.session_id || String(_index);
 
-  trackByMensaje(index: number, msg: ChatMensajeUi): string {
-    return `${index}:${msg.remitente}:${msg.texto.slice(0, 32)}`;
-  }
+  readonly trackByMensaje = (index: number, msg: ChatMensajeUi): string =>
+    `${index}:${msg.remitente}:${msg.texto.slice(0, 32)}`;
 
-  trackByCard(index: number, card: ChatCard): string {
-    return `${card.tipo}:${card.titulo}:${index}`;
-  }
+  readonly trackByCard = (index: number, card: ChatCard): string =>
+    `${card.tipo}:${card.titulo}:${index}`;
 
-  trackBySugerencia(index: number, texto: string): string {
-    return texto || String(index);
-  }
+  readonly trackBySugerencia = (index: number, texto: string): string =>
+    texto || String(index);
 
-  trackByPaso(index: number, paso: ChatPasoActividad): string {
-    return `${paso.tipo}:${paso.code}:${index}`;
-  }
+  readonly trackByPaso = (index: number, paso: ChatPasoActividad): string =>
+    `${paso.tipo}:${paso.code}:${index}`;
 
   labelPaso(paso: ChatPasoActividad): string {
     return paso.mensaje || paso.code.replace(/_/g, ' ');
@@ -249,7 +242,7 @@ export class AssistantPageComponent implements OnInit, OnDestroy {
         if (this.conversacionId === cid) {
           this.mensajes = [];
           this.conversacionId = this.chat.idNuevo();
-          sessionStorage.setItem(STORAGE_KEY, this.conversacionId);
+          this.chat.guardarConversacion(this.conversacionId);
         }
         this.cargarHilos();
         this.cdr.markForCheck();
@@ -281,7 +274,7 @@ export class AssistantPageComponent implements OnInit, OnDestroy {
         this.hilosVisibles = [];
         this.mensajes = [];
         this.conversacionId = this.chat.idNuevo();
-        sessionStorage.setItem(STORAGE_KEY, this.conversacionId);
+        this.chat.guardarConversacion(this.conversacionId);
         this.errorHistorial = null;
         this.cdr.markForCheck();
       },
@@ -357,14 +350,17 @@ export class AssistantPageComponent implements OnInit, OnDestroy {
             this.aviso = res.limites.aviso;
           }
         }
-        if (delServidor.length) {
-          this.hilos = delServidor;
+        this.hilos = delServidor;
+        const ids = new Set(this.hilos.map((hilo) => this.chat.idDeHilo(hilo)).filter(Boolean));
+        if (this.conversacionId && !ids.has(this.conversacionId)) {
+          this.conversacionId = null;
+          this.chat.olvidarConversacion();
         }
         this.filtrarHistorial();
         if (!abrirActual || this.mensajes.length) {
           return;
         }
-        const guardado = this.conversacionId && this.hilos.some((h) => this.chat.idDeHilo(h) === this.conversacionId)
+        const guardado = this.conversacionId && ids.has(this.conversacionId)
           ? this.conversacionId
           : this.chat.idDeHilo(this.hilos[0]);
         if (guardado) {
@@ -388,7 +384,7 @@ export class AssistantPageComponent implements OnInit, OnDestroy {
         this.cargandoHilo = false;
         const cid = this.chat.idDeHilo(detalle) || conversacionId;
         this.conversacionId = cid;
-        sessionStorage.setItem(STORAGE_KEY, cid);
+        this.chat.guardarConversacion(cid);
         this.mensajes = this.chat.mapearMensajes(detalle);
         if (detalle.limites) {
           this.limites = detalle.limites;
@@ -409,7 +405,7 @@ export class AssistantPageComponent implements OnInit, OnDestroy {
     this.detenerCicloLocal();
     this.pasosAgente = [];
     this.conversacionId = res.conversacion_id;
-    sessionStorage.setItem(STORAGE_KEY, res.conversacion_id);
+    this.chat.guardarConversacion(res.conversacion_id);
     this.aplicarCupo(res);
     const cards = res.cards?.length ? res.cards : [];
     this.mensajes.push({
