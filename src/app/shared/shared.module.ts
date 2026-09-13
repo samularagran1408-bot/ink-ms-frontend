@@ -11,6 +11,7 @@ import { IconComponent } from './components/icon/icon.component';
 import { PlaceLocationPickerComponent } from './components/place-location-picker/place-location-picker.component';
 import { EventLocationMapComponent } from './components/event-location-map/event-location-map.component';
 import { ConfirmDialogComponent } from './components/confirm-dialog/confirm-dialog.component';
+import { FlashMessageComponent } from './components/flash-message/flash-message.component';
 import { AiAssistantWidgetComponent } from './components/ai-assistant-widget/ai-assistant-widget.component';
 import { BodyMapComponent } from './components/body-map/body-map.component';
 import { DisabilityLabelPipe, RolesLabelPipe } from './pipes/catalog-label.pipe';
@@ -24,6 +25,7 @@ import { DisabilityLabelPipe, RolesLabelPipe } from './pipes/catalog-label.pipe'
     PlaceLocationPickerComponent,
     EventLocationMapComponent,
     ConfirmDialogComponent,
+    FlashMessageComponent,
     AiAssistantWidgetComponent,
     BodyMapComponent,
     DisabilityLabelPipe,
@@ -43,6 +45,7 @@ import { DisabilityLabelPipe, RolesLabelPipe } from './pipes/catalog-label.pipe'
     PlaceLocationPickerComponent,
     EventLocationMapComponent,
     ConfirmDialogComponent,
+    FlashMessageComponent,
     AiAssistantWidgetComponent,
     BodyMapComponent,
     TranslateModule,

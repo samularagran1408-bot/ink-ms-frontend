@@ -122,8 +122,21 @@ export class SessionService {
     this.injector.get(NotificationAnnounceService).stop();
     this.injector.get(PreferencesApiService).clearCache();
     this.injector.get(PanelRouteReuseStrategy).clear();
+    this.clearChatSessionKeys();
     this.clearSession();
     this.router.navigate(['/']);
+  }
+
+  private clearChatSessionKeys(): void {
+    const prefix = 'inklusport.chat.conversacion_id';
+    const keys: string[] = [];
+    for (let i = 0; i < sessionStorage.length; i++) {
+      const key = sessionStorage.key(i);
+      if (key && (key === prefix || key.startsWith(`${prefix}.`))) {
+        keys.push(key);
+      }
+    }
+    keys.forEach((key) => sessionStorage.removeItem(key));
   }
 
   homeForCurrentUser(): string {

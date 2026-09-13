@@ -1,7 +1,13 @@
 <h1 class="page-title">{{ 'ADMIN_USERS.TITLE' | translate }}</h1>
   <p class="page-subtitle">{{ 'ADMIN_USERS.LIST_SUBTITLE' | translate }}</p>
-  <p *ngIf="successMessage" class="empty-text">{{ successMessage }}</p>
-  <p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
+  <div class="sys-msg sys-msg--success" *ngIf="successMessage" role="status">
+    <strong>{{ 'COMMON.MSG_INFO' | translate }}</strong>
+    <span>{{ successMessage }}</span>
+  </div>
+  <div class="sys-msg sys-msg--error" *ngIf="errorMessage" role="alert">
+    <strong>{{ 'COMMON.MSG_ERROR' | translate }}</strong>
+    <span>{{ errorMessage }}</span>
+  </div>
   <p *ngIf="loading" class="empty-text">{{ 'ADMIN_USERS.LOADING' | translate }}</p>
 
   <div class="toolbar" *ngIf="!loading">

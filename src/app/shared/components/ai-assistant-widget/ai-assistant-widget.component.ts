@@ -6,7 +6,7 @@ import { filter } from 'rxjs/operators';
 import { TranslateService } from '@ngx-translate/core';
 
 import { AppRole } from '@core/models/app-role';
-import { ChatCard, ChatCtaAccion, ChatHilo, ChatMensajeUi, ChatPasoActividad, ChatResponse, ChatStreamEvent } from '@features/assistant/models/chat';
+import { ChatCard, ChatCtaAccion, ChatHilo, ChatLimites, ChatMensajeUi, ChatPasoActividad, ChatResponse, ChatStreamEvent } from '@features/assistant/models/chat';
 import { BodyMapData } from '@features/assistant/models/body-map';
 import { UserProfile } from '@core/models/user-profile';
 import { AiAssistantService } from '@features/assistant/services/ai-assistant.service';
@@ -15,12 +15,12 @@ import { ChatService } from '@features/assistant/services/chat.service';
 import { ConfirmDialogService } from '@shared/services/confirm-dialog.service';
 import { CompetitionProgressService } from '@features/assistant/services/competition-progress.service';
 import { LiveSyncService } from '@features/accessibility/services/live-sync.service';
+import { UnreadNotificationsService } from '@features/accessibility/services/unread-notifications.service';
 import { ReportsService } from '@features/reports/services/reports.service';
 import { SessionService } from '@core/services/session.service';
 import { UsersService } from '@features/users/services/users.service';
 import { HeroIconName } from '../../icons/heroicons-outline';
 
-const STORAGE_KEY = 'inklusport.chat.conversacion_id';
 const PUBLIC_PATHS = new Set(['/', '', '/login', '/register', '/guest', '/forgot-password']);
 
 @Component({
@@ -54,11 +54,24 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
   pasosAgente: ChatPasoActividad[] = [];
   errorChat: string | null = null;
   conversacionId: string | null = null;
+  private dueñoHistorial = '';
   hilos: ChatHilo[] = [];
   hilosVisibles: ChatHilo[] = [];
   cargandoHilos = false;
   cargandoHilo = false;
   errorHistorial: string | null = null;
+  limites: ChatLimites = {
+    maxMensajesPorChat: 40,
+    maxChatsActivos: 10,
+    maxMensajesPorHora: 20,
+    esperaMinutos: 60,
+    esperaHoras: 1,
+    usadosHora: 0
+  };
+  avisoChat: string | null = null;
+  bloqueadoHasta = 0;
+  esperaLabel = '';
+  private esperaTimer?: ReturnType<typeof setInterval>;
   private chatSub?: Subscription;
   private cicloLocal?: ReturnType<typeof setInterval>;
   private actividadReal = false;
@@ -90,6 +103,9 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
   historialRiesgo: Array<Record<string, unknown>> = [];
   cargandoHistorialRiesgo = false;
   errorHistorialRiesgo: string | null = null;
+  alertasSemana = 0;
+  umbralSemana = 3;
+  avisoUmbral = false;
 
   cargandoCompetencia = false;
   errorCompetencia: string | null = null;
@@ -122,13 +138,17 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     private competitionProgress: CompetitionProgressService,
     private assistantUi: AssistantUiService,
     private liveSync: LiveSyncService,
+    private unreadNotifications: UnreadNotificationsService,
     private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
-    this.conversacionId = sessionStorage.getItem(STORAGE_KEY);
+    this.aplicarIdentidadChat();
     this.refreshVisibility();
-    this.subs.add(this.session.profile$.subscribe(() => this.refreshVisibility()));
+    this.subs.add(this.session.profile$.subscribe(() => {
+      this.aplicarIdentidadChat();
+      this.refreshVisibility();
+    }));
     this.subs.add(this.session.roles$.subscribe(() => this.refreshVisibility()));
     this.subs.add(
       this.router.events
@@ -171,6 +191,7 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     this.subs.unsubscribe();
     this.chatSub?.unsubscribe();
     this.detenerCicloLocal();
+    this.detenerEspera();
     if (this.closeTimeout) {
       clearTimeout(this.closeTimeout);
     }
@@ -214,9 +235,13 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
+  get chatBloqueado(): boolean {
+    return Date.now() < this.bloqueadoHasta;
+  }
+
   enviarChat(): void {
     const texto = this.borrador.trim();
-    if (!texto || this.enviando || this.cargandoHilo) {
+    if (!texto || this.enviando || this.cargandoHilo || this.chatBloqueado) {
       return;
     }
     this.errorChat = null;
@@ -226,14 +251,23 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     this.iniciarAnimacionEspera();
     this.scrollChat();
     this.chatSub?.unsubscribe();
-    this.chatSub = this.chat.enviarConProgreso(texto, this.conversacionId, (ev) => this.onChatEvento(ev), this.limitacion).subscribe({
+    this.chatSub = this.chat.enviarConProgreso(texto, this.conversacionId, (ev) => this.onChatEvento(ev)).subscribe({
       next: (res) => this.aplicarChat(res),
       error: (err) => {
         this.cdr.markForCheck();
         this.enviando = false;
         this.detenerCicloLocal();
         this.pasosAgente = [];
-        this.errorChat = err?.error?.detail || err?.message || 'No se pudo contactar al asistente.';
+        const ultimo = this.mensajes[this.mensajes.length - 1];
+        if (ultimo?.remitente === 'usuario' && ultimo.texto === texto) {
+          this.mensajes.pop();
+          this.borrador = texto;
+        }
+        const info = this.chat.parsearError(err);
+        this.errorChat = info.mensaje;
+        if (info.codigo === 'chat_limite_hora' || info.retryAfterSegundos > 0) {
+          this.iniciarBloqueo(info.retryAfterSegundos || this.limites.esperaMinutos * 60);
+        }
       }
     });
   }
@@ -245,7 +279,7 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
 
   nuevaConversacion(): void {
     this.conversacionId = this.chat.idNuevo();
-    sessionStorage.setItem(STORAGE_KEY, this.conversacionId);
+    this.chat.guardarConversacion(this.conversacionId);
     this.mensajes = [];
     this.errorChat = null;
     this.chatSub?.unsubscribe();
@@ -260,7 +294,7 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
           return;
         }
         this.conversacionId = cid;
-        sessionStorage.setItem(STORAGE_KEY, cid);
+        this.chat.guardarConversacion(cid);
         this.cargarHilos();
       }
     });
@@ -271,29 +305,22 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
-  trackByHilo(_index: number, hilo: ChatHilo): string {
-    return this.idDeHilo(hilo) || String(_index);
-  }
+  readonly trackByHilo = (_index: number, hilo: ChatHilo): string =>
+    hilo?.conversacion_id || hilo?.session_id || String(_index);
 
-  trackByTab(_index: number, tab: { id: AssistantSection }): string {
-    return tab.id;
-  }
+  readonly trackByTab = (_index: number, tab: { id: AssistantSection }): string => tab.id;
 
-  trackByMensaje(index: number, msg: ChatMensajeUi): string {
-    return `${index}:${msg.remitente}:${msg.texto.slice(0, 32)}`;
-  }
+  readonly trackByMensaje = (index: number, msg: ChatMensajeUi): string =>
+    `${index}:${msg.remitente}:${msg.texto.slice(0, 32)}`;
 
-  trackByCard(index: number, card: ChatCard): string {
-    return `${card.tipo}:${card.titulo}:${index}`;
-  }
+  readonly trackByCard = (index: number, card: ChatCard): string =>
+    `${card.tipo}:${card.titulo}:${index}`;
 
-  trackBySugerencia(index: number, texto: string): string {
-    return texto || String(index);
-  }
+  readonly trackBySugerencia = (index: number, texto: string): string =>
+    texto || String(index);
 
-  trackByPaso(index: number, paso: ChatPasoActividad): string {
-    return `${paso.tipo}:${paso.code}:${index}`;
-  }
+  readonly trackByPaso = (index: number, paso: ChatPasoActividad): string =>
+    `${paso.tipo}:${paso.code}:${index}`;
 
   abrirHilo(event: Event, hilo: ChatHilo): void {
     event.preventDefault();
@@ -334,7 +361,7 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
         if (this.conversacionId === cid) {
           this.mensajes = [];
           this.conversacionId = this.chat.idNuevo();
-          sessionStorage.setItem(STORAGE_KEY, this.conversacionId);
+          this.chat.guardarConversacion(this.conversacionId);
         }
         this.cargarHilos();
       },
@@ -368,7 +395,7 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
         this.hilosVisibles = [];
         this.mensajes = [];
         this.conversacionId = this.chat.idNuevo();
-        sessionStorage.setItem(STORAGE_KEY, this.conversacionId);
+        this.chat.guardarConversacion(this.conversacionId);
         this.errorHistorial = null;
       },
       error: () => {
@@ -632,6 +659,11 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
         this.cdr.markForCheck();
         this.cargandoRiesgo = false;
         this.riesgo = res;
+        const umbral = res['umbral_semanal'];
+        this.avisoUmbral = !!(umbral && typeof umbral === 'object' && (umbral as Record<string, unknown>)['notificado']);
+        if (this.avisoUmbral) {
+          this.unreadNotifications.refresh();
+        }
         this.cargarHistorialRiesgo();
         this.cargarEstadisticas(this.statsObjetivoId || undefined, this.statsNombre || undefined, true);
       },
@@ -988,6 +1020,8 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
         this.cargandoHistorialRiesgo = false;
         const lista = res['evaluaciones'];
         this.historialRiesgo = Array.isArray(lista) ? lista as Array<Record<string, unknown>> : [];
+        this.alertasSemana = Number(res['alertas_semana'] ?? this.historialRiesgo.length) || 0;
+        this.umbralSemana = Number(res['umbral_semana'] || 3) || 3;
       },
       error: () => {
         this.cdr.markForCheck();
@@ -1040,6 +1074,8 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
         this.cdr.markForCheck();
         this.historialRiesgo = [];
         this.riesgo = null;
+        this.avisoUmbral = false;
+        this.alertasSemana = 0;
       },
       error: () => {
         this.cdr.markForCheck();
@@ -1307,14 +1343,26 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
       next: (res) => {
         this.cdr.markForCheck();
         this.cargandoHilos = false;
-        this.hilos = (res.conversaciones || [])
+        const delServidor = (res.conversaciones || [])
           .filter((hilo): hilo is ChatHilo => !!hilo && typeof hilo === 'object')
           .map((hilo) => this.normalizarHilo(hilo));
+        if (res.limites) {
+          this.limites = res.limites;
+          if (res.limites.aviso) {
+            this.avisoChat = res.limites.aviso;
+          }
+        }
+        this.hilos = delServidor;
+        const ids = new Set(this.hilos.map((hilo) => this.idDeHilo(hilo)).filter(Boolean));
+        if (this.conversacionId && !ids.has(this.conversacionId)) {
+          this.conversacionId = null;
+          this.chat.olvidarConversacion();
+        }
         this.filtrarHistorial();
         if (!abrirActual || this.mensajes.length) {
           return;
         }
-        const guardado = this.conversacionId && this.hilos.some((h) => this.idDeHilo(h) === this.conversacionId)
+        const guardado = this.conversacionId && ids.has(this.conversacionId)
           ? this.conversacionId
           : this.idDeHilo(this.hilos[0]);
         if (guardado) {
@@ -1338,8 +1386,11 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
         this.cargandoHilo = false;
         const cid = this.idDeHilo(detalle) || conversacionId;
         this.conversacionId = cid;
-        sessionStorage.setItem(STORAGE_KEY, cid);
+        this.chat.guardarConversacion(cid);
         this.mensajes = this.chat.mapearMensajes(detalle);
+        if (detalle.limites) {
+          this.limites = detalle.limites;
+        }
         this.scrollChat();
       },
       error: () => {
@@ -1364,12 +1415,42 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     if (!this.session.isAuthenticated()) {
       this.visible = false;
       this.open = false;
+      this.reiniciarChatLocal();
       this.cdr.markForCheck();
       return;
     }
     const path = (this.router.url || '/').split('?')[0];
     this.visible = !PUBLIC_PATHS.has(path);
     this.cdr.markForCheck();
+  }
+
+  private aplicarIdentidadChat(): void {
+    const dueño = this.session.isAuthenticated() ? this.chat.identidadHistorial() : '';
+    if (dueño === this.dueñoHistorial) {
+      return;
+    }
+    this.dueñoHistorial = dueño;
+    this.reiniciarChatLocal();
+    if (dueño) {
+      this.conversacionId = this.chat.leerConversacionGuardada();
+      this.cargarHilos(true);
+    }
+  }
+
+  private reiniciarChatLocal(): void {
+    this.mensajes = [];
+    this.hilos = [];
+    this.hilosVisibles = [];
+    this.errorHistorial = null;
+    this.errorChat = null;
+    this.avisoChat = null;
+    this.chatSub?.unsubscribe();
+    this.enviando = false;
+    this.detenerCicloLocal();
+    this.pasosAgente = [];
+    if (!this.session.isAuthenticated()) {
+      this.conversacionId = null;
+    }
   }
 
   private onChatEvento(ev: ChatStreamEvent): void {
@@ -1445,7 +1526,8 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     this.detenerCicloLocal();
     this.pasosAgente = [];
     this.conversacionId = res.conversacion_id;
-    sessionStorage.setItem(STORAGE_KEY, res.conversacion_id);
+    this.chat.guardarConversacion(res.conversacion_id);
+    this.aplicarCupo(res);
     this.mensajes.push({
       remitente: 'asistente',
       texto: res.respuesta,
@@ -1457,8 +1539,70 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
       cuerpo: this.cuerpoDe(res)
     });
     this.upsertHiloLocal(res);
+    this.cargarHilos();
     this.scrollChat();
     this.cdr.markForCheck();
+  }
+
+  private aplicarCupo(res: ChatResponse | { limites?: ChatLimites } | null): void {
+    const cupo = res && 'cupo' in res ? this.chat.extraerCupo(res) : null;
+    if (cupo) {
+      this.limites = {
+        ...this.limites,
+        maxMensajesPorHora: cupo.maximo,
+        usadosHora: cupo.usados,
+        esperaMinutos: Math.max(1, Math.round(cupo.esperaSegundos / 60)),
+        esperaHoras: Math.max(1, Math.round(cupo.esperaSegundos / 3600))
+      };
+      this.avisoChat = cupo.aviso;
+      if (cupo.retryAfterSegundos && cupo.retryAfterSegundos > 0) {
+        this.iniciarBloqueo(cupo.retryAfterSegundos);
+      }
+      return;
+    }
+    if (res && 'aviso' in res && typeof res.aviso === 'string') {
+      this.avisoChat = res.aviso;
+    }
+  }
+
+  private iniciarBloqueo(segundos: number): void {
+    const espera = Math.max(1, Math.floor(segundos));
+    this.bloqueadoHasta = Date.now() + espera * 1000;
+    this.avisoChat = this.errorChat || this.avisoChat;
+    this.actualizarEsperaLabel();
+    this.detenerEspera();
+    this.esperaTimer = setInterval(() => {
+      if (!this.chatBloqueado) {
+        this.detenerEspera();
+        this.bloqueadoHasta = 0;
+        this.esperaLabel = '';
+        this.errorChat = null;
+        this.avisoChat = null;
+        this.cdr.markForCheck();
+        return;
+      }
+      this.actualizarEsperaLabel();
+      this.cdr.markForCheck();
+    }, 1000);
+  }
+
+  private actualizarEsperaLabel(): void {
+    const restante = Math.max(0, Math.ceil((this.bloqueadoHasta - Date.now()) / 1000));
+    const horas = Math.floor(restante / 3600);
+    const min = Math.floor((restante % 3600) / 60);
+    const seg = restante % 60;
+    if (horas > 0) {
+      this.esperaLabel = min > 0 ? `${horas} h ${min} min` : `${horas} h`;
+      return;
+    }
+    this.esperaLabel = min > 0 ? `${min} min ${seg.toString().padStart(2, '0')} s` : `${seg} s`;
+  }
+
+  private detenerEspera(): void {
+    if (this.esperaTimer) {
+      clearInterval(this.esperaTimer);
+      this.esperaTimer = undefined;
+    }
   }
 
   private upsertHiloLocal(res: ChatResponse): void {
@@ -1480,7 +1624,7 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
       this.hilos = [
         {
           conversacion_id: cid,
-          titulo: '',
+          titulo: this.tituloDesdeMensajes() || this.translate.instant('CHAT.NEW'),
           estado: 'activa',
           ultima_interaccion: now,
           total_mensajes: this.mensajes.length
@@ -1489,6 +1633,11 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
       ];
     }
     this.filtrarHistorial();
+  }
+
+  private tituloDesdeMensajes(): string {
+    const primero = this.mensajes.find((m) => m.remitente === 'usuario' && m.texto.trim());
+    return (primero?.texto || '').trim().slice(0, 60);
   }
 
   private scrollChat(): void {

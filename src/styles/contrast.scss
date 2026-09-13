@@ -1,8 +1,7 @@
 /* =============================================================================
    Contraste de Inklusport
    - Normal (bajo): paleta de marca con texto ≥ 4.5:1 (WCAG AA) sobre cada fondo.
-   - Alto: pares fijos negro / blanco / ámbar ≥ 7:1 (WCAG AAA). Ningún texto
-     hereda un color que se pierda contra su superficie.
+   - Alto: negro + amarillo / blanco / cian / rojo / lima / naranja (WCAG AAA).
    ============================================================================= */
 
 /* --- Bajo contraste (tema por defecto): jerarquía visible y AA --------------------------- */
@@ -21,62 +20,63 @@ body.low-contrast-mode ::placeholder {
 html[data-contrast='high'],
 body.high-contrast-mode {
   color-scheme: dark;
-  --ink-red: #ffe14d;
-  --ink-red-hover: #fff18a;
+  --ink-red: #00FFFF;
+  --ink-red-hover: #7FFFFF;
   --ink-red-soft: #000000;
   --ink-navy: #000000;
-  --ink-ink: #ffffff;
-  --ink-muted: #ffe14d;
-  --ink-subtle: #ffe14d;
-  --ink-line: #ffffff;
+  --ink-ink: #FFFF00;
+  --ink-muted: #FFFFFF;
+  --ink-subtle: #FFFFFF;
+  --ink-line: #FFFFFF;
   --ink-surface: #000000;
   --ink-surface-alt: #000000;
   --ink-canvas: #000000;
   --ink-on-accent: #000000;
-  --ink-on-dark: #ffffff;
-  --ink-on-dark-muted: #ffe14d;
-  --ink-link: #ffe14d;
-  --ink-focus: #ffe14d;
-  --ink-danger: #ff6b6b;
-  --ink-danger-text: #ff6b6b;
+  --ink-on-dark: #FFFF00;
+  --ink-on-dark-muted: #FFFFFF;
+  --ink-link: #00FFFF;
+  --ink-focus: #00FFFF;
+  --ink-danger: #FF0000;
+  --ink-danger-text: #FF0000;
   --ink-danger-bg: #000000;
-  --ink-success: #5dff9f;
+  --ink-success: #00FF00;
   --ink-success-bg: #000000;
-  --ink-warn: #ffe14d;
+  --ink-warn: #FFA500;
   --ink-warn-bg: #000000;
   --ink-shadow-sm: none;
   --ink-shadow: none;
   --ink-shadow-lg: none;
   --hc-bg: #000000;
-  --hc-fg: #ffffff;
-  --hc-accent: #ffe14d;
+  --hc-fg: #FFFF00;
+  --hc-muted: #FFFFFF;
+  --hc-accent: #00FFFF;
   --hc-on-accent: #000000;
-  --hc-danger: #ff6b6b;
-  --hc-success: #5dff9f;
-  background: #000 !important;
-  color: #fff !important;
-  scrollbar-color: #fff #000;
+  --hc-danger: #FF0000;
+  --hc-success: #00FF00;
+  --hc-warn: #FFA500;
+  background: #000000 !important;
+  color: #FFFF00 !important;
+  scrollbar-color: #FFFF00 #000000;
 }
 
 html[data-contrast='high'] body,
 body.high-contrast-mode {
-  background: #000 !important;
-  color: #fff !important;
+  background: #000000 !important;
+  color: #FFFF00 !important;
 }
 
-/* Superficies y texto: fondo negro + letra blanca. Selector simple a propósito:
-   un :not() con lista larga invalida toda la regla y deja paneles/hovers en blanco. */
+/* Superficies y texto: fondo negro + letra amarilla. */
 html[data-contrast='high'] *,
 body.high-contrast-mode * {
   background-color: var(--hc-bg, #000) !important;
   background-image: none !important;
-  color: var(--hc-fg, #fff) !important;
-  border-color: var(--hc-fg, #fff) !important;
-  outline-color: var(--hc-accent, #ffe14d) !important;
+  color: var(--hc-fg, #FFFF00) !important;
+  border-color: var(--hc-fg, #FFFF00) !important;
+  outline-color: var(--hc-accent, #00FFFF) !important;
   box-shadow: none !important;
   text-shadow: none !important;
   filter: none !important;
-  caret-color: var(--hc-accent, #ffe14d) !important;
+  caret-color: var(--hc-accent, #00FFFF) !important;
 }
 
 html[data-contrast='high'] *:focus,
@@ -87,8 +87,8 @@ body.high-contrast-mode *:focus-visible,
 body.high-contrast-mode *:active {
   background-color: var(--hc-bg, #000) !important;
   background-image: none !important;
-  color: var(--hc-fg, #fff) !important;
-  border-color: var(--hc-fg, #fff) !important;
+  color: var(--hc-fg, #FFFF00) !important;
+  border-color: var(--hc-fg, #FFFF00) !important;
 }
 
 html[data-contrast='high'] *::before,
@@ -140,24 +140,24 @@ html[data-contrast='high'] .error-title-line,
 body.high-contrast-mode .kpi-card::before,
 body.high-contrast-mode .title-line,
 body.high-contrast-mode .error-title-line {
-  background: var(--hc-accent, #ffe14d) !important;
+  background: var(--hc-accent, #00FFFF) !important;
 }
 
 html[data-contrast='high'] ::placeholder,
 body.high-contrast-mode ::placeholder {
-  color: var(--hc-accent, #ffe14d) !important;
+  color: var(--hc-muted, #FFFFFF) !important;
   opacity: 1 !important;
 }
 
 html[data-contrast='high'] ::selection,
 body.high-contrast-mode ::selection {
-  background: var(--hc-accent, #ffe14d) !important;
+  background: var(--hc-accent, #00FFFF) !important;
   color: var(--hc-on-accent, #000) !important;
 }
 
 html[data-contrast='high'] :focus-visible,
 body.high-contrast-mode :focus-visible {
-  outline: 3px solid var(--hc-accent, #ffe14d) !important;
+  outline: 3px solid var(--hc-accent, #00FFFF) !important;
   outline-offset: 3px !important;
 }
 
@@ -169,14 +169,14 @@ body.high-contrast-mode a,
 body.high-contrast-mode .brand-logo,
 body.high-contrast-mode .forgot-link,
 body.high-contrast-mode .error-recover-link {
-  color: var(--hc-accent, #ffe14d) !important;
+  color: var(--hc-accent, #00FFFF) !important;
   text-decoration-thickness: 2px;
   text-underline-offset: 2px;
 }
 
 html[data-contrast='high'] a:visited,
 body.high-contrast-mode a:visited {
-  color: var(--hc-accent, #ffe14d) !important;
+  color: var(--hc-accent, #00FFFF) !important;
 }
 
 /* Controles rellenos: ámbar + negro (nunca blanco sobre blanco). */
@@ -224,10 +224,10 @@ body.high-contrast-mode :is(
     .ai-send,
     .chat-bubble--user
   ) {
-  background: var(--hc-accent, #ffe14d) !important;
+  background: var(--hc-accent, #00FFFF) !important;
   background-image: none !important;
   color: var(--hc-on-accent, #000) !important;
-  border: 2px solid var(--hc-accent, #ffe14d) !important;
+  border: 2px solid var(--hc-accent, #00FFFF) !important;
   box-shadow: none !important;
 }
 
@@ -345,14 +345,14 @@ body.high-contrast-mode :is(
   ) {
   background: var(--hc-bg, #000) !important;
   background-image: none !important;
-  color: var(--hc-fg, #fff) !important;
-  border: 2px solid var(--hc-fg, #fff) !important;
+  color: var(--hc-fg, #FFFF00) !important;
+  border: 2px solid var(--hc-fg, #FFFF00) !important;
   box-shadow: none !important;
 }
 
 html[data-contrast='high'] a:is(.btn-secondary, .btn-danger, .register-event-btn--cancel),
 body.high-contrast-mode a:is(.btn-secondary, .btn-danger, .register-event-btn--cancel) {
-  color: var(--hc-fg, #fff) !important;
+  color: var(--hc-fg, #FFFF00) !important;
   text-decoration: none !important;
 }
 
@@ -364,8 +364,8 @@ body.high-contrast-mode .btn-danger,
 body.high-contrast-mode .register-event-btn--cancel,
 body.high-contrast-mode .field-error,
 body.high-contrast-mode .error-text {
-  color: var(--hc-danger, #ff6b6b) !important;
-  border-color: var(--hc-danger, #ff6b6b) !important;
+  color: var(--hc-danger, #FF0000) !important;
+  border-color: var(--hc-danger, #FF0000) !important;
 }
 
 html[data-contrast='high'] .btn-danger,
@@ -378,36 +378,36 @@ body.high-contrast-mode .register-event-btn--cancel {
 html[data-contrast='high'] :is(.status-pill--ok, .form-success-banner),
 body.high-contrast-mode :is(.status-pill--ok, .form-success-banner) {
   background: var(--hc-bg, #000) !important;
-  color: var(--hc-success, #5dff9f) !important;
-  border: 2px solid var(--hc-success, #5dff9f) !important;
+  color: var(--hc-success, #00FF00) !important;
+  border: 2px solid var(--hc-success, #00FF00) !important;
 }
 
 html[data-contrast='high'] :is(.status-pill--bad, .form-error-banner),
 body.high-contrast-mode :is(.status-pill--bad, .form-error-banner) {
   background: var(--hc-bg, #000) !important;
-  color: var(--hc-danger, #ff6b6b) !important;
-  border: 2px solid var(--hc-danger, #ff6b6b) !important;
+  color: var(--hc-danger, #FF0000) !important;
+  border: 2px solid var(--hc-danger, #FF0000) !important;
 }
 
 html[data-contrast='high'] :is(.status-pill--warn),
 body.high-contrast-mode :is(.status-pill--warn) {
   background: var(--hc-bg, #000) !important;
-  color: var(--hc-accent, #ffe14d) !important;
-  border: 2px solid var(--hc-accent, #ffe14d) !important;
+  color: var(--hc-warn, #FFA500) !important;
+  border: 2px solid var(--hc-warn, #FFA500) !important;
 }
 
 html[data-contrast='high'] :is(input, select, textarea, .input-box, .input-field),
 body.high-contrast-mode :is(input, select, textarea, .input-box, .input-field) {
   background: var(--hc-bg, #000) !important;
-  color: var(--hc-fg, #fff) !important;
-  border: 2px solid var(--hc-fg, #fff) !important;
-  accent-color: var(--hc-accent, #ffe14d);
+  color: var(--hc-fg, #FFFF00) !important;
+  border: 2px solid var(--hc-fg, #FFFF00) !important;
+  accent-color: var(--hc-accent, #00FFFF);
 }
 
 html[data-contrast='high'] option,
 body.high-contrast-mode option {
   background: var(--hc-bg, #000) !important;
-  color: var(--hc-fg, #fff) !important;
+  color: var(--hc-fg, #FFFF00) !important;
 }
 
 html[data-contrast='high'] input:-webkit-autofill,
@@ -416,8 +416,8 @@ html[data-contrast='high'] select:-webkit-autofill,
 body.high-contrast-mode input:-webkit-autofill,
 body.high-contrast-mode textarea:-webkit-autofill,
 body.high-contrast-mode select:-webkit-autofill {
-  -webkit-text-fill-color: #fff !important;
-  caret-color: #ffe14d;
+  -webkit-text-fill-color: #FFFF00 !important;
+  caret-color: #00FFFF;
   box-shadow: 0 0 0 1000px #000 inset !important;
   transition: background-color 9999s ease-out;
 }
@@ -510,8 +510,8 @@ body.high-contrast-mode :is(
   ) {
   background: var(--hc-bg, #000) !important;
   background-image: none !important;
-  color: var(--hc-fg, #fff) !important;
-  border-color: var(--hc-fg, #fff) !important;
+  color: var(--hc-fg, #FFFF00) !important;
+  border-color: var(--hc-fg, #FFFF00) !important;
 }
 
 html[data-contrast='high'] :is(
@@ -546,55 +546,65 @@ body.high-contrast-mode :is(
     .chat-hilo,
     .action-card strong
   ) {
-  color: var(--hc-fg, #fff) !important;
+  color: var(--hc-fg, #FFFF00) !important;
+  background: transparent !important;
+}
+
+html[data-contrast='high'] :is(
+    .ai-lead,
+    .ai-hilo-open small,
+    .ai-limit,
+    .ai-activity li,
+    .chat-meta,
+    .chat-history-hint,
+    .chat-hilo-body small,
+    .kpi-sub,
+    .empty-text,
+    .page-subtitle
+  ),
+body.high-contrast-mode :is(
+    .ai-lead,
+    .ai-hilo-open small,
+    .ai-limit,
+    .ai-activity li,
+    .chat-meta,
+    .chat-history-hint,
+    .chat-hilo-body small,
+    .kpi-sub,
+    .empty-text,
+    .page-subtitle
+  ) {
+  color: var(--hc-muted, #FFFFFF) !important;
   background: transparent !important;
 }
 
 html[data-contrast='high'] :is(
     .ai-eyebrow,
-    .ai-lead,
     .ai-link,
-    .ai-hilo-open small,
-    .ai-limit,
     .ai-card span,
     .ai-card small,
     .ai-chip,
-    .ai-activity li,
-    .chat-meta,
-    .chat-history-hint,
-    .chat-hilo-body small,
     .chat-history-clear,
-    .action-card-type,
-    .kpi-sub,
-    .empty-text
+    .action-card-type
   ),
 body.high-contrast-mode :is(
     .ai-eyebrow,
-    .ai-lead,
     .ai-link,
-    .ai-hilo-open small,
-    .ai-limit,
     .ai-card span,
     .ai-card small,
     .ai-chip,
-    .ai-activity li,
-    .chat-meta,
-    .chat-history-hint,
-    .chat-hilo-body small,
     .chat-history-clear,
-    .action-card-type,
-    .kpi-sub,
-    .empty-text
+    .action-card-type
   ) {
-  color: var(--hc-accent, #ffe14d) !important;
+  color: var(--hc-accent, #00FFFF) !important;
   background: transparent !important;
 }
 
 html[data-contrast='high'] :is(.ai-bubble--user, .chat-bubble--user),
 body.high-contrast-mode :is(.ai-bubble--user, .chat-bubble--user) {
-  background: var(--hc-accent, #ffe14d) !important;
+  background: var(--hc-accent, #00FFFF) !important;
   color: var(--hc-on-accent, #000) !important;
-  border: 2px solid var(--hc-accent, #ffe14d) !important;
+  border: 2px solid var(--hc-accent, #00FFFF) !important;
 }
 
 html[data-contrast='high'] :is(.ai-bubble--user, .chat-bubble--user) :is(p, span, strong, small, .chat-text),
@@ -606,32 +616,37 @@ body.high-contrast-mode :is(.ai-bubble--user, .chat-bubble--user) :is(p, span, s
 html[data-contrast='high'] :is(.ai-bubble--bot, .chat-bubble--bot, .ai-thinking),
 body.high-contrast-mode :is(.ai-bubble--bot, .chat-bubble--bot, .ai-thinking) {
   background: var(--hc-bg, #000) !important;
-  color: var(--hc-fg, #fff) !important;
-  border: 2px solid var(--hc-fg, #fff) !important;
+  color: var(--hc-fg, #FFFF00) !important;
+  border: 2px solid var(--hc-fg, #FFFF00) !important;
 }
 
-html[data-contrast='high'] :is(.ai-error, .chat-activity--run),
-body.high-contrast-mode :is(.ai-error, .chat-activity--run) {
-  color: var(--hc-danger, #ff6b6b) !important;
+html[data-contrast='high'] :is(.ai-error),
+body.high-contrast-mode :is(.ai-error) {
+  color: var(--hc-danger, #FF0000) !important;
+}
+
+html[data-contrast='high'] :is(.chat-activity--run),
+body.high-contrast-mode :is(.chat-activity--run) {
+  color: var(--hc-warn, #FFA500) !important;
 }
 
 html[data-contrast='high'] :is(.ai-activity--done, .chat-activity--done, .ai-check-item--done),
 body.high-contrast-mode :is(.ai-activity--done, .chat-activity--done, .ai-check-item--done) {
-  color: var(--hc-success, #5dff9f) !important;
+  color: var(--hc-success, #00FF00) !important;
 }
 
 html[data-contrast='high'] :is(.ai-composer textarea, .ai-section input, .chat-composer input, .chat-composer textarea, .ai-limit input),
 body.high-contrast-mode :is(.ai-composer textarea, .ai-section input, .chat-composer input, .chat-composer textarea, .ai-limit input) {
   background: var(--hc-bg, #000) !important;
-  color: var(--hc-fg, #fff) !important;
-  border: 2px solid var(--hc-fg, #fff) !important;
+  color: var(--hc-fg, #FFFF00) !important;
+  border: 2px solid var(--hc-fg, #FFFF00) !important;
 }
 
 html[data-contrast='high'] .ai-json,
 body.high-contrast-mode .ai-json {
   background: var(--hc-bg, #000) !important;
-  color: var(--hc-accent, #ffe14d) !important;
-  border: 2px solid var(--hc-fg, #fff) !important;
+  color: var(--hc-accent, #00FFFF) !important;
+  border: 2px solid var(--hc-fg, #FFFF00) !important;
 }
 
 /* Fotos, mapas y canvas: no aplanar. */
@@ -714,8 +729,8 @@ body.high-contrast-mode :is(
   ) {
   background-color: var(--hc-bg, #000) !important;
   background-image: none !important;
-  color: var(--hc-fg, #fff) !important;
-  border-color: var(--hc-fg, #fff) !important;
+  color: var(--hc-fg, #FFFF00) !important;
+  border-color: var(--hc-fg, #FFFF00) !important;
 }
 
 /* Hover de fondo blanco: letra negra, nunca blanco sobre blanco. */
@@ -829,10 +844,10 @@ body.high-contrast-mode :is(
     .ai-bubble--user,
     .chat-bubble--user
   ):is(:hover, :focus, :focus-visible, :active) {
-  background: var(--hc-accent, #ffe14d) !important;
+  background: var(--hc-accent, #00FFFF) !important;
   background-image: none !important;
   color: var(--hc-on-accent, #000) !important;
-  border-color: var(--hc-accent, #ffe14d) !important;
+  border-color: var(--hc-accent, #00FFFF) !important;
 }
 
 html[data-contrast='high'] :is(

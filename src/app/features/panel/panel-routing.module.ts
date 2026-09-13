@@ -46,6 +46,7 @@ const routes: Routes = [
     children: [
       {
         path: '',
+        pathMatch: 'full',
         loadComponent: () =>
           import('@features/users/pages/user-interface/user-interface.component').then((m) => m.UserInterfaceComponent)
       },
