@@ -1,6 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+
+import { PaymentsService } from '../../services/payments.service';
+import { SubscriptionsService } from '../../services/subscriptions.service';
 
 import { SubscriptionService } from '../../services/subscription.service';
 import { PagoEstadoResponse, PagoSuscripcionResponse, Plan } from '../../models/subscription-models';
@@ -8,73 +11,61 @@ import { PagoEstadoResponse, PagoSuscripcionResponse, Plan } from '../../models/
 /** M09 - Comprobante de pago (RF67, RF68): resumen del cobro tras pagar con Mercado Pago. */
 @Component({
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterModule],
   selector: 'app-proof-of-payment',
   templateUrl: './proof-of-payment.component.html',
   styleUrl: './proof-of-payment.component.scss'
 })
 export class ProofOfPaymentComponent implements OnInit {
-  referencia = '';
-  estado: PagoEstadoResponse | null = null;
-  pago: PagoSuscripcionResponse | null = null;
-  plan: Plan | null = null;
-  cargando = true;
-  error: string | null = null;
+  pagoId: number | null = null;
+  tipo: 'evento' | 'suscripcion' = 'evento';
+  referencia: string | null = null;
+  plan: string | null = null;
+  errorMessage: string | null = null;
+  descargando = false;
 
   constructor(
-    private readonly route: ActivatedRoute,
-    private readonly router: Router,
-    private readonly subscriptions: SubscriptionService,
+    private route: ActivatedRoute,
+    private router: Router,
+    private payments: PaymentsService,
+    private subscriptions: SubscriptionsService
   ) {}
 
   ngOnInit(): void {
-    const state = history.state as { referencia?: string } | undefined;
-    this.referencia = this.route.snapshot.queryParamMap.get('ref') ?? state?.referencia ?? '';
+    const params = this.route.snapshot.queryParamMap;
+    const id = params.get('pagoId') || params.get('payment_id');
+    this.pagoId = id ? Number(id) : null;
+    this.tipo = params.get('tipo') === 'suscripcion' ? 'suscripcion' : 'evento';
+    this.referencia = params.get('ref') || params.get('external_reference');
+    this.plan = params.get('plan');
+  }
 
-    if (!this.referencia) {
-      this.error = 'No se encontró información de ningún pago reciente.';
-      this.cargando = false;
+  descargar(): void {
+    if (!this.pagoId || this.descargando) {
       return;
     }
-
-    this.subscriptions.consultarEstadoPago(this.referencia).subscribe({
-      next: (estado) => {
-        this.estado = estado;
-        this.cargarDetalle();
+    this.descargando = true;
+    const request$ = this.tipo === 'suscripcion'
+      ? this.subscriptions.descargarComprobanteSuscripcion(this.pagoId)
+      : this.payments.descargarComprobanteEvento(this.pagoId);
+    request$.subscribe({
+      next: (blob) => {
+        this.descargando = false;
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `comprobante-${this.pagoId}.pdf`;
+        a.click();
+        URL.revokeObjectURL(url);
       },
       error: () => {
-        this.error = 'No se encontró este pago.';
-        this.cargando = false;
-      },
+        this.descargando = false;
+        this.errorMessage = 'El comprobante aún no está disponible. Si acabas de pagar, espera unos segundos.';
+      }
     });
   }
 
-  private cargarDetalle(): void {
-    this.subscriptions.getSuscripcionActual().subscribe({
-      next: (suscripcion) => {
-        this.subscriptions.getPagosSuscripcion(suscripcion.id).subscribe({
-          next: (pagos) => {
-            this.pago = pagos.find((p) => p.referenciaTransaccion === this.referencia) ?? null;
-            this.subscriptions.getPlanes().subscribe({
-              next: (planes) => {
-                this.plan = planes.find((p) => p.id === suscripcion.planId) ?? null;
-                this.cargando = false;
-              },
-              error: () => (this.cargando = false),
-            });
-          },
-          error: () => (this.cargando = false),
-        });
-      },
-      error: () => (this.cargando = false),
-    });
-  }
-
-  irAPanel(): void {
-    this.router.navigate(['/organizer/subscription']);
-  }
-
-  imprimir(): void {
-    window.print();
+  irAlPanel(): void {
+    void this.router.navigate(['/organizer']);
   }
 }

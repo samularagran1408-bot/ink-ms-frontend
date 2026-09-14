@@ -4,97 +4,44 @@
 
   <div class="hero">
     <h1>Planes de Suscripción</h1>
-    <p>Potencia tu organización deportiva con capacidades avanzadas de gestión de eventos, atletas y analítica.</p>
+    <p>Potencia tu organización deportiva con más eventos al mes, menor comisión y cobros en pesos colombianos a través de Mercado Pago.</p>
   </div>
 
-  <div *ngIf="error" class="banner-error">{{ error }}</div>
-  <div *ngIf="cargando" class="state-box">Cargando planes…</div>
+  <p *ngIf="loading" class="status">Cargando planes…</p>
+  <p *ngIf="errorMessage" class="error">{{ errorMessage }}</p>
 
-  <!-- Pricing cards -->
-  <section class="pricing" *ngIf="!cargando">
-    <article class="plan-card" *ngFor="let plan of planes; let last = last" [class.featured]="last">
-      <div class="reco" *ngIf="last">◉ RECOMENDADO <small>MÁXIMA CAPACIDAD</small></div>
-      <div class="plan-tag">{{ plan.nombre }} <span class="t-ic">{{ plan.precio === 0 ? '🚩' : (last ? '🏅' : '📈') }}</span></div>
+  <section class="pricing" *ngIf="!loading">
+    <article class="plan-card" *ngFor="let plan of planes; let i = index" [class.featured]="i === 1">
+      <div class="reco" *ngIf="i === 1">◉ RECOMENDADO</div>
+      <div class="plan-tag">{{ plan.esGratuito ? 'Nivel entrada' : (i === 1 ? 'Crecimiento' : 'Alto rendimiento') }}</div>
       <h2>{{ plan.nombre }}</h2>
       <p class="plan-desc">{{ plan.descripcion }}</p>
-      <div class="price">${{ plan.precio | number: '1.0-0' }}<small> COP / {{ plan.duracionDias }} días</small></div>
+      <div class="price">{{ precio(plan) }}<small> / {{ plan.duracionDias || 30 }} días</small></div>
       <div class="cap-label">Capacidades incluidas:</div>
       <ul class="features">
-        <li>Hasta {{ plan.limiteEventosMes ?? '∞' }} eventos activos al mes</li>
-        <li>{{ plan.porcentajeComision ?? 0 }}% comisión por inscripción</li>
-        <li *ngFor="let beneficio of plan.beneficios">{{ beneficio }}</li>
+        <li>Hasta {{ plan.limiteEventosMes || 'ilimitados' }} eventos al mes</li>
+        <li>{{ plan.porcentajeComision }}% comisión por inscripción</li>
+        <li *ngFor="let b of plan.beneficios">{{ b }}</li>
+        <li *ngFor="let f of plan.funcionalidades">{{ f }}</li>
       </ul>
       <button
         class="plan-btn"
         [class.btn-current]="esPlanActual(plan)"
-        [class.btn-elite]="last && !esPlanActual(plan)"
-        [class.btn-pro]="!last && !esPlanActual(plan)"
-        [disabled]="esPlanActual(plan) || procesandoPlanId !== null"
-        (click)="suscribirse(plan)">
-        <ng-container *ngIf="esPlanActual(plan)">PLAN ACTUAL</ng-container>
-        <ng-container *ngIf="!esPlanActual(plan) && procesandoPlanId === plan.id">PROCESANDO…</ng-container>
-        <ng-container *ngIf="!esPlanActual(plan) && procesandoPlanId !== plan.id">
-          {{ plan.precio === 0 ? 'ACTIVAR GRATIS' : 'ELEGIR PLAN →' }}
-        </ng-container>
+        [class.btn-elite]="!esPlanActual(plan) && !plan.esGratuito && i !== 1"
+        [class.btn-pro]="!esPlanActual(plan) && (plan.esGratuito || i === 1)"
+        [disabled]="esPlanActual(plan) || contratandoId === plan.id"
+        (click)="elegir(plan)">
+        {{ esPlanActual(plan) ? 'PLAN ACTUAL' : (contratandoId === plan.id ? 'REDIRIGIENDO…' : 'ELEGIR PLAN →') }}
       </button>
     </article>
   </section>
 
-  <!-- Comparison table -->
-  <h2 class="compare-title" *ngIf="!cargando">Comparativa Detallada de Características</h2>
-  <p class="compare-sub" *ngIf="!cargando">Verifica los límites y comisiones de cada plan antes de actualizar tu suscripción.</p>
-  <table class="compare" *ngIf="!cargando">
-    <thead>
-      <tr>
-        <th>Funcionalidad Clave</th>
-        <th *ngFor="let plan of planes">{{ plan.nombre }}</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>Eventos activos / mes</td>
-        <td *ngFor="let plan of planes"><b class="hl">{{ plan.limiteEventosMes ?? 'Ilimitados' }}</b></td>
-      </tr>
-      <tr>
-        <td>Comisión sobre cobro de inscripciones</td>
-        <td *ngFor="let plan of planes"><b class="hl">{{ plan.porcentajeComision ?? 0 }}%</b></td>
-      </tr>
-      <tr>
-        <td>Duración del ciclo</td>
-        <td *ngFor="let plan of planes">{{ plan.duracionDias }} días</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <!-- Bottom -->
-  <div class="bottom" *ngIf="!cargando">
-    <section class="guarantee">
-      <div class="g-ic">🛡</div>
-      <div class="g-kicker">GARANTÍA INKLUSPORT</div>
-      <h3>Compromiso de Transparencia</h3>
-      <p>Podés cambiar o cancelar tu plan en cualquier momento desde esta misma pantalla. El cobro de un plan pago se procesa de forma segura a través de Mercado Pago.</p>
-      <div class="g-badges">
-        <span>🛡 Pago encriptado, tokenizado por Mercado Pago</span>
-        <span>↺ Cambia de plan en cualquier instante con 1 clic</span>
-      </div>
-    </section>
-
-    <section class="faq-card">
-      <div class="g-kicker">RESUELVE TUS DUDAS</div>
-      <h3 style="margin-bottom:10px">Preguntas Frecuentes</h3>
-      <details class="faq-item" open>
-        <summary class="faq-q">¿Cómo se contabilizan los eventos activos? <span class="chev">▾</span></summary>
-        <p class="faq-a">Un evento se considera "activo" desde el momento en que abres inscripciones públicas hasta el cierre de la premiación final.</p>
-      </details>
-      <details class="faq-item">
-        <summary class="faq-q">¿Cuándo se aplican las comisiones de inscripción? <span class="chev">▾</span></summary>
-        <p class="faq-a">Las comisiones solo se aplican cuando cobras una cuota de registro a los atletas mediante nuestra pasarela.</p>
-      </details>
-      <details class="faq-item">
-        <summary class="faq-q">¿Puedo cambiar de plan a mitad de mes? <span class="chev">▾</span></summary>
-        <p class="faq-a">Sí. Al elegir otro plan se renueva tu suscripción de inmediato con el nuevo límite de eventos y comisión.</p>
-      </details>
-    </section>
-  </div>
+  <section class="banner">
+    <div>
+      <div class="banner-kicker">MERCADO PAGO · COP</div>
+      <h2>Los cobros se liquidan en pesos colombianos</h2>
+      <p>Checkout Pro de Mercado Pago. Si el plan es gratuito se activa al instante, sin pasarela.</p>
+    </div>
+  </section>
 
 </div>

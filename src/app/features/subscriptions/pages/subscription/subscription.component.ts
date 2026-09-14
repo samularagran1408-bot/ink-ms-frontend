@@ -2,6 +2,10 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 
+import { Plan, Suscripcion } from '../../models/subscriptions';
+import { CheckoutRedirectService } from '../../services/checkout-redirect.service';
+import { SubscriptionsService } from '../../services/subscriptions.service';
+
 import { SubscriptionService } from '../../services/subscription.service';
 import { Plan, SuscripcionResponse } from '../../models/subscription-models';
 
@@ -14,54 +18,61 @@ import { Plan, SuscripcionResponse } from '../../models/subscription-models';
   styleUrl: './subscription.component.scss'
 })
 export class SubscriptionComponent implements OnInit {
-  suscripcion: SuscripcionResponse | null = null;
+  actual: Suscripcion | null = null;
   planes: Plan[] = [];
-  cargando = true;
-  error: string | null = null;
+  loading = true;
+  errorMessage: string | null = null;
+  renovando = false;
 
   constructor(
-    private readonly subscriptions: SubscriptionService,
-    private readonly router: Router,
+    private subscriptions: SubscriptionsService,
+    private checkout: CheckoutRedirectService,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
-    this.subscriptions.getSuscripcionActual().subscribe({
-      next: (s) => {
-        this.suscripcion = s;
-        this.cargando = false;
-      },
-      error: (err) => {
-        this.cargando = false;
-        if (err?.status !== 404) {
-          this.error = 'No se pudo cargar tu suscripción.';
-        }
-      },
+    this.subscriptions.listarPlanes().subscribe({
+      next: (planes) => (this.planes = planes)
     });
-
-    this.subscriptions.getPlanes().subscribe({
-      next: (planes) => (this.planes = planes),
-      error: () => (this.planes = []),
+    this.subscriptions.obtenerActual().subscribe({
+      next: (actual) => {
+        this.actual = actual;
+        this.loading = false;
+      },
+      error: (error) => {
+        this.loading = false;
+        this.errorMessage = error?.error?.message || 'Aún no tienes una suscripción activa.';
+      }
     });
   }
 
-  get eventosUsadosPct(): number {
-    if (!this.suscripcion?.limiteEventosMes) {
+  usoEventos(): number {
+    const usados = this.actual?.eventosCreadosMes ?? 0;
+    const limite = this.actual?.limiteEventosMes ?? 0;
+    if (!limite) {
       return 0;
     }
-    return Math.min(100, Math.round((this.suscripcion.eventosCreadosMes / this.suscripcion.limiteEventosMes) * 100));
+    return Math.min(100, Math.round((usados / limite) * 100));
   }
 
-  renovar(): void {
-    if (!this.suscripcion) {
+  renovar(planId?: number): void {
+    if (!this.actual || this.renovando) {
       return;
     }
-    this.subscriptions.renovarSuscripcion(this.suscripcion.id).subscribe({
-      next: () => this.ngOnInit(),
-      error: (err) => (this.error = err?.error?.message ?? 'No se pudo renovar la suscripción.'),
+    this.renovando = true;
+    this.subscriptions.renovar(this.actual.id, planId).subscribe({
+      next: (checkout) => {
+        this.renovando = false;
+        this.checkout.follow(checkout, { plan: this.actual?.planNombre });
+      },
+      error: (error) => {
+        this.renovando = false;
+        this.errorMessage = error?.error?.message || 'No se pudo renovar la suscripción.';
+      }
     });
   }
 
-  cambiarPlan(): void {
-    this.router.navigate(['/organizer/plans']);
+  irAPlanes(): void {
+    void this.router.navigate(['/organizer/plans']);
   }
 }

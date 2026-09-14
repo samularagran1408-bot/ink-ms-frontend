@@ -4,88 +4,26 @@
     <div class="breadcrumb">FACTURACIÓN<span class="sep">›</span>SUSCRIPCIONES<span class="sep">›</span><b>COMPROBANTE</b></div>
   </div>
 
-  <div *ngIf="cargando" class="state-box">Cargando comprobante…</div>
-  <div *ngIf="error" class="banner-error">{{ error }}</div>
-
-  <ng-container *ngIf="!cargando && !error && estado">
-    <!-- Success hero -->
-    <section class="success" *ngIf="estado.estado === 'APROBADO'">
-      <div class="check-wrap">
-        <div class="check-main">✓</div>
-        <div class="check-mini">✓</div>
-      </div>
-      <div class="kicker">COMPROBANTE DIGITAL</div>
-      <h1>¡TRANSACCIÓN PROCESADA CON ÉXITO!</h1>
-      <p>Tu suscripción al <b>Plan {{ plan?.nombre ?? '' }}</b> ha sido activada. Se ha emitido un comprobante y, si tu correo está configurado, se envió a tu bandeja de entrada.</p>
-      <div class="chips">
-        <span class="chip">🧾 {{ referencia }}</span>
-        <span class="chip">🔒 PASARELA SEGURA · MERCADO PAGO</span>
-        <span class="chip dark">✓ ESTADO: APROBADO</span>
-      </div>
-    </section>
-
-    <section class="success" *ngIf="estado.estado !== 'APROBADO'">
-      <div class="kicker">ESTADO DEL PAGO</div>
-      <h1>{{ estado.estado === 'PENDIENTE' ? 'Tu pago está en revisión' : 'El pago no fue aprobado' }}</h1>
-      <p>Referencia <b>{{ referencia }}</b>.</p>
-      <div class="chips">
-        <span class="chip">🧾 {{ referencia }}</span>
-        <span class="chip dark">Estado: {{ estado.estado }}</span>
-      </div>
-    </section>
-
-    <!-- Middle -->
-    <div class="grid-mid">
-      <!-- Invoice breakdown -->
-      <section class="card">
-        <div class="card-head">
-          <div class="card-title">🧾 Desglose del Pago</div>
-          <span class="tag-mini tag-brand">RF67</span>
-        </div>
-        <div class="fila"><span class="lbl">Referencia de Transacción</span><span class="val"><b>{{ referencia }}</b></span></div>
-        <div class="fila"><span class="lbl">Plan Adquirido</span><span class="val"><b>{{ plan?.nombre ?? '—' }}</b><small *ngIf="plan">{{ plan.duracionDias }} DÍAS DE ACCESO</small></span></div>
-        <div class="fila" *ngIf="pago"><span class="lbl">Fecha y Hora</span><span class="val"><b>{{ pago.fechaPago | date: 'dd MMMM yyyy, HH:mm' }}</b></span></div>
-        <div class="fila" *ngIf="pago"><span class="lbl">Método de Pago</span><span class="val">{{ pago.metodoPago | uppercase }}</span></div>
-        <div class="fila"><span class="lbl">ID de Pago (Mercado Pago)</span><span class="val" style="color:var(--muted)">{{ estado.pagoId }}</span></div>
-        <hr class="divider">
-        <div class="total-box">
-          <div>
-            <small>MONTO TOTAL PAGADO</small>
-          </div>
-          <div class="amount">${{ estado.monto | number: '1.0-0' }}<small>COP</small></div>
-        </div>
-      </section>
-
-      <!-- Benefits -->
-      <section class="card" *ngIf="plan">
-        <div class="card-head">
-          <div class="card-title">🛡 Beneficios Activos</div>
-          <span class="tag-mini tag-blue">INMEDIATO</span>
-        </div>
-        <p class="benefit-intro">Tu plan {{ plan.nombre }} incluye:</p>
-        <div class="benefit">
-          <div class="b-ic b-red">🏆</div>
-          <div><b>Hasta {{ plan.limiteEventosMes ?? 'eventos ilimitados' }} eventos activos / mes</b></div>
-        </div>
-        <div class="benefit">
-          <div class="b-ic b-teal">％</div>
-          <div><b>{{ plan.porcentajeComision ?? 0 }}% de comisión por inscripción</b></div>
-        </div>
-        <div class="benefit" *ngFor="let beneficio of plan.beneficios">
-          <div class="b-ic b-blue">✓</div>
-          <div><b>{{ beneficio }}</b></div>
-        </div>
-      </section>
+  <section class="success">
+    <div class="check-wrap">
+      <div class="check-main">✓</div>
     </div>
-
-    <!-- Actions -->
-    <div class="actions">
-      <div class="actions-left">
-        <button class="btn btn-ghost" (click)="imprimir()">🖨&nbsp; Imprimir Comprobante</button>
-      </div>
-      <button class="btn btn-blue" (click)="irAPanel()">Ir a mi Suscripción <span class="arrow">→</span></button>
+    <div class="kicker">COMPROBANTE DIGITAL</div>
+    <h1>Pago registrado</h1>
+    <p>Tu transacción {{ plan ? 'del plan ' + plan : '' }} quedó registrada. El comprobante se emite en COP a través de Mercado Pago.</p>
+    <div class="chips">
+      <span class="chip" *ngIf="pagoId">🧾 Pago #{{ pagoId }}</span>
+      <span class="chip" *ngIf="referencia">{{ referencia }}</span>
+      <span class="chip dark">MERCADO PAGO · COP</span>
     </div>
+    <p *ngIf="errorMessage" class="error">{{ errorMessage }}</p>
+  </section>
 
-  </ng-container>
+  <div class="actions">
+    <button class="btn btn-brand" type="button" [disabled]="!pagoId || descargando" (click)="descargar()">
+      {{ descargando ? 'DESCARGANDO…' : 'DESCARGAR COMPROBANTE (PDF)' }}
+    </button>
+    <button class="btn btn-blue" type="button" (click)="irAlPanel()">Ir a mi panel →</button>
+  </div>
 
 </div>

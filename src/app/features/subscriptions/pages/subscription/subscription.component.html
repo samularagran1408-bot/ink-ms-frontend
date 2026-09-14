@@ -1,75 +1,78 @@
 <div class="subscription-page">
 
-  <h1>Gestión de Suscripción</h1>
-  <p class="sub">Administra el plan, los límites de uso y el ciclo de facturación de tu organización.</p>
+  <h1>Gestión de suscripción</h1>
+  <p class="sub">Consulta tu plan, el cupo de eventos del mes y renueva con Mercado Pago en COP.</p>
 
-  <div *ngIf="cargando" class="state-box">Cargando tu suscripción…</div>
-  <div *ngIf="error" class="banner-error">{{ error }}</div>
+  <p *ngIf="loading" class="status">Cargando suscripción…</p>
+  <p *ngIf="errorMessage" class="error">{{ errorMessage }}</p>
 
-  <div *ngIf="!cargando && !suscripcion && !error" class="empty-state">
-    <p>Todavía no tenés una suscripción activa.</p>
-    <button class="btn btn-solid" (click)="cambiarPlan()">VER PLANES DISPONIBLES</button>
+  <div class="grid-top" *ngIf="actual">
+    <section class="card">
+      <div class="kicker">✰ PLAN ACTUAL</div>
+      <div class="plan-name">{{ actual.planNombre }}</div>
+      <p class="plan-meta">Estado {{ actual.estado }} · vigente hasta {{ actual.fechaFin | date:'mediumDate' }}</p>
+      <div class="plan-actions">
+        <button class="btn btn-solid" [disabled]="renovando" (click)="renovar()">{{ renovando ? 'PROCESANDO…' : 'RENOVAR' }}</button>
+        <button class="btn btn-outline" (click)="irAPlanes()">CAMBIAR PLAN</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="cap-head"><span class="c-ic red">🗓</span>Eventos del mes</div>
+      <div class="cap-value"><b>{{ actual.eventosCreadosMes || 0 }}</b><span>/ {{ actual.limiteEventosMes || '∞' }}</span></div>
+      <div class="bar red"><i [style.width.%]="usoEventos()"></i></div>
+      <div class="cap-note">{{ usoEventos() }}% USADO</div>
+    </section>
   </div>
 
-  <ng-container *ngIf="!cargando && suscripcion">
-    <!-- Current plan + capacity -->
-    <div class="grid-top">
-      <section class="card">
-        <div class="kicker">✰ PLAN ACTUAL</div>
-        <div class="plan-name">{{ suscripcion.planNombre }}</div>
-        <p class="plan-meta">
-          <ng-container [ngSwitch]="suscripcion.estado">
-            <span *ngSwitchCase="'ACTIVA'">Activa hasta {{ suscripcion.fechaFin | date: 'dd MMM yyyy' }}</span>
-            <span *ngSwitchCase="'VENCIDA'">Venció el {{ suscripcion.fechaFin | date: 'dd MMM yyyy' }}</span>
-            <span *ngSwitchCase="'CANCELADA'">Cancelada</span>
-            <span *ngSwitchCase="'SUSPENDIDA'">Pendiente de pago</span>
-          </ng-container>
-        </p>
-        <div class="plan-actions">
-          <button class="btn btn-solid" (click)="renovar()" *ngIf="suscripcion.estado === 'ACTIVA'">RENOVAR</button>
-          <button class="btn btn-outline" (click)="cambiarPlan()">CAMBIAR PLAN</button>
-          <a class="btn btn-outline" routerLink="/organizer/subscription/historial">VER HISTORIAL</a>
+  <h2 class="compare-title">Comparar planes</h2>
+
+  <div class="compare-cards" *ngIf="planes.length">
+    <article class="compare-card" *ngFor="let plan of planes" [class.current]="actual?.planId === plan.id">
+      <header>
+        <h3>{{ plan.nombre }}</h3>
+        <span class="current-pill" *ngIf="actual?.planId === plan.id">Actual</span>
+      </header>
+      <dl>
+        <div>
+          <dt>Eventos / mes</dt>
+          <dd>{{ plan.limiteEventosMes || 'Ilimitados' }}</dd>
         </div>
-      </section>
+        <div>
+          <dt>Comisión</dt>
+          <dd>{{ plan.porcentajeComision }}%</dd>
+        </div>
+        <div>
+          <dt>Precio</dt>
+          <dd>{{ plan.precio | number:'1.0-0' }} {{ plan.moneda || 'COP' }}</dd>
+        </div>
+      </dl>
+    </article>
+  </div>
 
-      <section class="card" *ngIf="suscripcion.limiteEventosMes as limite">
-        <div class="cap-head"><span class="c-ic red">🗓</span>Eventos este mes</div>
-        <div class="cap-value"><b>{{ suscripcion.eventosCreadosMes }}</b><span>/ {{ limite }}</span></div>
-        <div class="bar red"><i [style.width.%]="eventosUsadosPct"></i></div>
-        <div class="cap-note">{{ eventosUsadosPct }}% USADO</div>
-      </section>
-      <section class="card" *ngIf="!suscripcion.limiteEventosMes">
-        <div class="cap-head"><span class="c-ic blue">🗓</span>Eventos este mes</div>
-        <div class="cap-value"><b>{{ suscripcion.eventosCreadosMes }}</b><span>/ Ilimitados</span></div>
-      </section>
-    </div>
-
-    <!-- Compare plans -->
-    <h2 class="compare-title">Comparar Planes</h2>
+  <div class="compare-wrap" *ngIf="planes.length">
     <table class="compare">
       <thead>
         <tr>
-          <th>Características</th>
-          <th *ngFor="let plan of planes" [class.hl]="plan.id === suscripcion.planId">
-            {{ plan.nombre }}{{ plan.id === suscripcion.planId ? ' (Actual)' : '' }}
-          </th>
+          <th>Característica</th>
+          <th *ngFor="let plan of planes" [class.hl]="actual?.planId === plan.id">{{ plan.nombre }}</th>
         </tr>
       </thead>
       <tbody>
         <tr>
           <td>Eventos / mes</td>
-          <td *ngFor="let plan of planes" [class.hl]="plan.id === suscripcion.planId">{{ plan.limiteEventosMes ?? 'Ilimitados' }}</td>
+          <td *ngFor="let plan of planes" [class.hl]="actual?.planId === plan.id">{{ plan.limiteEventosMes || 'Ilimitados' }}</td>
         </tr>
         <tr>
-          <td>Comisión por inscripción</td>
-          <td *ngFor="let plan of planes" [class.hl]="plan.id === suscripcion.planId">{{ plan.porcentajeComision ?? 0 }}%</td>
+          <td>Comisión</td>
+          <td *ngFor="let plan of planes" [class.hl]="actual?.planId === plan.id">{{ plan.porcentajeComision }}%</td>
         </tr>
         <tr>
           <td>Precio</td>
-          <td *ngFor="let plan of planes" [class.hl]="plan.id === suscripcion.planId">${{ plan.precio | number: '1.0-0' }} COP</td>
+          <td *ngFor="let plan of planes" [class.hl]="actual?.planId === plan.id">{{ plan.precio | number:'1.0-0' }} {{ plan.moneda || 'COP' }}</td>
         </tr>
       </tbody>
     </table>
-  </ng-container>
+  </div>
 
 </div>

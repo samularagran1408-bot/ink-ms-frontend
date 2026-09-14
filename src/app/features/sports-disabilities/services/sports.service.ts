@@ -319,4 +319,10 @@ export class SportsService {
   getRoutineRegistrationsByUser(userId: string): Observable<RoutineRegistration[]> {
     return this.http.get<RoutineRegistration[]>(`${this.routineRegistrationsUrl}/user/${userId}`);
   }
+
+  markRoutineAttendance(registrationId: string, attended: boolean): Observable<RoutineRegistration> {
+    return this.http.post<RoutineRegistration>(`${this.routineRegistrationsUrl}/${registrationId}/attendance`, {
+      attended
+    });
+  }
 }

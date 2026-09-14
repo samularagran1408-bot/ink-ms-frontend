@@ -2,63 +2,186 @@
   <p class="page-subtitle">{{ 'SESSIONS_PAGE.SUBTITLE' | translate }}</p>
   <p *ngIf="successMessage" class="empty-text">{{ successMessage }}</p>
   <p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
+  <p *ngIf="loading" class="empty-text">{{ 'COMMON.LOADING' | translate }}</p>
 
   <div class="card" style="margin-bottom: 16px;">
-    <h3 class="section-title">Nueva sesión</h3>
+    <h3 class="section-title">{{ 'SESSIONS_PAGE.NEW' | translate }}</h3>
     <form class="form-grid" [formGroup]="form" (ngSubmit)="create()">
-      <label>Nombre <input formControlName="name" /></label>
-      <label>Deporte
+      <label>{{ 'COMMON.NAME' | translate }} <input formControlName="name" /></label>
+      <label>{{ 'SESSIONS_PAGE.SPORT' | translate }}
         <select formControlName="sportId">
           <option *ngFor="let sport of sports" [ngValue]="sport.id">{{ sport.name }}</option>
         </select>
       </label>
-      <label>Enfoque discapacidad <input formControlName="disabilityFocus" /></label>
-      <label>Nivel
+      <label>{{ 'SESSIONS_PAGE.FOCUS' | translate }} <input formControlName="disabilityFocus" /></label>
+      <label>{{ 'SESSIONS_PAGE.LEVEL' | translate }}
         <select formControlName="level">
-          <option value="principiante">Principiante</option>
-          <option value="intermedio">Intermedio</option>
-          <option value="avanzado">Avanzado</option>
+          <option value="principiante">{{ 'SESSIONS_PAGE.BEGINNER' | translate }}</option>
+          <option value="intermedio">{{ 'SESSIONS_PAGE.INTERMEDIATE' | translate }}</option>
+          <option value="avanzado">{{ 'SESSIONS_PAGE.ADVANCED' | translate }}</option>
         </select>
       </label>
-      <label>Duración (min) <input type="number" formControlName="durationMinutes" /></label>
-      <label>Cupo <input type="number" formControlName="maxCapacity" /></label>
-      <label style="grid-column: 1 / -1;">Descripción <textarea rows="2" formControlName="description"></textarea></label>
-      <div><button class="btn-primary" type="submit">Crear</button></div>
+      <label>{{ 'SESSIONS_PAGE.DURATION' | translate }} <input type="number" formControlName="durationMinutes" /></label>
+      <label>{{ 'SESSIONS_PAGE.CAPACITY' | translate }} <input type="number" formControlName="maxCapacity" /></label>
+      <label style="grid-column: 1 / -1;">{{ 'COMMON.DESCRIPTION' | translate }} <textarea rows="2" formControlName="description"></textarea></label>
+      <div><button class="btn-primary" type="submit">{{ 'COMMON.CREATE' | translate }}</button></div>
     </form>
   </div>
 
-  <div class="card">
-    <div class="search-bar">
-      <input
-        type="search"
-        name="sessionQuery"
-        [(ngModel)]="searchQuery"
-        [placeholder]="'SESSIONS_PAGE.SEARCH_PH' | translate"
-      />
-      <button class="btn-secondary" type="button" *ngIf="searchQuery.trim()" (click)="clearSearch()">
-        {{ 'COMMON.CLEAR' | translate }}
-      </button>
-    </div>
-    <p class="search-count" *ngIf="searchQuery.trim()">
-      {{ 'COMMON.RESULTS' | translate:{ count: filteredRoutines.length } }}
-    </p>
-    <div class="list-item" *ngFor="let routine of filteredRoutines">
-      <div>
-        <strong>{{ routine.name }}</strong>
-        <div class="kpi-sub">{{ routine.status }} · {{ routine.disabilityFocus || 'General' }} · {{ routine.durationMinutes || '—' }} min</div>
-      </div>
-      <button
-        class="btn-secondary"
-        type="button"
-        *ngIf="routine.status !== 'published'"
-        (click)="publish(routine)"
-      >
-        Publicar
-      </button>
-      <span *ngIf="routine.status === 'published'" class="status-pill status-pill--ok">Publicada</span>
-    </div>
-    <p *ngIf="!routines.length" class="empty-text">Sin sesiones todavía.</p>
-    <p *ngIf="routines.length && !filteredRoutines.length" class="empty-text">
-      {{ 'SESSIONS_PAGE.EMPTY_SEARCH' | translate }}
-    </p>
+  <div class="search-bar" *ngIf="!loading">
+    <input
+      type="search"
+      name="sessionQuery"
+      [(ngModel)]="searchQuery"
+      (ngModelChange)="onSearchChange()"
+      [placeholder]="'SESSIONS_PAGE.SEARCH_PH' | translate"
+    />
+    <button class="btn-secondary" type="button" *ngIf="searchQuery.trim()" (click)="clearSearch()">
+      {{ 'COMMON.CLEAR' | translate }}
+    </button>
   </div>
+  <p class="search-count" *ngIf="searchQuery.trim()">
+    {{ 'COMMON.RESULTS' | translate:{ count: filteredSummaries.length } }}
+  </p>
+
+  <div class="card session-card" *ngFor="let summary of filteredSummaries; trackBy: trackBySummary">
+    <div class="session-head">
+      <div>
+        <strong>{{ summary.routine.name }}</strong>
+        <div class="kpi-sub">
+          {{ summary.routine.status }}
+          · {{ summary.routine.disabilityFocus || ('SESSIONS_PAGE.GENERAL' | translate) }}
+          · {{ summary.routine.durationMinutes || '—' }} min
+          · {{ 'SESSIONS_PAGE.ENROLLED' | translate:{ occupied: occupied(summary.routine), capacity: summary.routine.maxCapacity || 0 } }}
+        </div>
+      </div>
+      <div class="session-actions">
+        <button
+          class="btn-secondary"
+          type="button"
+          *ngIf="summary.routine.status !== 'published'"
+          (click)="publish(summary.routine)"
+        >
+          {{ 'SESSIONS_PAGE.PUBLISH' | translate }}
+        </button>
+        <span *ngIf="summary.routine.status === 'published'" class="status-pill status-pill--ok">
+          {{ 'SESSIONS_PAGE.PUBLISHED' | translate }}
+        </span>
+        <button class="btn-secondary" type="button" (click)="toggle(summary)">
+          {{ (summary.expanded ? 'SESSIONS_PAGE.HIDE_ATHLETES' : 'SESSIONS_PAGE.SEE_ATHLETES') | translate }}
+        </button>
+      </div>
+    </div>
+
+    <div *ngIf="summary.expanded" class="session-body">
+      <div class="filter-chips">
+        <button
+          type="button"
+          class="filter-chip"
+          [class.filter-chip--active]="summary.filter === 'all'"
+          (click)="setFilter(summary, 'all')"
+        >
+          {{ 'ATHLETES.ALL' | translate:{ count: summary.enrolledCount } }}
+        </button>
+        <button
+          type="button"
+          class="filter-chip"
+          [class.filter-chip--active]="summary.filter === 'attended'"
+          (click)="setFilter(summary, 'attended')"
+        >
+          {{ 'ATHLETES.ATTENDED' | translate:{ count: summary.attendedCount } }}
+        </button>
+        <button
+          type="button"
+          class="filter-chip"
+          [class.filter-chip--active]="summary.filter === 'absent'"
+          (click)="setFilter(summary, 'absent')"
+        >
+          {{ 'ATHLETES.ABSENT' | translate:{ count: summary.absentCount } }}
+        </button>
+      </div>
+
+      <div class="table-wrap" *ngIf="summary.visibleAthletes.length; else noAthletes">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>{{ 'CATALOG.NAME' | translate }}</th>
+              <th>{{ 'CATALOG.EMAIL' | translate }}</th>
+              <th>{{ 'SESSIONS_PAGE.SESSION_ATTENDANCE' | translate }}</th>
+              <th>{{ 'SESSIONS_PAGE.PROGRESS' | translate }}</th>
+              <th>{{ 'COMMON.ACTIONS' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of summary.visibleAthletes; trackBy: trackByAthlete">
+              <td>
+                <span class="user-cell">
+                  <img *ngIf="row.userProfilePicture" class="table-avatar" [src]="row.userProfilePicture" alt="" />
+                  <span *ngIf="!row.userProfilePicture" class="avatar-fallback">
+                    {{ initials(row.userFullName || row.userEmail) }}
+                  </span>
+                  <span>
+                    {{ row.userFullName || row.userEmail || ('ROLES.USER_FALLBACK' | translate) }}
+                    <div class="kpi-sub" *ngIf="row.userDisability">{{ row.userDisability }}</div>
+                  </span>
+                </span>
+              </td>
+              <td>{{ row.userEmail || ('COMMON.NONE' | translate) }}</td>
+              <td>
+                <span class="status-pill" [class.status-pill--ok]="row.attended" [class.status-pill--warn]="!row.attended">
+                  {{ (row.attended ? 'CATALOG.ATTENDED' : 'CATALOG.NO_CHECKIN') | translate }}
+                </span>
+              </td>
+              <td>
+                <ng-container *ngIf="progressOf(row.userId) as progress">
+                  <p *ngIf="progress.loading" class="kpi-sub">{{ 'SESSIONS_PAGE.PROGRESS_LOADING' | translate }}</p>
+                  <p *ngIf="!progress.loading && progress.error" class="kpi-sub">{{ progress.error }}</p>
+                  <div *ngIf="!progress.loading && !progress.error" class="progress-stack">
+                    <div class="progress-line">
+                      {{ 'SESSIONS_PAGE.EVENT_ATTENDANCE' | translate }}:
+                      <strong>{{ progress.asistenciaPct ?? 0 }}%</strong>
+                      <span class="kpi-sub" *ngIf="progress.confirmados">
+                        ({{ progress.asistidos || 0 }}/{{ progress.confirmados }})
+                      </span>
+                    </div>
+                    <div class="progress-line" *ngIf="progress.planPct != null">
+                      {{ 'SESSIONS_PAGE.PLAN' | translate }}: <strong>{{ progress.planPct }}%</strong>
+                    </div>
+                    <div class="progress-line" *ngIf="progress.sesionesObjetivo">
+                      {{ 'SESSIONS_PAGE.DONE_SESSIONS' | translate }}:
+                      <strong>{{ progress.sesionesHechas || 0 }}/{{ progress.sesionesObjetivo }}</strong>
+                    </div>
+                    <div class="progress-line">
+                      RPE: <strong>{{ progress.rpe || '—' }}</strong>
+                      · {{ 'SESSIONS_PAGE.RISK' | translate }}: <strong>{{ progress.riesgo || '—' }}</strong>
+                    </div>
+                    <div class="progress-line">
+                      {{ 'SESSIONS_PAGE.TREND' | translate }}: <strong>{{ progress.tendencia || '—' }}</strong>
+                      <span *ngIf="progress.modoCompetencia" class="status-pill status-pill--ok progress-pill">
+                        {{ 'SESSIONS_PAGE.COMPETITION' | translate }}
+                      </span>
+                    </div>
+                    <div class="kpi-sub" *ngIf="progress.objetivo">{{ progress.objetivo }}</div>
+                  </div>
+                </ng-container>
+                <p *ngIf="!progressOf(row.userId)" class="kpi-sub">{{ 'SESSIONS_PAGE.PROGRESS_LOADING' | translate }}</p>
+              </td>
+              <td>
+                <button class="btn-secondary" type="button" (click)="markAttendance(summary, row)">
+                  {{ (row.attended ? 'SESSIONS_PAGE.UNMARK' : 'SESSIONS_PAGE.MARK') | translate }}
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <ng-template #noAthletes>
+        <p class="empty-text">{{ 'SESSIONS_PAGE.EMPTY_ATHLETES' | translate }}</p>
+      </ng-template>
+    </div>
+  </div>
+
+  <p *ngIf="!loading && !summaries.length" class="empty-text">{{ 'SESSIONS_PAGE.EMPTY' | translate }}</p>
+  <p *ngIf="!loading && summaries.length && !filteredSummaries.length" class="empty-text">
+    {{ 'SESSIONS_PAGE.EMPTY_SEARCH' | translate }}
+  </p>

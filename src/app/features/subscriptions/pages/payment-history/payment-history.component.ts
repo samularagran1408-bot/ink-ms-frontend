@@ -1,6 +1,24 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+import { forkJoin, of } from 'rxjs';
+import { catchError, switchMap } from 'rxjs/operators';
+
+import { PagoEvento, PagoSuscripcion } from '../../models/subscriptions';
+import { PaymentsService } from '../../services/payments.service';
+import { SubscriptionsService } from '../../services/subscriptions.service';
+
+interface LedgerRow {
+  id: number;
+  tipo: 'suscripcion' | 'evento';
+  concepto: string;
+  fecha?: string | null;
+  metodo?: string | null;
+  monto: number;
+  estado: string;
+  comprobanteId?: number | null;
+}
 
 import { SubscriptionService } from '../../services/subscription.service';
 import { PagoSuscripcionResponse, SuscripcionResponse } from '../../models/subscription-models';
@@ -14,84 +32,93 @@ import { PagoSuscripcionResponse, SuscripcionResponse } from '../../models/subsc
   styleUrl: './payment-history.component.scss'
 })
 export class PaymentHistoryComponent implements OnInit {
-  suscripcion: SuscripcionResponse | null = null;
-  pagos: PagoSuscripcionResponse[] = [];
-  cargando = true;
-  error: string | null = null;
-  busqueda = '';
+  rows: LedgerRow[] = [];
+  loading = true;
+  errorMessage: string | null = null;
+  filtro = '';
 
-  constructor(private readonly subscriptions: SubscriptionService) {}
+  constructor(
+    private subscriptions: SubscriptionsService,
+    private payments: PaymentsService,
+    private router: Router
+  ) {}
 
   ngOnInit(): void {
-    this.subscriptions.getSuscripcionActual().subscribe({
-      next: (s) => {
-        this.suscripcion = s;
-        this.subscriptions.getPagosSuscripcion(s.id).subscribe({
-          next: (pagos) => {
-            this.pagos = pagos;
-            this.cargando = false;
-          },
-          error: () => {
-            this.error = 'No se pudo cargar el historial de pagos.';
-            this.cargando = false;
-          },
-        });
+    this.subscriptions.obtenerActual().pipe(
+      switchMap((actual) =>
+        forkJoin({
+          suscripcion: this.subscriptions.listarPagos(actual.id).pipe(catchError(() => of([] as PagoSuscripcion[]))),
+          eventos: this.payments.historialEventos().pipe(catchError(() => of([] as PagoEvento[])))
+        })
+      ),
+      catchError(() =>
+        forkJoin({
+          suscripcion: of([] as PagoSuscripcion[]),
+          eventos: this.payments.historialEventos().pipe(catchError(() => of([] as PagoEvento[])))
+        })
+      )
+    ).subscribe({
+      next: ({ suscripcion, eventos }) => {
+        const subRows: LedgerRow[] = suscripcion.map((p) => ({
+          id: p.id,
+          tipo: 'suscripcion',
+          concepto: 'Suscripción de organizador',
+          fecha: p.fechaPago,
+          metodo: p.metodoPago,
+          monto: p.monto,
+          estado: p.estado,
+          comprobanteId: p.comprobanteId
+        }));
+        const eventRows: LedgerRow[] = eventos.map((p) => ({
+          id: p.id,
+          tipo: 'evento',
+          concepto: 'Inscripción a evento ' + p.eventoId,
+          fecha: p.fechaPago,
+          metodo: p.metodoPago,
+          monto: p.monto,
+          estado: p.estado,
+          comprobanteId: p.comprobanteId
+        }));
+        this.rows = [...subRows, ...eventRows].sort((a, b) =>
+          String(b.fecha || '').localeCompare(String(a.fecha || '')));
+        this.loading = false;
       },
-      error: (err) => {
-        this.cargando = false;
-        if (err?.status !== 404) {
-          this.error = 'No se pudo cargar tu suscripción.';
-        }
-      },
+      error: () => {
+        this.errorMessage = 'No se pudo cargar el historial de pagos.';
+        this.loading = false;
+      }
     });
   }
 
-  get pagosFiltrados(): PagoSuscripcionResponse[] {
-    const texto = this.busqueda.trim().toLowerCase();
-    if (!texto) {
-      return this.pagos;
+  get filtradas(): LedgerRow[] {
+    const q = this.filtro.trim().toLowerCase();
+    if (!q) {
+      return this.rows;
     }
-    return this.pagos.filter((p) => (p.referenciaTransaccion ?? '').toLowerCase().includes(texto));
+    return this.rows.filter((row) =>
+      String(row.id).includes(q) || row.concepto.toLowerCase().includes(q) || row.estado.toLowerCase().includes(q));
   }
 
-  get totalInvertido(): number {
-    return this.pagos.filter((p) => p.estado === 'APROBADO').reduce((sum, p) => sum + p.monto, 0);
+  totalAprobado(): number {
+    return this.rows.filter((r) => r.estado === 'APROBADO').reduce((sum, r) => sum + (r.monto || 0), 0);
   }
 
-  get ultimoPagoAprobado(): PagoSuscripcionResponse | null {
-    const aprobados = this.pagos.filter((p) => p.estado === 'APROBADO');
-    if (!aprobados.length) {
-      return null;
+  verComprobante(row: LedgerRow): void {
+    void this.router.navigate(['/organizer/payments/receipt'], {
+      queryParams: { pagoId: row.id, tipo: row.tipo }
+    });
+  }
+
+  badge(estado: string): string {
+    if (estado === 'APROBADO') {
+      return 'b-ok';
     }
-    return aprobados.reduce((a, b) => (new Date(a.fechaPago) > new Date(b.fechaPago) ? a : b));
-  }
-
-  badgeClass(estado: string): string {
-    if (estado === 'APROBADO') return 'b-ok';
-    if (estado === 'RECHAZADO') return 'b-err';
-    return 'b-warn';
-  }
-
-  /** Exporta el historial cargado (ya filtrado) a un CSV real, generado en el navegador. */
-  exportarCsv(): void {
-    const filas = this.pagosFiltrados;
-    const encabezado = ['Referencia', 'Fecha', 'Metodo', 'Monto', 'Estado', 'Comprobante'];
-    const lineas = filas.map((p) => [
-      p.referenciaTransaccion ?? '',
-      p.fechaPago,
-      p.metodoPago ?? '',
-      p.monto.toFixed(2),
-      p.estado,
-      p.numeroComprobante ?? '',
-    ].map((v) => `"${String(v).replace(/"/g, '""')}"`).join(','));
-    const csv = [encabezado.join(','), ...lineas].join('\n');
-
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'historial-pagos.csv';
-    a.click();
-    URL.revokeObjectURL(url);
+    if (estado === 'PENDIENTE') {
+      return 'b-warn';
+    }
+    if (estado === 'REEMBOLSADO') {
+      return 'b-ref';
+    }
+    return 'b-err';
   }
 }

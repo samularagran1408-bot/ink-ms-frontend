@@ -1,85 +1,91 @@
 <div class="payments-page">
 
-  <div class="crumb">RF61 · RF66 MÓDULO FINANCIERO <span class="sep">|</span> HISTORIAL DE PAGOS</div>
+  <div class="crumb">RF61 · RF66 · RF67 <span class="sep">|</span> MÓDULO FINANCIERO</div>
 
   <div class="page-head">
     <div>
       <h1>Historial de Pagos y Transacciones</h1>
-      <p>Consulta los cobros de tu suscripción, su estado y el método de pago utilizado.</p>
+      <p>Consulta tus cobros de suscripción e inscripciones. Los montos están en pesos colombianos (COP) vía Mercado Pago.</p>
     </div>
-    <div class="pci">🛡<div><b>BÓVEDA ENCRIPTADA</b>PCI-DSS Nivel 1</div></div>
   </div>
 
-  <div *ngIf="cargando" class="state-box">Cargando historial de pagos…</div>
-  <div *ngIf="error" class="banner-error">{{ error }}</div>
+  <p *ngIf="loading" class="status">Cargando pagos…</p>
+  <p *ngIf="errorMessage" class="error">{{ errorMessage }}</p>
 
-  <ng-container *ngIf="!cargando && !error">
-    <!-- KPIs -->
-    <section class="kpis">
-      <div class="kpi">
-        <div class="kpi-top"><span>TOTAL INVERTIDO</span><span class="ic">💼</span></div>
-        <div class="kpi-value">${{ totalInvertido | number: '1.0-0' }}<small>COP</small></div>
-        <div class="kpi-note">{{ pagos.length }} pago(s) registrado(s)</div>
-      </div>
-      <div class="kpi">
-        <div class="kpi-top"><span>ÚLTIMO PAGO APROBADO</span><span class="ic">✅</span></div>
-        <ng-container *ngIf="ultimoPagoAprobado as ultimo; else sinPagos">
-          <div class="kpi-value">${{ ultimo.monto | number: '1.0-0' }}<small>COP</small></div>
-          <div class="kpi-note">{{ ultimo.fechaPago | date: 'dd MMM, yyyy' }}</div>
-        </ng-container>
-        <ng-template #sinPagos><div class="kpi-value">—</div><div class="kpi-note">Aún sin pagos aprobados</div></ng-template>
-      </div>
-      <div class="kpi">
-        <div class="kpi-top"><span>PRÓXIMA FACTURACIÓN</span><span class="ic">🗓</span></div>
-        <div class="kpi-value date" *ngIf="suscripcion?.estado === 'ACTIVA'; else sinRenovacion">{{ suscripcion?.fechaFin | date: 'dd MMM, yyyy' }}</div>
-        <ng-template #sinRenovacion><div class="kpi-value date">—</div></ng-template>
-        <div class="kpi-note">Plan {{ suscripcion?.planNombre ?? '—' }}</div>
-      </div>
-      <div class="kpi">
-        <div class="kpi-top"><span>MÉTODO DEL ÚLTIMO PAGO</span><span class="ic">💳</span></div>
-        <div class="pay-method">
-          <span class="brand">{{ (ultimoPagoAprobado?.metodoPago ?? 'N/D') | uppercase }}</span>
+  <section class="kpis" *ngIf="!loading">
+    <div class="kpi">
+      <div class="kpi-top"><span>TOTAL APROBADO</span></div>
+      <div class="kpi-value">{{ totalAprobado() | number:'1.0-0' }}<small>COP</small></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-top"><span>TRANSACCIONES</span></div>
+      <div class="kpi-value">{{ rows.length }}</div>
+    </div>
+  </section>
+
+  <div class="filters">
+    <label class="f-input">
+      <span aria-hidden="true">🧾</span>
+      <input type="search" [(ngModel)]="filtro" placeholder="Buscar por ID, concepto o estado">
+    </label>
+  </div>
+
+  <div class="ledger-head">
+    <div class="ledger-title">
+      <h2>Libro de facturas</h2>
+      <span class="chip">{{ filtradas.length }} REGISTROS</span>
+    </div>
+    <span class="sync">⟳ MERCADO PAGO · COP</span>
+  </div>
+
+  <div class="ledger-cards">
+    <article class="ledger-card" *ngFor="let row of filtradas">
+      <header>
+        <span class="txn-id">#{{ row.id }}</span>
+        <span class="badge" [ngClass]="badge(row.estado)">{{ row.estado }}</span>
+      </header>
+      <p class="concept"><b>{{ row.concepto }}</b></p>
+      <dl>
+        <div>
+          <dt>Fecha</dt>
+          <dd>{{ row.fecha | date:'medium' }}</dd>
         </div>
-      </div>
-    </section>
+        <div>
+          <dt>Método</dt>
+          <dd>{{ row.metodo || 'Mercado Pago' }}</dd>
+        </div>
+        <div>
+          <dt>Monto</dt>
+          <dd class="amount">{{ row.monto | number:'1.0-0' }} <small>COP</small></dd>
+        </div>
+      </dl>
+      <button *ngIf="row.comprobanteId" class="link" type="button" (click)="verComprobante(row)">Comprobante</button>
+    </article>
+    <p class="empty" *ngIf="!loading && filtradas.length === 0">No hay pagos registrados todavía.</p>
+  </div>
 
-    <!-- Search + export -->
-    <div class="filters">
-      <div class="f-input">🧾<input type="text" placeholder="Buscar por referencia de transacción" [(ngModel)]="busqueda"></div>
-      <button class="btn-export" (click)="exportarCsv()" [disabled]="!pagosFiltrados.length">⬇ EXPORTAR CSV</button>
-    </div>
-
-    <!-- Ledger -->
-    <div class="ledger-head">
-      <div class="ledger-title">
-        <h2>Libro Mayor de Pagos</h2>
-        <span class="chip">{{ pagos.length }} REGISTRO(S)</span>
-      </div>
-    </div>
-
-    <div class="ledger-wrap">
-      <table class="ledger">
-        <thead>
-          <tr><th>REFERENCIA</th><th>FECHA Y HORA</th><th>MÉTODO</th><th>MONTO</th><th>ESTADO</th></tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let pago of pagosFiltrados">
-            <td><span class="txn-id">{{ pago.referenciaTransaccion ?? '—' }}<small>🧾</small></span></td>
-            <td class="date">{{ pago.fechaPago | date: 'dd MMM yyyy' }}<small>{{ pago.fechaPago | date: 'HH:mm' }} hrs</small></td>
-            <td class="method">{{ (pago.metodoPago ?? 'N/D') | uppercase }}</td>
-            <td class="amount">${{ pago.monto | number: '1.0-0' }}<small>COP</small></td>
-            <td><span class="badge" [ngClass]="badgeClass(pago.estado)">{{ pago.estado }}</span></td>
-          </tr>
-          <tr *ngIf="!pagosFiltrados.length">
-            <td colspan="5" class="empty-text">No hay pagos que coincidan con la búsqueda.</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <div class="ledger-foot">
-      <span>MOSTRANDO {{ pagosFiltrados.length }} DE {{ pagos.length }} PAGOS</span>
-    </div>
-  </ng-container>
+  <div class="ledger-wrap">
+    <table class="ledger">
+      <thead>
+        <tr><th>ID</th><th>CONCEPTO</th><th>FECHA</th><th>MÉTODO</th><th>MONTO</th><th>ESTADO</th><th></th></tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let row of filtradas">
+          <td><span class="txn-id">#{{ row.id }}</span></td>
+          <td class="concept"><b>{{ row.concepto }}</b></td>
+          <td class="date">{{ row.fecha | date:'medium' }}</td>
+          <td class="method">{{ row.metodo || 'Mercado Pago' }}</td>
+          <td class="amount">{{ row.monto | number:'1.0-0' }}<small>COP</small></td>
+          <td><span class="badge" [ngClass]="badge(row.estado)">{{ row.estado }}</span></td>
+          <td>
+            <button *ngIf="row.comprobanteId" class="link" type="button" (click)="verComprobante(row)">Comprobante</button>
+          </td>
+        </tr>
+        <tr *ngIf="!loading && filtradas.length === 0">
+          <td colspan="7">No hay pagos registrados todavía.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
 
 </div>

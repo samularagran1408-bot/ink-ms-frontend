@@ -49,6 +49,8 @@
             <th>{{ 'SESSIONS_PAGE.FOCUS' | translate }}</th>
             <th>{{ 'CATALOG.STATUS' | translate }}</th>
             <th>{{ 'SESSIONS_PAGE.DURATION' | translate }}</th>
+            <th>{{ 'SESSIONS_PAGE.ATHLETES' | translate }}</th>
+            <th>{{ 'COMMON.ACTIONS' | translate }}</th>
           </tr>
         </thead>
         <tbody>
@@ -61,6 +63,12 @@
               </span>
             </td>
             <td>{{ routine.durationMinutes || '—' }} min</td>
+            <td>{{ occupied(routine) }}/{{ routine.maxCapacity || 0 }}</td>
+            <td>
+              <button class="btn-secondary" type="button" (click)="goSession(routine)" [disabled]="!quizPassed">
+                {{ 'SESSIONS_PAGE.SEE_ATHLETES' | translate }}
+              </button>
+            </td>
           </tr>
         </tbody>
       </table>

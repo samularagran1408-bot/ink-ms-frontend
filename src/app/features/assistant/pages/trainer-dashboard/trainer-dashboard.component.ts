@@ -82,6 +82,16 @@ export class TrainerDashboardComponent implements OnInit, OnDestroy {
     this.router.navigate(['/trainer/sessions']);
   }
 
+  goSession(routine: Routine): void {
+    this.router.navigate(['/trainer/sessions'], { queryParams: { sesion: routine.id } });
+  }
+
+  occupied(routine: Routine): number {
+    const max = Number(routine.maxCapacity || 0);
+    const available = routine.availableCapacity == null ? max : Number(routine.availableCapacity);
+    return Math.max(max - available, 0);
+  }
+
   goSports(): void {
     this.router.navigate(['/trainer/sports']);
   }
