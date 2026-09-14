@@ -1,10 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { SharedModule } from '@shared/shared.module';
 
 import { Plan, Suscripcion } from '../../models/subscriptions';
-import { CheckoutRedirectService } from '../../services/checkout-redirect.service';
 import { SubscriptionsService } from '../../services/subscriptions.service';
 
 @Component({
@@ -23,7 +22,7 @@ export class OrganizerPlansComponent implements OnInit {
 
   constructor(
     private subscriptions: SubscriptionsService,
-    private checkout: CheckoutRedirectService
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -68,7 +67,13 @@ export class OrganizerPlansComponent implements OnInit {
     request$.subscribe({
       next: (checkout) => {
         this.contratandoId = null;
-        this.checkout.follow(checkout, { plan: plan.nombre });
+        if (!checkout.referenciaTransaccion) {
+          void this.router.navigate(['/organizer/subscription']);
+          return;
+        }
+        void this.router.navigate(['/organizer/plans/pago', checkout.referenciaTransaccion], {
+          state: { plan, monto: checkout.monto }
+        });
       },
       error: (error) => {
         this.contratandoId = null;
