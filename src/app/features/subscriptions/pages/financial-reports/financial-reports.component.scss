@@ -21,7 +21,8 @@ $font-family: 'Inter', -apple-system, sans-serif;
   padding: 0;
 }
 
-body {
+:host {
+  display: block;
   background-color: $bg-main;
   font-family: $font-family;
   color: $text-main;
@@ -65,47 +66,25 @@ body {
       }
     }
 
-    .role-badge {
-      background: #f1f5f9;
-      padding: 4px 10px;
-      border-radius: 12px;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 0.75rem;
+  }
 
-      .dot { width: 6px; height: 6px; background: $green; border-radius: 50%; }
-    }
+  .role-badge {
+    background: #f1f5f9;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+
+    .dot { width: 6px; height: 6px; background: $green; border-radius: 50%; }
   }
 
   .nav-right {
     display: flex;
     align-items: center;
     gap: 12px;
-
-    .mode-toggle {
-      background: #e2e8f0;
-      padding: 3px;
-      border-radius: 6px;
-      display: flex;
-
-      .btn-mode {
-        border: none;
-        background: transparent;
-        padding: 4px 10px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        color: $text-muted;
-        cursor: pointer;
-        border-radius: 4px;
-
-        &.active {
-          background: $primary-red;
-          color: white;
-        }
-      }
-    }
 
     .action-buttons {
       display: flex;
@@ -348,10 +327,48 @@ body {
   }
 }
 
-/* Charts & Breakdown Grid */
+/* Loading / Error States */
+.loading-box {
+  text-align: center;
+  color: $text-muted;
+  padding: 40px 0;
+  font-size: 0.9rem;
+}
+
+.warning-box {
+  background: #fffbeb;
+  border: 1px solid #fef3c7;
+  border-radius: 6px;
+  padding: 12px 16px;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-bottom: 20px;
+
+  svg {
+    color: #d97706;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  p {
+    font-size: 0.8rem;
+    color: #92400e;
+    line-height: 1.4;
+  }
+}
+
+.empty-note {
+  color: $text-muted;
+  font-size: 0.78rem;
+  text-align: center;
+  padding: 16px 0;
+}
+
+/* Breakdown Grid */
 .charts-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: 1fr;
   gap: 16px;
   margin-bottom: 20px;
 
