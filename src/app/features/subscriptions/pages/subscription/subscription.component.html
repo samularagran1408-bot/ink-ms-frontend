@@ -28,6 +28,7 @@
         <div class="plan-actions">
           <button class="btn btn-solid" (click)="renovar()" *ngIf="suscripcion.estado === 'ACTIVA'">RENOVAR</button>
           <button class="btn btn-outline" (click)="cambiarPlan()">CAMBIAR PLAN</button>
+          <a class="btn btn-outline" routerLink="/organizer/subscription/historial">VER HISTORIAL</a>
         </div>
       </section>
 

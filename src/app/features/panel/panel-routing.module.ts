@@ -4,39 +4,8 @@ import { RouterModule, Routes } from '@angular/router';
 import { AuthGuard } from '@core/guards/auth.guard';
 import { RoleGuard } from '@core/guards/role.guard';
 import { QuizCompletedGuard } from '@core/guards/quiz-completed.guard';
-<<<<<<< Updated upstream
 import { SharedModule } from '@shared/shared.module';
 import { PanelShellComponent } from '@shared/components/panel-shell/panel-shell.component';
-=======
-// Componentes de pagina agrupados por modulo de producto (M01-M09).
-// Ver features/MODULES.md para el mapa carpeta <-> modulo <-> RF.
-import { UserInterfaceComponent } from '@features/users/pages/user-interface/user-interface.component';
-import { ProfilePageComponent } from '@features/users/pages/profile-page/profile-page.component';
-import { AdminUsersComponent } from '@features/users/pages/admin-users/admin-users.component';
-import { AdminUserDetailComponent } from '@features/users/pages/admin-user-detail/admin-user-detail.component';
-import { AthletesPageComponent } from '@features/users/pages/athletes-page/athletes-page.component';
-import { AttendanceCheckinPageComponent } from '@features/users/pages/attendance-checkin-page/attendance-checkin-page.component';
-import { AptitudeQuizPageComponent } from '@features/users/pages/aptitude-quiz-page/aptitude-quiz-page.component';
-import { SportsPageComponent } from '@features/sports-disabilities/pages/sports-page/sports-page.component';
-import { DisabilitiesPageComponent } from '@features/sports-disabilities/pages/disabilities-page/disabilities-page.component';
-import { AssociationsPageComponent } from '@features/sports-disabilities/pages/associations-page/associations-page.component';
-import { EventsPageComponent } from '@features/sports-disabilities/pages/events-page/events-page.component';
-import { OrganizerDashboardComponent } from '@features/sports-disabilities/pages/organizer-dashboard/organizer-dashboard.component';
-import { AccessibilityPageComponent } from '@features/accessibility/pages/accessibility-page/accessibility-page.component';
-import { NotificationsPageComponent } from '@features/accessibility/pages/notifications-page/notifications-page.component';
-import { AdminDashboardComponent } from '@features/admin/pages/admin-dashboard/admin-dashboard.component';
-import { AdminRolesComponent } from '@features/admin/pages/admin-roles/admin-roles.component';
-import { AdminAuditComponent } from '@features/admin/pages/admin-audit/admin-audit.component';
-import { AssistantPageComponent } from '@features/assistant/pages/assistant-page/assistant-page.component';
-import { TrainerDashboardComponent } from '@features/assistant/pages/trainer-dashboard/trainer-dashboard.component';
-import { SessionsPageComponent } from '@features/assistant/pages/sessions-page/sessions-page.component';
-import { CrewPageComponent } from '@features/assistant/pages/crew-page/crew-page.component';
-import { OrganizerPlansComponent } from '@features/subscriptions/pages/organizer-plans/organizer-plans.component';
-import { SubscriptionComponent } from '@features/subscriptions/pages/subscription/subscription.component';
-import { PaymentHistoryComponent } from '@features/subscriptions/pages/payment-history/payment-history.component';
-import { ProofOfPaymentComponent } from '@features/subscriptions/pages/proof-of-payment/proof-of-payment.component';
-import { PaymentGatewayComponent } from '@features/subscriptions/pages/payment-gateway/payment-gateway.component';
->>>>>>> Stashed changes
 
 const accountChildren: Routes = [
   {
@@ -100,6 +69,20 @@ const routes: Routes = [
         path: 'crew',
         loadComponent: () =>
           import('@features/assistant/pages/crew-page/crew-page.component').then((m) => m.CrewPageComponent)
+      },
+      {
+        path: 'eventos/:eventoId/pago',
+        loadComponent: () =>
+          import('@features/subscriptions/pages/event-registration-payment/event-registration-payment.component').then(
+            (m) => m.EventRegistrationPaymentComponent
+          )
+      },
+      {
+        path: 'pagos-eventos',
+        loadComponent: () =>
+          import('@features/subscriptions/pages/event-payment-history/event-payment-history.component').then(
+            (m) => m.EventPaymentHistoryComponent
+          )
       },
       ...accountChildren
     ]
@@ -191,6 +174,28 @@ const routes: Routes = [
           import('@features/subscriptions/pages/organizer-plans/organizer-plans.component').then(
             (m) => m.OrganizerPlansComponent
           )
+      },
+      {
+        path: 'plans',
+        loadComponent: () =>
+          import('@features/subscriptions/pages/admin-plans/admin-plans.component').then(
+            (m) => m.AdminPlansComponent
+          )
+      },
+      {
+        path: 'organizer-subscriptions',
+        loadComponent: () =>
+          import('@features/subscriptions/pages/admin-subscriptions/admin-subscriptions.component').then(
+            (m) => m.AdminSubscriptionsComponent
+          )
+      },
+      {
+        path: 'reports',
+        loadComponent: () =>
+          import('@features/subscriptions/pages/financial-reports/financial-reports.component').then(
+            (m) => m.FinancialReportsComponent
+          ),
+        data: { mode: 'global' }
       },
       ...accountChildren
     ]
@@ -316,7 +321,6 @@ const routes: Routes = [
         canActivate: [QuizCompletedGuard],
         data: { quizRole: 'ORGANIZADOR' }
       },
-<<<<<<< Updated upstream
       {
         path: 'plans',
         loadComponent: () =>
@@ -325,11 +329,40 @@ const routes: Routes = [
           )
       },
       {
+        path: 'plans/pago/:referencia',
+        loadComponent: () =>
+          import('@features/subscriptions/pages/payment-gateway/payment-gateway.component').then(
+            (m) => m.PaymentGatewayComponent
+          )
+      },
+      {
         path: 'subscription',
         loadComponent: () =>
           import('@features/subscriptions/pages/subscription/subscription.component').then(
             (m) => m.SubscriptionComponent
           )
+      },
+      {
+        path: 'subscription/historial',
+        loadComponent: () =>
+          import('@features/subscriptions/pages/subscription-history/subscription-history.component').then(
+            (m) => m.SubscriptionHistoryComponent
+          )
+      },
+      {
+        path: 'events/:eventoId/pago-config',
+        loadComponent: () =>
+          import('@features/subscriptions/pages/event-payment-setup/event-payment-setup.component').then(
+            (m) => m.EventPaymentSetupComponent
+          )
+      },
+      {
+        path: 'reports',
+        loadComponent: () =>
+          import('@features/subscriptions/pages/financial-reports/financial-reports.component').then(
+            (m) => m.FinancialReportsComponent
+          ),
+        data: { mode: 'own' }
       },
       {
         path: 'payments',
@@ -345,13 +378,6 @@ const routes: Routes = [
             (m) => m.ProofOfPaymentComponent
           )
       },
-=======
-      { path: 'plans', component: OrganizerPlansComponent },
-      { path: 'plans/pago/:referencia', component: PaymentGatewayComponent },
-      { path: 'subscription', component: SubscriptionComponent },
-      { path: 'payments', component: PaymentHistoryComponent },
-      { path: 'payments/receipt', component: ProofOfPaymentComponent },
->>>>>>> Stashed changes
       ...accountChildren
     ]
   }

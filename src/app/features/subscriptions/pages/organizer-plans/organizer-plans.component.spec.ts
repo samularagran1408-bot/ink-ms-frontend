@@ -11,8 +11,7 @@ describe('OrganizerPlansComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [RouterTestingModule, HttpClientTestingModule],
-      declarations: [OrganizerPlansComponent],
+      imports: [RouterTestingModule, HttpClientTestingModule, OrganizerPlansComponent],
       schemas: [NO_ERRORS_SCHEMA],
     })
     .compileComponents();

@@ -11,8 +11,7 @@ describe('PaymentGatewayComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [RouterTestingModule, HttpClientTestingModule],
-      declarations: [PaymentGatewayComponent],
+      imports: [RouterTestingModule, HttpClientTestingModule, PaymentGatewayComponent],
       schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();
 

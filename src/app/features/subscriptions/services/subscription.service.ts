@@ -4,12 +4,20 @@ import { Observable } from 'rxjs';
 
 import { API_BASE_URL } from '@core/config/api.config';
 import {
+  CambiarEstadoSuscripcionRequest,
+  ConfiguracionEventoPagoRequest,
+  ConfiguracionEventoPagoResponse,
   CrearSuscripcionRequest,
+  HistorialSuscripcionResponse,
   PagoCheckoutResponse,
   PagoEstadoResponse,
+  PagoEventoResponse,
   PagoSuscripcionResponse,
   PagoTarjetaRequest,
   Plan,
+  PlanRequest,
+  PuedeCrearEventoResponse,
+  ReporteFinancieroResponse,
   SuscripcionResponse,
 } from '../models/subscription-models';
 
@@ -76,5 +84,121 @@ export class SubscriptionService {
       `${this.base}/api/pagos/${encodeURIComponent(referencia)}/pagar-tarjeta`,
       datos,
     );
+  }
+
+  /** RF61 - historial de movimientos (creación/renovación/cambio de plan/cancelación). */
+  getHistorialSuscripcion(suscripcionId: number): Observable<HistorialSuscripcionResponse[]> {
+    return this.http.get<HistorialSuscripcionResponse[]>(`${this.base}/api/suscripciones/${suscripcionId}/historial`);
+  }
+
+  // -------------------------------------------------------------------------
+  // RF65 - Administración de planes (ADMIN)
+  // -------------------------------------------------------------------------
+
+  getPlanesAdmin(): Observable<Plan[]> {
+    return this.http.get<Plan[]>(`${this.base}/api/planes/admin`);
+  }
+
+  crearPlan(body: PlanRequest): Observable<Plan> {
+    return this.http.post<Plan>(`${this.base}/api/planes/admin`, body);
+  }
+
+  actualizarPlan(id: number, body: PlanRequest): Observable<Plan> {
+    return this.http.put<Plan>(`${this.base}/api/planes/admin/${id}`, body);
+  }
+
+  desactivarPlan(id: number): Observable<Plan> {
+    return this.http.patch<Plan>(`${this.base}/api/planes/admin/${id}/desactivar`, {});
+  }
+
+  // -------------------------------------------------------------------------
+  // RF58 - Gestión admin de suscripciones ajenas
+  // -------------------------------------------------------------------------
+
+  cambiarEstadoSuscripcion(suscripcionId: number, body: CambiarEstadoSuscripcionRequest): Observable<SuscripcionResponse> {
+    return this.http.patch<SuscripcionResponse>(`${this.base}/api/suscripciones/admin/${suscripcionId}/estado`, body);
+  }
+
+  getHistorialPorOrganizador(organizadorId: string): Observable<HistorialSuscripcionResponse[]> {
+    return this.http.get<HistorialSuscripcionResponse[]>(
+      `${this.base}/api/suscripciones/admin/organizadores/${encodeURIComponent(organizadorId)}/historial`,
+    );
+  }
+
+  // -------------------------------------------------------------------------
+  // RF55, RF63 - Configuración de eventos de pago (organizador)
+  // -------------------------------------------------------------------------
+
+  configurarEventoPago(body: ConfiguracionEventoPagoRequest): Observable<ConfiguracionEventoPagoResponse> {
+    return this.http.post<ConfiguracionEventoPagoResponse>(`${this.base}/api/eventos-pago/configuracion`, body);
+  }
+
+  actualizarConfiguracionEventoPago(eventoId: string, body: ConfiguracionEventoPagoRequest): Observable<ConfiguracionEventoPagoResponse> {
+    return this.http.put<ConfiguracionEventoPagoResponse>(
+      `${this.base}/api/eventos-pago/configuracion/${encodeURIComponent(eventoId)}`,
+      body,
+    );
+  }
+
+  getConfiguracionEventoPago(eventoId: string): Observable<ConfiguracionEventoPagoResponse> {
+    return this.http.get<ConfiguracionEventoPagoResponse>(
+      `${this.base}/api/eventos-pago/configuracion/${encodeURIComponent(eventoId)}`,
+    );
+  }
+
+  getConfiguracionesEventoPagoPropias(): Observable<ConfiguracionEventoPagoResponse[]> {
+    return this.http.get<ConfiguracionEventoPagoResponse[]>(`${this.base}/api/eventos-pago/configuracion`);
+  }
+
+  // -------------------------------------------------------------------------
+  // RF57 - Inscripción y pago a eventos
+  // -------------------------------------------------------------------------
+
+  inscribirseEvento(eventoId: string): Observable<PagoCheckoutResponse> {
+    return this.http.post<PagoCheckoutResponse>(
+      `${this.base}/api/pagos/eventos/${encodeURIComponent(eventoId)}/inscripcion`,
+      {},
+    );
+  }
+
+  getHistorialPagosEventos(): Observable<PagoEventoResponse[]> {
+    return this.http.get<PagoEventoResponse[]>(`${this.base}/api/pagos/eventos/historial`);
+  }
+
+  descargarComprobanteEvento(pagoId: number): Observable<Blob> {
+    return this.http.get(`${this.base}/api/pagos/eventos/${pagoId}/comprobante`, { responseType: 'blob' });
+  }
+
+  puedeCrearEvento(organizadorId: string): Observable<PuedeCrearEventoResponse> {
+    return this.http.get<PuedeCrearEventoResponse>(
+      `${this.base}/api/internal/suscripciones/organizadores/${encodeURIComponent(organizadorId)}/puede-crear-evento`,
+    );
+  }
+
+  // -------------------------------------------------------------------------
+  // RF62 - Reportes financieros
+  // -------------------------------------------------------------------------
+
+  getReporteFinancieroPropio(desde?: string, hasta?: string): Observable<ReporteFinancieroResponse> {
+    return this.http.get<ReporteFinancieroResponse>(`${this.base}/api/reportes/financiero`, {
+      params: this.rangoParams(desde, hasta),
+    });
+  }
+
+  getReporteFinancieroGlobal(desde?: string, hasta?: string): Observable<ReporteFinancieroResponse> {
+    return this.http.get<ReporteFinancieroResponse>(`${this.base}/api/reportes/admin/financiero`, {
+      params: this.rangoParams(desde, hasta),
+    });
+  }
+
+  private rangoParams(desde?: string, hasta?: string): HttpParams {
+    let params = new HttpParams();
+    if (desde) {
+      params = params.set('desde', desde);
+    }
+    if (hasta) {
+      params = params.set('hasta', hasta);
+    }
+    return params;
   }
 }

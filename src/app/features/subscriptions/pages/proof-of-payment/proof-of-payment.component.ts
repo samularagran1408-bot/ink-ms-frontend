@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ActivatedRoute, Router } from '@angular/router';
 
 import { SubscriptionService } from '../../services/subscription.service';
 import { PagoEstadoResponse, PagoSuscripcionResponse, Plan } from '../../models/subscription-models';

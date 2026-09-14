@@ -3,6 +3,7 @@
 export type EstadoPago = 'PENDIENTE' | 'APROBADO' | 'RECHAZADO';
 export type EstadoSuscripcion = 'ACTIVA' | 'VENCIDA' | 'CANCELADA' | 'SUSPENDIDA';
 export type TipoPago = 'SUSCRIPCION' | 'EVENTO';
+export type TipoMovimiento = 'CREACION' | 'RENOVACION' | 'CAMBIO_PLAN' | 'CANCELACION';
 
 /** GET /api/planes (PlanResponse) */
 export interface Plan {
@@ -86,4 +87,113 @@ export interface PagoEstadoResponse {
   suscripcionActiva: boolean | null;
   /** true si el estado se resolvió re-consultando Mercado Pago en esa misma llamada. */
   reconciliadoAhora: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// RF65 - Administración de planes (solo ADMIN)
+// ---------------------------------------------------------------------------
+
+/** Cuerpo de POST /api/planes/admin y PUT /api/planes/admin/{id} */
+export interface PlanRequest {
+  nombre: string;
+  descripcion?: string | null;
+  precio: number;
+  limiteEventosMes: number;
+  porcentajeComision: number;
+  duracionDias: number;
+  beneficios: string[];
+}
+
+// ---------------------------------------------------------------------------
+// RF61 - Historial de movimientos de una suscripción (distinto del historial de pagos)
+// ---------------------------------------------------------------------------
+
+/** GET /api/suscripciones/{id}/historial (HistorialSuscripcionResponse) */
+export interface HistorialSuscripcionResponse {
+  id: number;
+  suscripcionId: number;
+  tipoMovimiento: TipoMovimiento;
+  planAnteriorId: number | null;
+  planAnteriorNombre: string | null;
+  planNuevoId: number;
+  planNuevoNombre: string;
+  fechaMovimiento: string;
+}
+
+// ---------------------------------------------------------------------------
+// RF58 - Gestión admin de la suscripción de un organizador ajeno
+// ---------------------------------------------------------------------------
+
+/** Cuerpo de PATCH /api/suscripciones/admin/{id}/estado */
+export interface CambiarEstadoSuscripcionRequest {
+  estado: EstadoSuscripcion;
+}
+
+// ---------------------------------------------------------------------------
+// RF55, RF63 - Configuración de un evento como pago
+// ---------------------------------------------------------------------------
+
+/** Cuerpo de POST/PUT /api/eventos-pago/configuracion */
+export interface ConfiguracionEventoPagoRequest {
+  eventoId: string;
+  esPago: boolean;
+  valorInscripcion?: number | null;
+}
+
+/** GET /api/eventos-pago/configuracion(/{eventoId}) (ConfiguracionEventoPagoResponse) */
+export interface ConfiguracionEventoPagoResponse {
+  id: number;
+  eventoId: string;
+  organizadorId: string;
+  esPago: boolean;
+  valorInscripcion: number | null;
+  porcentajeComision: number | null;
+  fechaCreacion: string;
+}
+
+// ---------------------------------------------------------------------------
+// RF57 - Inscripción y pago a eventos (checkout Pro, distinto del de suscripciones)
+// ---------------------------------------------------------------------------
+
+/** GET /api/pagos/eventos/historial (PagoEventoResponse) */
+export interface PagoEventoResponse {
+  id: number;
+  usuarioId: string;
+  eventoId: string;
+  monto: number;
+  metodoPago: string | null;
+  referenciaTransaccion: string | null;
+  estado: EstadoPago;
+  fechaPago: string;
+  comprobanteId: number | null;
+  numeroComprobante: string | null;
+}
+
+/** GET /api/internal/suscripciones/organizadores/{id}/puede-crear-evento (PuedeCrearEventoResponse) */
+export interface PuedeCrearEventoResponse {
+  puedeCrear: boolean;
+  eventosCreadosMes: number | null;
+  limiteEventosMes: number | null;
+  planNombre: string | null;
+}
+
+// ---------------------------------------------------------------------------
+// RF62 - Reportes financieros (organizador propio + admin global)
+// ---------------------------------------------------------------------------
+
+export interface ReporteEventoItem {
+  eventoId: string;
+  numeroInscritos: number;
+  montoTotal: number;
+  comisionEstimada: number;
+}
+
+/** GET /api/reportes/financiero y /api/reportes/admin/financiero (ReporteFinancieroResponse) */
+export interface ReporteFinancieroResponse {
+  desde: string;
+  hasta: string;
+  ingresosPorEventos: number;
+  ingresosPorSuscripciones: number;
+  numeroInscritos: number;
+  detallePorEvento: ReporteEventoItem[];
 }

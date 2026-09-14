@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 
 import { SubscriptionService } from '../../services/subscription.service';
 import { PagoSuscripcionResponse, SuscripcionResponse } from '../../models/subscription-models';
@@ -7,7 +8,7 @@ import { PagoSuscripcionResponse, SuscripcionResponse } from '../../models/subsc
 /** M09 - Historial de pagos de la suscripción del organizador (RF61, RF66). */
 @Component({
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   selector: 'app-payment-history',
   templateUrl: './payment-history.component.html',
   styleUrl: './payment-history.component.scss'

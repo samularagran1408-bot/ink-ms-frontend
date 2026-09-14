@@ -11,8 +11,7 @@ describe('ProofOfPaymentComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [RouterTestingModule, HttpClientTestingModule],
-      declarations: [ProofOfPaymentComponent],
+      imports: [RouterTestingModule, HttpClientTestingModule, ProofOfPaymentComponent],
       schemas: [NO_ERRORS_SCHEMA],
     })
     .compileComponents();

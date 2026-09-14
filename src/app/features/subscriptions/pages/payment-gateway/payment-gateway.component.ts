@@ -1,4 +1,5 @@
 import { AfterViewInit, Component, NgZone, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 
 import { MERCADOPAGO_PUBLIC_KEY } from '@core/config/api.config';
@@ -24,6 +25,8 @@ interface IdentificacionTipo {
  * de la página), se recupera el monto consultando el estado del pago.
  */
 @Component({
+  standalone: true,
+  imports: [CommonModule],
   selector: 'app-payment-gateway',
   templateUrl: './payment-gateway.component.html',
   styleUrl: './payment-gateway.component.scss',

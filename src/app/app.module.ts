@@ -2,11 +2,8 @@ import { NgModule, LOCALE_ID } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { CommonModule, registerLocaleData } from '@angular/common';
 import { HTTP_INTERCEPTORS, HttpClient, HttpClientModule } from '@angular/common/http';
-<<<<<<< Updated upstream
 import { RouteReuseStrategy } from '@angular/router';
-=======
 import localeEsCO from '@angular/common/locales/es-CO';
->>>>>>> Stashed changes
 import { TranslateLoader, TranslateModule } from '@ngx-translate/core';
 import { TranslateHttpLoader } from '@ngx-translate/http-loader';
 
@@ -43,12 +40,9 @@ export function httpLoaderFactory(http: HttpClient): TranslateHttpLoader {
   ],
   providers: [
     { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },
-<<<<<<< Updated upstream
     PanelRouteReuseStrategy,
-    { provide: RouteReuseStrategy, useExisting: PanelRouteReuseStrategy }
-=======
+    { provide: RouteReuseStrategy, useExisting: PanelRouteReuseStrategy },
     { provide: LOCALE_ID, useValue: 'es-CO' }
->>>>>>> Stashed changes
   ],
   bootstrap: [AppComponent]
 })

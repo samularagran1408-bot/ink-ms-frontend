@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router, RouterModule } from '@angular/router';
 
 import { SubscriptionService } from '../../services/subscription.service';
 import { Plan, SuscripcionResponse } from '../../models/subscription-models';
@@ -7,7 +8,7 @@ import { Plan, SuscripcionResponse } from '../../models/subscription-models';
 /** M09 - Estado de la suscripción vigente del organizador (RF57). */
 @Component({
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterModule],
   selector: 'app-subscription',
   templateUrl: './subscription.component.html',
   styleUrl: './subscription.component.scss'

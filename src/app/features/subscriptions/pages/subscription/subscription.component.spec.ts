@@ -11,8 +11,7 @@ describe('SubscriptionComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [RouterTestingModule, HttpClientTestingModule],
-      declarations: [SubscriptionComponent],
+      imports: [RouterTestingModule, HttpClientTestingModule, SubscriptionComponent],
       schemas: [NO_ERRORS_SCHEMA],
     })
     .compileComponents();

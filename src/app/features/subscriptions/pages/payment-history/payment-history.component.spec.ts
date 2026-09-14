@@ -12,8 +12,7 @@ describe('PaymentHistoryComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [RouterTestingModule, HttpClientTestingModule, FormsModule],
-      declarations: [PaymentHistoryComponent],
+      imports: [RouterTestingModule, HttpClientTestingModule, FormsModule, PaymentHistoryComponent],
       schemas: [NO_ERRORS_SCHEMA],
     })
     .compileComponents();
