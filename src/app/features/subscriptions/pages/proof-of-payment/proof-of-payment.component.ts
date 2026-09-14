@@ -5,6 +5,10 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { PaymentsService } from '../../services/payments.service';
 import { SubscriptionsService } from '../../services/subscriptions.service';
 
+import { SubscriptionService } from '../../services/subscription.service';
+import { PagoEstadoResponse, PagoSuscripcionResponse, Plan } from '../../models/subscription-models';
+
+/** M09 - Comprobante de pago (RF67, RF68): resumen del cobro tras pagar con Mercado Pago. */
 @Component({
   standalone: true,
   imports: [CommonModule, RouterModule],

@@ -506,6 +506,9 @@
           <button class="btn-secondary" type="button" (click)="toggleWaitlist(row)">
             {{ row.showWaitlist ? 'Ocultar waitlist' : 'Ver waitlist' }}
           </button>
+          <a class="btn-secondary" [routerLink]="['/organizer/events', row.event.id, 'pago-config']">
+            Configurar pago
+          </a>
         </div>
       </div>
 

@@ -70,6 +70,20 @@ const routes: Routes = [
         loadComponent: () =>
           import('@features/assistant/pages/crew-page/crew-page.component').then((m) => m.CrewPageComponent)
       },
+      {
+        path: 'eventos/:eventoId/pago',
+        loadComponent: () =>
+          import('@features/subscriptions/pages/event-registration-payment/event-registration-payment.component').then(
+            (m) => m.EventRegistrationPaymentComponent
+          )
+      },
+      {
+        path: 'pagos-eventos',
+        loadComponent: () =>
+          import('@features/subscriptions/pages/event-payment-history/event-payment-history.component').then(
+            (m) => m.EventPaymentHistoryComponent
+          )
+      },
       ...accountChildren
     ]
   },
@@ -160,6 +174,28 @@ const routes: Routes = [
           import('@features/subscriptions/pages/organizer-plans/organizer-plans.component').then(
             (m) => m.OrganizerPlansComponent
           )
+      },
+      {
+        path: 'plans',
+        loadComponent: () =>
+          import('@features/subscriptions/pages/admin-plans/admin-plans.component').then(
+            (m) => m.AdminPlansComponent
+          )
+      },
+      {
+        path: 'organizer-subscriptions',
+        loadComponent: () =>
+          import('@features/subscriptions/pages/admin-subscriptions/admin-subscriptions.component').then(
+            (m) => m.AdminSubscriptionsComponent
+          )
+      },
+      {
+        path: 'reports',
+        loadComponent: () =>
+          import('@features/subscriptions/pages/financial-reports/financial-reports.component').then(
+            (m) => m.FinancialReportsComponent
+          ),
+        data: { mode: 'global' }
       },
       ...accountChildren
     ]
@@ -293,11 +329,40 @@ const routes: Routes = [
           )
       },
       {
+        path: 'plans/pago/:referencia',
+        loadComponent: () =>
+          import('@features/subscriptions/pages/payment-gateway/payment-gateway.component').then(
+            (m) => m.PaymentGatewayComponent
+          )
+      },
+      {
         path: 'subscription',
         loadComponent: () =>
           import('@features/subscriptions/pages/subscription/subscription.component').then(
             (m) => m.SubscriptionComponent
           )
+      },
+      {
+        path: 'subscription/historial',
+        loadComponent: () =>
+          import('@features/subscriptions/pages/subscription-history/subscription-history.component').then(
+            (m) => m.SubscriptionHistoryComponent
+          )
+      },
+      {
+        path: 'events/:eventoId/pago-config',
+        loadComponent: () =>
+          import('@features/subscriptions/pages/event-payment-setup/event-payment-setup.component').then(
+            (m) => m.EventPaymentSetupComponent
+          )
+      },
+      {
+        path: 'reports',
+        loadComponent: () =>
+          import('@features/subscriptions/pages/financial-reports/financial-reports.component').then(
+            (m) => m.FinancialReportsComponent
+          ),
+        data: { mode: 'own' }
       },
       {
         path: 'payments',

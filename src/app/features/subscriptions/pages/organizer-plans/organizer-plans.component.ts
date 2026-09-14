@@ -12,7 +12,7 @@ import { SubscriptionsService } from '../../services/subscriptions.service';
   imports: [CommonModule, RouterModule, SharedModule],
   selector: 'app-organizer-plans',
   templateUrl: './organizer-plans.component.html',
-  styleUrl: './organizer-plans.component.scss'
+  styleUrl: './organizer-plans.component.scss',
 })
 export class OrganizerPlansComponent implements OnInit {
   planes: Plan[] = [];

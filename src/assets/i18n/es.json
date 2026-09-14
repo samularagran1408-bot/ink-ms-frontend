@@ -110,7 +110,11 @@
     "ASSISTANT": "Asistente",
     "PLANS": "Planes",
     "MY_SUBSCRIPTION": "Mi suscripción",
-    "PAYMENT_HISTORY": "Historial de pagos"
+    "PAYMENT_HISTORY": "Historial de pagos",
+    "PLAN_MANAGEMENT": "Administrar planes",
+    "ORGANIZER_SUBSCRIPTIONS": "Suscripciones de organizadores",
+    "FINANCIAL_REPORTS": "Reportes financieros",
+    "EVENT_PAYMENTS": "Pagos de eventos"
   },
   "AI_WIDGET": {
     "TOGGLE": "Abrir asistente InkluSport",

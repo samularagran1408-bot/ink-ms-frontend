@@ -1,0 +1,139 @@
+<div class="page">
+  <div class="breadcrumb">
+    SUSCRIPCIONES <span class="sep">›</span> ORGANIZADOR <span class="rf-badge">RF61</span>
+  </div>
+
+  <div class="page-head">
+    <div>
+      <h1>HISTORIAL DE MOVIMIENTOS</h1>
+      <p class="subtitle">Línea de tiempo cronológica de los cambios y estados de la suscripción del organizador.</p>
+    </div>
+    <div class="current-plan" *ngIf="suscripcion">
+      <span class="live-dot"></span>
+      <div class="txt">
+        <small>PLAN ACTUAL VIGENTE</small>
+        <b>{{ suscripcion.planNombre | uppercase }}</b>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <div *ngIf="error" class="banner-error">{{ error }}</div>
+  <div *ngIf="cargando" class="state-box">Cargando historial…</div>
+
+  <section class="timeline-card" *ngIf="!cargando">
+    <div class="tl-head">
+      <div class="tl-title">
+        <div class="tl-ic">◷</div>
+        <div>
+          <h2>LÍNEA TEMPORAL DE MOVIMIENTOS</h2>
+          <p>{{ movimientos.length }} registro(s) en el ciclo de suscripción</p>
+        </div>
+      </div>
+      <div class="seg" *ngIf="movimientos.length">
+        <button type="button" [class.on]="orden === 'desc'" (click)="orden = 'desc'">↓ Más recientes</button>
+        <button type="button" [class.on]="orden === 'asc'" (click)="orden = 'asc'">↑ Más antiguos</button>
+      </div>
+    </div>
+
+    <div class="timeline" *ngIf="movimientosOrdenados.length">
+      <div class="t-item" *ngFor="let mov of movimientosOrdenados">
+        <!-- CAMBIO_PLAN -->
+        <ng-container *ngIf="mov.tipoMovimiento === 'CAMBIO_PLAN'">
+          <div class="t-node red">⇄</div>
+          <div class="t-card">
+            <div class="t-top">
+              <span class="t-badge pink">CAMBIO DE PLAN</span>
+              <span class="t-desc">Movimiento contractual registrado</span>
+              <span class="t-date">🗓 {{ mov.fechaMovimiento | date: 'dd \'de\' MMMM \'de\' yyyy' }}</span>
+            </div>
+            <div class="t-label">ACTUALIZACIÓN DE NIVEL DE SUSCRIPCIÓN</div>
+            <div class="plan-change">
+              <div class="plan-box">
+                <small>PLAN ANTERIOR</small>
+                <b>{{ mov.planAnteriorNombre ?? '—' }}</b>
+              </div>
+              <div class="arrow-circle">→</div>
+              <div class="plan-box new">
+                <small>NUEVO PLAN VIGENTE</small>
+                <b>{{ mov.planNuevoNombre }}</b>
+              </div>
+            </div>
+          </div>
+        </ng-container>
+
+        <!-- RENOVACION -->
+        <ng-container *ngIf="mov.tipoMovimiento === 'RENOVACION'">
+          <div class="t-node red">↻</div>
+          <div class="t-card">
+            <div class="t-top">
+              <span class="t-badge gray">RENOVACIÓN DE PLAN</span>
+              <span class="t-desc">Extensión periódica completada</span>
+              <span class="t-date">🗓 {{ mov.fechaMovimiento | date: 'dd \'de\' MMMM \'de\' yyyy' }}</span>
+            </div>
+            <div class="t-label">COBERTURA Y VIGENCIA RENOVADA</div>
+            <div class="plan-row">
+              <div class="plan-ic green">🛡</div>
+              <div>
+                <small>PLAN RENOVADO</small>
+                <b>{{ mov.planNuevoNombre }}</b>
+              </div>
+              <span class="status-pill green">Continuidad sin interrupción</span>
+            </div>
+          </div>
+        </ng-container>
+
+        <!-- CREACION -->
+        <ng-container *ngIf="mov.tipoMovimiento === 'CREACION'">
+          <div class="t-node dark">🗓</div>
+          <div class="t-card">
+            <div class="t-top">
+              <span class="t-badge gray">CREACIÓN DE SUSCRIPCIÓN</span>
+              <span class="t-desc">Alta inicial del servicio</span>
+              <span class="t-date">🗓 {{ mov.fechaMovimiento | date: 'dd \'de\' MMMM \'de\' yyyy' }}</span>
+            </div>
+            <div class="t-label">ACTIVACIÓN INICIAL DEL ORGANIZADOR</div>
+            <div class="plan-row">
+              <div class="plan-ic blue">🚀</div>
+              <div>
+                <small>PLAN INICIAL ADQUIRIDO</small>
+                <b>{{ mov.planNuevoNombre }}</b>
+              </div>
+              <span class="status-pill gray">Inicio del historial</span>
+            </div>
+          </div>
+        </ng-container>
+
+        <!-- CANCELACION -->
+        <ng-container *ngIf="mov.tipoMovimiento === 'CANCELACION'">
+          <div class="t-node dark">✕</div>
+          <div class="t-card">
+            <div class="t-top">
+              <span class="t-badge gray">CANCELACIÓN</span>
+              <span class="t-desc">La suscripción fue cancelada</span>
+              <span class="t-date">🗓 {{ mov.fechaMovimiento | date: 'dd \'de\' MMMM \'de\' yyyy' }}</span>
+            </div>
+            <div class="t-label">FIN DE LA SUSCRIPCIÓN</div>
+            <div class="plan-row">
+              <div class="plan-ic red">⚠</div>
+              <div>
+                <small>ÚLTIMO PLAN</small>
+                <b>{{ mov.planAnteriorNombre ?? mov.planNuevoNombre }}</b>
+              </div>
+              <span class="status-pill gray">Cancelada</span>
+            </div>
+          </div>
+        </ng-container>
+      </div>
+    </div>
+
+    <div class="empty-state" *ngIf="!movimientos.length">
+      Todavía no hay movimientos registrados para esta suscripción.
+    </div>
+
+    <div class="tl-foot" *ngIf="movimientos.length">
+      <span class="info">ⓘ Los registros corresponden a transiciones de estado oficiales registradas en InkluSport.</span>
+    </div>
+  </section>
+</div>

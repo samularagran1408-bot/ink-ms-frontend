@@ -1,0 +1,468 @@
+// Variables
+$bg-color: #f7f9fa;
+$card-bg: #ffffff;
+$text-main: #1e293b;
+$text-muted: #64748b;
+$text-light: #94a3b8;
+$border-color: #e2e8f0;
+
+$primary-blue: #009ee3; // Color de Mercado Pago
+$primary-blue-hover: #0081b8;
+$green-light: #dcfce7;
+$green-text: #15803d;
+$red-icon: #ef4444;
+
+$font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: $bg-color;
+  font-family: $font-family;
+  color: $text-main;
+  display: flex;
+  justify-content: center;
+  padding: 40px 20px;
+  -webkit-font-smoothing: antialiased;
+}
+
+.checkout-container {
+  max-width: 960px;
+  width: 100%;
+}
+
+/* Header & Breadcrumbs */
+.checkout-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  font-size: 0.75rem;
+  font-weight: 600;
+
+  .breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: $text-light;
+
+    .sep {
+      color: $text-light;
+    }
+
+    .active {
+      color: $text-main;
+      font-weight: 700;
+    }
+
+    .badge-code {
+      background-color: #fee2e2;
+      color: #991b1b;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      margin-left: 4px;
+    }
+  }
+
+  .user-role {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #f1f5f9;
+    padding: 4px 10px;
+    border-radius: 12px;
+    color: $text-main;
+    letter-spacing: 0.5px;
+  }
+}
+
+/* Title Section */
+.checkout-title-section {
+  margin-bottom: 30px;
+
+  .title-with-badge {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 900;
+      letter-spacing: -0.5px;
+    }
+
+    .badge-official {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background-color: $green-light;
+      color: $green-text;
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 12px;
+      letter-spacing: 0.5px;
+    }
+  }
+
+  .subtitle {
+    margin-top: 6px;
+    color: $text-muted;
+    font-size: 0.85rem;
+  }
+}
+
+/* Grid Layout */
+.checkout-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 24px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Cards Generic */
+.checkout-card {
+  background: $card-bg;
+  border-radius: 12px;
+  padding: 24px;
+  border: 1px solid $border-color;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+
+    .card-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      h2 {
+        font-size: 1rem;
+        font-weight: 800;
+        letter-spacing: 0.3px;
+      }
+    }
+
+    .badge-tag {
+      background: #f1f5f9;
+      color: $text-muted;
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+  }
+}
+
+/* Left Card: Summary Details */
+.card-summary {
+  .event-box {
+    background-color: #f8fafc;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 20px;
+
+    .event-box-top {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: #991b1b;
+      margin-bottom: 8px;
+
+      .event-label {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        text-transform: uppercase;
+      }
+
+      .event-category {
+        color: $text-muted;
+        font-weight: 500;
+      }
+    }
+
+    .event-name {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: $text-main;
+    }
+
+    .event-details {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 0.75rem;
+      color: $text-muted;
+
+      span {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+    }
+  }
+
+  .price-breakdown {
+    margin-bottom: 20px;
+
+    .breakdown-title {
+      display: block;
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: $text-muted;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+
+    .price-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.8rem;
+      color: $text-muted;
+      margin-bottom: 10px;
+
+      .price-amount {
+        font-weight: 600;
+        color: $text-main;
+      }
+
+      .badge-discount {
+        background-color: $green-light;
+        color: $green-text;
+        font-size: 0.65rem;
+        padding: 1px 6px;
+        border-radius: 4px;
+        font-weight: 600;
+        margin-left: 6px;
+      }
+    }
+  }
+
+  .total-box {
+    background: #fef2f2;
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+
+    .total-label {
+      display: flex;
+      flex-direction: column;
+
+      strong {
+        font-size: 0.75rem;
+        color: $text-main;
+        letter-spacing: 0.3px;
+      }
+
+      small {
+        font-size: 0.68rem;
+        color: $text-muted;
+      }
+    }
+
+    .total-amount {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: #991b1b;
+
+      .currency {
+        font-size: 0.8rem;
+        font-weight: 600;
+      }
+    }
+  }
+
+  .info-notice {
+    display: flex;
+    gap: 8px;
+    font-size: 0.72rem;
+    color: $text-muted;
+    line-height: 1.4;
+
+    svg {
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+  }
+}
+
+/* Right Card: Payment */
+.card-payment {
+  display: flex;
+  flex-direction: column;
+
+  .mp-banner {
+    background-color: #f0f9ff;
+    border: 1px solid #bae6fd;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 20px;
+
+    .mp-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 10px;
+
+      .mp-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #0369a1;
+        font-size: 0.85rem;
+      }
+
+      .badge-external {
+        background: #ffffff;
+        color: $text-muted;
+        font-size: 0.65rem;
+        padding: 2px 6px;
+        border-radius: 4px;
+        border: 1px solid $border-color;
+      }
+    }
+
+    .mp-description {
+      font-size: 0.75rem;
+      color: #0369a1;
+      line-height: 1.4;
+    }
+  }
+
+  .allowed-methods {
+    margin-bottom: 24px;
+
+    .methods-title {
+      display: block;
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: $text-muted;
+      margin-bottom: 8px;
+      letter-spacing: 0.5px;
+    }
+
+    .badges-group {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+
+      .method-tag {
+        background-color: #f1f5f9;
+        color: $text-muted;
+        font-size: 0.7rem;
+        padding: 4px 8px;
+        border-radius: 4px;
+      }
+    }
+  }
+
+  .btn-pay {
+    width: 100%;
+    background-color: $primary-blue;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: background-color 0.2s;
+    margin-bottom: 16px;
+
+    &:hover {
+      background-color: $primary-blue-hover;
+    }
+  }
+
+  .security-text {
+    font-size: 0.68rem;
+    color: $text-light;
+    text-align: center;
+    line-height: 1.3;
+    margin-bottom: 24px;
+  }
+
+  .back-link {
+    margin-top: auto;
+    text-align: center;
+    font-size: 0.75rem;
+    color: $text-muted;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+/* Bottom Features Footer */
+.checkout-features {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+
+  .feature-item {
+    background: $card-bg;
+    border: 1px solid $border-color;
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+
+    .feature-icon {
+      padding: 6px;
+      border-radius: 6px;
+      background: #f8fafc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      &.text-green { color: #16a34a; }
+      &.text-blue { color: #0284c7; }
+      &.text-red { color: #dc2626; }
+    }
+
+    .feature-text {
+      strong {
+        display: block;
+        font-size: 0.7rem;
+        font-weight: 700;
+        margin-bottom: 4px;
+        letter-spacing: 0.3px;
+      }
+
+      p {
+        font-size: 0.7rem;
+        color: $text-muted;
+        line-height: 1.3;
+      }
+    }
+  }
+}

@@ -6,6 +6,10 @@ import { Plan, Suscripcion } from '../../models/subscriptions';
 import { CheckoutRedirectService } from '../../services/checkout-redirect.service';
 import { SubscriptionsService } from '../../services/subscriptions.service';
 
+import { SubscriptionService } from '../../services/subscription.service';
+import { Plan, SuscripcionResponse } from '../../models/subscription-models';
+
+/** M09 - Estado de la suscripción vigente del organizador (RF57). */
 @Component({
   standalone: true,
   imports: [CommonModule, RouterModule],

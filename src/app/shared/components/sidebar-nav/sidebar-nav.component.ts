@@ -241,7 +241,10 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
           { labelKey: 'NAV.ASSOCIATIONS', route: '/admin/associations', icon: 'link' },
           { labelKey: 'NAV.ROLES', route: '/admin/roles', icon: 'shield-check' },
           { labelKey: 'NAV.AUDIT_LOGS', route: '/admin/audit', icon: 'clipboard-document-list' },
-          { labelKey: 'NAV.SUBSCRIPTIONS', route: '/admin/subscriptions', icon: 'chart-bar' }
+          { labelKey: 'NAV.SUBSCRIPTIONS', route: '/admin/subscriptions', icon: 'chart-bar' },
+          { labelKey: 'NAV.PLAN_MANAGEMENT', route: '/admin/plans', icon: 'sparkles' },
+          { labelKey: 'NAV.ORGANIZER_SUBSCRIPTIONS', route: '/admin/organizer-subscriptions', icon: 'identification' },
+          { labelKey: 'NAV.FINANCIAL_REPORTS', route: '/admin/reports', icon: 'building-library' }
         ];
         this.secondaryItems = this.commonAccountItems('/admin');
         break;
@@ -264,7 +267,8 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
           { labelKey: 'NAV.ATHLETES_WAITLIST', route: '/organizer/athletes', icon: 'user-group' },
           { labelKey: 'NAV.PLANS', route: '/organizer/plans', icon: 'sparkles' },
           { labelKey: 'NAV.MY_SUBSCRIPTION', route: '/organizer/subscription', icon: 'chart-bar' },
-          { labelKey: 'NAV.PAYMENT_HISTORY', route: '/organizer/payments', icon: 'clipboard-document-list' }
+          { labelKey: 'NAV.PAYMENT_HISTORY', route: '/organizer/payments', icon: 'clipboard-document-list' },
+          { labelKey: 'NAV.FINANCIAL_REPORTS', route: '/organizer/reports', icon: 'building-library' }
         ];
         this.secondaryItems = this.commonAccountItems('/organizer');
         break;
@@ -273,6 +277,7 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
           { labelKey: 'NAV.HOME', route: '/home', exact: true, icon: 'home' },
           { labelKey: 'NAV.EVENTS', route: '/home/events', icon: 'calendar-days' },
           { labelKey: 'NAV.HISTORY', route: '/home/events', queryParams: { vista: 'historial' }, icon: 'clipboard-document-list' },
+          { labelKey: 'NAV.EVENT_PAYMENTS', route: '/home/pagos-eventos', icon: 'chart-bar' },
           ...this.commonAccountItems('/home')
         ];
         this.secondaryItems = [];
