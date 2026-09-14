@@ -16,6 +16,8 @@ import {
 } from '@features/sports-disabilities/models/sports';
 import { SessionService } from '@core/services/session.service';
 import { SportsService } from '@features/sports-disabilities/services/sports.service';
+import { PaymentsService } from '@features/subscriptions/services/payments.service';
+import { CheckoutRedirectService } from '@features/subscriptions/services/checkout-redirect.service';
 import { ReportsService } from '@features/reports/services/reports.service';
 import { PreferencesApiService } from '@features/accessibility/services/preferences-api.service';
 import { LanguageService } from '@features/accessibility/services/language.service';
@@ -131,6 +133,8 @@ export class EventsPageComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private sportsService: SportsService,
+    private paymentsService: PaymentsService,
+    private checkoutRedirect: CheckoutRedirectService,
     private session: SessionService,
     private reportsService: ReportsService,
     private preferencesApi: PreferencesApiService,
@@ -667,24 +671,45 @@ export class EventsPageComponent implements OnInit, OnDestroy {
       }
 
       this.registeringId = event.id;
-      this.sportsService.registerToEvent(userId, event.id).subscribe({
-        next: (registration) => {
-          this.registeringId = null;
-          this.successMessage = null;
-          this.errorMessage = null;
-          this.reload();
-          const onWaitlist = registration?.waitlistPosition != null;
-          this.notifySuccess(
-            onWaitlist ? 'EVENTS_PAGE.SUCCESS_WAITLIST_TITLE' : 'EVENTS_PAGE.SUCCESS_REGISTER_TITLE',
-            registration?.message || this.translate.instant(
-              onWaitlist ? 'EVENTS_PAGE.SUCCESS_WAITLIST_MSG' : 'EVENTS_PAGE.SUCCESS_REGISTER_MSG',
-              { name: event.name, position: registration?.waitlistPosition }
-            )
-          );
+      this.paymentsService.obtenerConfiguracionEvento(event.id).subscribe({
+        next: (config) => {
+          if (config?.esPago) {
+            this.paymentsService.inscribirse(event.id).subscribe({
+              next: (checkout) => {
+                this.registeringId = null;
+                this.checkoutRedirect.follow(checkout, { evento: event.name });
+              },
+              error: (error) => {
+                this.registeringId = null;
+                this.errorMessage = error?.error?.message || 'No se pudo iniciar el pago de la inscripción.';
+              }
+            });
+            return;
+          }
+          this.sportsService.registerToEvent(userId, event.id).subscribe({
+            next: (registration) => {
+              this.registeringId = null;
+              this.successMessage = null;
+              this.errorMessage = null;
+              this.reload();
+              const onWaitlist = registration?.waitlistPosition != null;
+              this.notifySuccess(
+                onWaitlist ? 'EVENTS_PAGE.SUCCESS_WAITLIST_TITLE' : 'EVENTS_PAGE.SUCCESS_REGISTER_TITLE',
+                registration?.message || this.translate.instant(
+                  onWaitlist ? 'EVENTS_PAGE.SUCCESS_WAITLIST_MSG' : 'EVENTS_PAGE.SUCCESS_REGISTER_MSG',
+                  { name: event.name, position: registration?.waitlistPosition }
+                )
+              );
+            },
+            error: (error) => {
+              this.registeringId = null;
+              this.errorMessage = error?.error?.message || 'No se pudo inscribir.';
+            }
+          });
         },
-        error: (error) => {
+        error: () => {
           this.registeringId = null;
-          this.errorMessage = error?.error?.message || 'No se pudo inscribir.';
+          this.errorMessage = 'No se pudo verificar si el evento es de pago.';
         }
       });
     });

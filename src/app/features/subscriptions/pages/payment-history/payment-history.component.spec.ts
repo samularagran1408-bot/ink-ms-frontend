@@ -1,4 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
+import { RouterTestingModule } from '@angular/router/testing';
 
 import { PaymentHistoryComponent } from './payment-history.component';
 
@@ -8,13 +10,11 @@ describe('PaymentHistoryComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [PaymentHistoryComponent]
-    })
-    .compileComponents();
-    
+      imports: [PaymentHistoryComponent, HttpClientTestingModule, RouterTestingModule]
+    }).compileComponents();
+
     fixture = TestBed.createComponent(PaymentHistoryComponent);
     component = fixture.componentInstance;
-    fixture.detectChanges();
   });
 
   it('should create', () => {

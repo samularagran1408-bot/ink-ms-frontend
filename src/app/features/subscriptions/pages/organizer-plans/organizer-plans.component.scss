@@ -19,6 +19,7 @@
 .hero { text-align:center;margin-bottom:30px }
 .hero h1 { font-family:'Space Grotesk',sans-serif;font-size:38px;font-weight:700;letter-spacing:-.02em }
 .hero p { color:var(--muted);font-size:14px;margin-top:10px;line-height:1.55;max-width:520px;margin-inline:auto }
+.error { color:#b13a46; text-align:center; margin-bottom:16px; }
 
 /* Billing toggle */
 .toggle { display:flex;justify-content:center;align-items:center;gap:14px;margin-bottom:26px;font-size:13px;font-weight:600;color:var(--muted) }
