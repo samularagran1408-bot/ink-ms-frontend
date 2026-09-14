@@ -2,23 +2,14 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 
+import { SharedModule } from '@shared/shared.module';
+
 @Component({
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, SharedModule],
   selector: 'app-payment-result',
-  template: `
-    <section class="result">
-      <h1>{{ titulo }}</h1>
-      <p>{{ mensaje }}</p>
-      <p *ngIf="referencia">Referencia: {{ referencia }}</p>
-      <button type="button" (click)="irHistorial()">Ver historial de pagos</button>
-      <button type="button" (click)="irPanel()">Volver al panel</button>
-    </section>
-  `,
-  styles: [`
-    .result { max-width: 560px; margin: 48px auto; padding: 32px; text-align: center; }
-    button { margin: 8px; padding: 10px 16px; }
-  `]
+  templateUrl: './payment-result.component.html',
+  styleUrl: './payment-result.component.scss'
 })
 export class PaymentResultComponent implements OnInit {
   status: 'exito' | 'pendiente' | 'error' = 'exito';

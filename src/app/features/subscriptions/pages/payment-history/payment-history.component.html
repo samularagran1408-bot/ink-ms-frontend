@@ -9,8 +9,8 @@
     </div>
   </div>
 
-  <p *ngIf="loading">Cargando pagos…</p>
-  <p *ngIf="errorMessage">{{ errorMessage }}</p>
+  <p *ngIf="loading" class="status">Cargando pagos…</p>
+  <p *ngIf="errorMessage" class="error">{{ errorMessage }}</p>
 
   <section class="kpis" *ngIf="!loading">
     <div class="kpi">
@@ -24,7 +24,10 @@
   </section>
 
   <div class="filters">
-    <div class="f-input">🧾<input type="text" [(ngModel)]="filtro" placeholder="Buscar por ID, concepto o estado"></div>
+    <label class="f-input">
+      <span aria-hidden="true">🧾</span>
+      <input type="search" [(ngModel)]="filtro" placeholder="Buscar por ID, concepto o estado">
+    </label>
   </div>
 
   <div class="ledger-head">
@@ -33,6 +36,32 @@
       <span class="chip">{{ filtradas.length }} REGISTROS</span>
     </div>
     <span class="sync">⟳ MERCADO PAGO · COP</span>
+  </div>
+
+  <div class="ledger-cards">
+    <article class="ledger-card" *ngFor="let row of filtradas">
+      <header>
+        <span class="txn-id">#{{ row.id }}</span>
+        <span class="badge" [ngClass]="badge(row.estado)">{{ row.estado }}</span>
+      </header>
+      <p class="concept"><b>{{ row.concepto }}</b></p>
+      <dl>
+        <div>
+          <dt>Fecha</dt>
+          <dd>{{ row.fecha | date:'medium' }}</dd>
+        </div>
+        <div>
+          <dt>Método</dt>
+          <dd>{{ row.metodo || 'Mercado Pago' }}</dd>
+        </div>
+        <div>
+          <dt>Monto</dt>
+          <dd class="amount">{{ row.monto | number:'1.0-0' }} <small>COP</small></dd>
+        </div>
+      </dl>
+      <button *ngIf="row.comprobanteId" class="link" type="button" (click)="verComprobante(row)">Comprobante</button>
+    </article>
+    <p class="empty" *ngIf="!loading && filtradas.length === 0">No hay pagos registrados todavía.</p>
   </div>
 
   <div class="ledger-wrap">

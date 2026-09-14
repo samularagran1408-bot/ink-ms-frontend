@@ -16,15 +16,13 @@
       <span class="chip" *ngIf="referencia">{{ referencia }}</span>
       <span class="chip dark">MERCADO PAGO · COP</span>
     </div>
-    <p *ngIf="errorMessage">{{ errorMessage }}</p>
+    <p *ngIf="errorMessage" class="error">{{ errorMessage }}</p>
   </section>
 
   <div class="actions">
-    <div class="actions-left">
-      <button class="btn btn-brand" type="button" [disabled]="!pagoId || descargando" (click)="descargar()">
-        {{ descargando ? 'DESCARGANDO…' : 'DESCARGAR COMPROBANTE (PDF)' }}
-      </button>
-    </div>
+    <button class="btn btn-brand" type="button" [disabled]="!pagoId || descargando" (click)="descargar()">
+      {{ descargando ? 'DESCARGANDO…' : 'DESCARGAR COMPROBANTE (PDF)' }}
+    </button>
     <button class="btn btn-blue" type="button" (click)="irAlPanel()">Ir a mi panel →</button>
   </div>
 

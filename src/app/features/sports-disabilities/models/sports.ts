@@ -202,7 +202,15 @@ export interface RoutineRequest {
 export interface RoutineRegistration {
   id: string;
   userId: string;
+  userFullName?: string;
+  userEmail?: string;
+  userProfilePicture?: string;
+  userDisability?: string;
   routineId: string;
+  routineName?: string;
+  trainerId?: string;
   status?: string;
   registeredAt?: string;
+  registrationDate?: string;
+  message?: string;
 }

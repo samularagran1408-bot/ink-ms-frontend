@@ -7,7 +7,7 @@
     <p>Potencia tu organización deportiva con más eventos al mes, menor comisión y cobros en pesos colombianos a través de Mercado Pago.</p>
   </div>
 
-  <p *ngIf="loading">Cargando planes…</p>
+  <p *ngIf="loading" class="status">Cargando planes…</p>
   <p *ngIf="errorMessage" class="error">{{ errorMessage }}</p>
 
   <section class="pricing" *ngIf="!loading">
@@ -27,6 +27,8 @@
       <button
         class="plan-btn"
         [class.btn-current]="esPlanActual(plan)"
+        [class.btn-elite]="!esPlanActual(plan) && !plan.esGratuito && i !== 1"
+        [class.btn-pro]="!esPlanActual(plan) && (plan.esGratuito || i === 1)"
         [disabled]="esPlanActual(plan) || contratandoId === plan.id"
         (click)="elegir(plan)">
         {{ esPlanActual(plan) ? 'PLAN ACTUAL' : (contratandoId === plan.id ? 'REDIRIGIENDO…' : 'ELEGIR PLAN →') }}

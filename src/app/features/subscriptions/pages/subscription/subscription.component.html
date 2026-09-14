@@ -3,7 +3,7 @@
   <h1>Gestión de suscripción</h1>
   <p class="sub">Consulta tu plan, el cupo de eventos del mes y renueva con Mercado Pago en COP.</p>
 
-  <p *ngIf="loading">Cargando suscripción…</p>
+  <p *ngIf="loading" class="status">Cargando suscripción…</p>
   <p *ngIf="errorMessage" class="error">{{ errorMessage }}</p>
 
   <div class="grid-top" *ngIf="actual">
@@ -26,27 +26,53 @@
   </div>
 
   <h2 class="compare-title">Comparar planes</h2>
-  <table class="compare" *ngIf="planes.length">
-    <thead>
-      <tr>
-        <th>Característica</th>
-        <th *ngFor="let plan of planes" [class.hl]="actual?.planId === plan.id">{{ plan.nombre }}</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>Eventos / mes</td>
-        <td *ngFor="let plan of planes" [class.hl]="actual?.planId === plan.id">{{ plan.limiteEventosMes || 'Ilimitados' }}</td>
-      </tr>
-      <tr>
-        <td>Comisión</td>
-        <td *ngFor="let plan of planes" [class.hl]="actual?.planId === plan.id">{{ plan.porcentajeComision }}%</td>
-      </tr>
-      <tr>
-        <td>Precio</td>
-        <td *ngFor="let plan of planes" [class.hl]="actual?.planId === plan.id">{{ plan.precio | number:'1.0-0' }} {{ plan.moneda || 'COP' }}</td>
-      </tr>
-    </tbody>
-  </table>
+
+  <div class="compare-cards" *ngIf="planes.length">
+    <article class="compare-card" *ngFor="let plan of planes" [class.current]="actual?.planId === plan.id">
+      <header>
+        <h3>{{ plan.nombre }}</h3>
+        <span class="current-pill" *ngIf="actual?.planId === plan.id">Actual</span>
+      </header>
+      <dl>
+        <div>
+          <dt>Eventos / mes</dt>
+          <dd>{{ plan.limiteEventosMes || 'Ilimitados' }}</dd>
+        </div>
+        <div>
+          <dt>Comisión</dt>
+          <dd>{{ plan.porcentajeComision }}%</dd>
+        </div>
+        <div>
+          <dt>Precio</dt>
+          <dd>{{ plan.precio | number:'1.0-0' }} {{ plan.moneda || 'COP' }}</dd>
+        </div>
+      </dl>
+    </article>
+  </div>
+
+  <div class="compare-wrap" *ngIf="planes.length">
+    <table class="compare">
+      <thead>
+        <tr>
+          <th>Característica</th>
+          <th *ngFor="let plan of planes" [class.hl]="actual?.planId === plan.id">{{ plan.nombre }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Eventos / mes</td>
+          <td *ngFor="let plan of planes" [class.hl]="actual?.planId === plan.id">{{ plan.limiteEventosMes || 'Ilimitados' }}</td>
+        </tr>
+        <tr>
+          <td>Comisión</td>
+          <td *ngFor="let plan of planes" [class.hl]="actual?.planId === plan.id">{{ plan.porcentajeComision }}%</td>
+        </tr>
+        <tr>
+          <td>Precio</td>
+          <td *ngFor="let plan of planes" [class.hl]="actual?.planId === plan.id">{{ plan.precio | number:'1.0-0' }} {{ plan.moneda || 'COP' }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
 
 </div>

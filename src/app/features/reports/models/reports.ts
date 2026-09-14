@@ -31,6 +31,13 @@ export interface PanelDashboardResponse {
     waitlist?: Registration[];
     attendanceReport?: AttendanceReport;
   }>;
+  sessionSummaries?: Array<{
+    routine: Routine;
+    registrations?: RoutineRegistration[];
+    enrolledCount?: number;
+    attendedCount?: number;
+    absentCount?: number;
+  }>;
   users?: UserProfile[];
   roles?: RoleInfo[];
   auditLogs?: AdminAuditLog[];

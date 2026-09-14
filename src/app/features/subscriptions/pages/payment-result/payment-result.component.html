@@ -1,0 +1,12 @@
+<app-panel-shell>
+  <section class="result" [class.result--ok]="status === 'exito'" [class.result--pending]="status === 'pendiente'" [class.result--error]="status === 'error'">
+    <div class="result-mark" aria-hidden="true">{{ status === 'error' ? '!' : (status === 'pendiente' ? '…' : '✓') }}</div>
+    <h1>{{ titulo }}</h1>
+    <p>{{ mensaje }}</p>
+    <p class="ref" *ngIf="referencia">Referencia: {{ referencia }}</p>
+    <div class="result-actions">
+      <button type="button" class="btn btn-brand" (click)="irHistorial()">Ver historial de pagos</button>
+      <button type="button" class="btn btn-outline" (click)="irPanel()">Volver al panel</button>
+    </div>
+  </section>
+</app-panel-shell>
