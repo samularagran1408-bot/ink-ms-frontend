@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { RouterTestingModule } from '@angular/router/testing';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
 
 import { EventRegistrationPaymentComponent } from './event-registration-payment.component';
 
@@ -9,7 +10,7 @@ describe('EventRegistrationPaymentComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [RouterTestingModule, EventRegistrationPaymentComponent]
+      imports: [RouterTestingModule, HttpClientTestingModule, EventRegistrationPaymentComponent]
     }).compileComponents();
 
     fixture = TestBed.createComponent(EventRegistrationPaymentComponent);

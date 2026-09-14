@@ -14,68 +14,82 @@
           <span class="dot"></span> ROL: ORGANIZADOR ACTIVO
         </div>
       </div>
-      
-      <div class="nav-right">
-        <div class="mode-toggle">
-          <button class="btn-mode active">Modo Organizador (Propio)</button>
-          <button class="btn-mode">Modo Administrador (Global)</button>
-        </div>
-        <div class="action-buttons">
-          <button class="btn-outline">Exportar CSV</button>
-          <button class="btn-outline">Descargar PDF</button>
-          <button class="btn-icon">↻</button>
-        </div>
+      <div class="breadcrumb">
+        <span>FINANZAS</span> / <span class="active">REPORTES FINANCIEROS</span>
+        <span class="badge-code">RF62</span>
       </div>
-    </header>
+      <div class="role-badge">
+        <span class="dot"></span> ROL: {{ modo === 'global' ? 'ADMINISTRADOR' : 'ORGANIZADOR' }}
+      </div>
+    </div>
 
-    <!-- Main Title Section -->
-    <section class="main-title-section">
-      <div class="title-wrapper">
-        <h1>REPORTES FINANCIEROS</h1>
-        <span class="subtitle-badge">Plataforma InkluSport</span>
+    <div class="nav-right">
+      <span class="role-badge">Vista: {{ modo === 'global' ? 'Administrador (Global)' : 'Organizador (Propio)' }}</span>
+      <div class="action-buttons">
+        <button class="btn-outline" [disabled]="!detalle.length" (click)="exportarCsv()">Exportar CSV</button>
+        <button class="btn-icon" title="Actualizar" (click)="cargar()">↻</button>
       </div>
-      <div class="status-bar">
-        <span>Análisis de ingresos e inscripciones propias correspondientes a tus eventos deportivos adaptados registrados en la plataforma.</span>
-        <span class="sync-status">Última actualización: Hoy, 10:45 AM • Synchronized</span>
-      </div>
-    </section>
+    </div>
+  </header>
 
-    <!-- Filter Card -->
-    <section class="filter-card">
-      <div class="filter-header">
-        <div class="filter-title">
-          <span class="icon">📅</span>
-          <strong>PERÍODO DE CONSULTA</strong>
-          <span class="badge-period">Período: Octubre 2024</span>
-        </div>
-        <div class="filter-shortcuts">
-          <span class="label">ATAJOS:</span>
-          <button class="btn-shortcut">Últimos 7 días</button>
-          <button class="btn-shortcut active">Últimos 30 días</button>
-          <button class="btn-shortcut">Este Trimestre</button>
-          <button class="btn-shortcut">Año 2024</button>
-          <label class="checkbox-label"><input type="checkbox"> Simular sin datos</label>
-        </div>
-      </div>
+  <!-- Main Title Section -->
+  <section class="main-title-section">
+    <div class="title-wrapper">
+      <h1>REPORTES FINANCIEROS</h1>
+      <span class="subtitle-badge">Plataforma InkluSport</span>
+    </div>
+    <div class="status-bar">
+      <span>{{ modo === 'global'
+        ? 'Análisis global de ingresos e inscripciones de todos los organizadores y eventos registrados en la plataforma.'
+        : 'Análisis de ingresos e inscripciones propias correspondientes a tus eventos deportivos adaptados registrados en la plataforma.' }}</span>
+      <span class="sync-status" *ngIf="ultimaActualizacion">Última actualización: {{ ultimaActualizacion | date: 'dd/MM/yyyy, HH:mm' }}</span>
+    </div>
+  </section>
 
-      <div class="filter-form">
-        <div class="input-group">
-          <label>FECHA DESDE</label>
-          <input type="text" value="10/01/2024">
-        </div>
-        <div class="input-group">
-          <label>FECHA HASTA</label>
-          <input type="text" value="10/31/2024">
-        </div>
-        <div class="input-group grow">
-          <label>FILTRAR POR EVENTO</label>
-          <select>
-            <option>Todos los eventos activos (3)</option>
-          </select>
-        </div>
-        <button class="btn-search">🔍 Aplicar Filtro</button>
+  <!-- Filter Card -->
+  <section class="filter-card">
+    <div class="filter-header">
+      <div class="filter-title">
+        <span class="icon">📅</span>
+        <strong>PERÍODO DE CONSULTA</strong>
+        <span class="badge-period" *ngIf="desde && hasta">{{ desde | date: 'dd/MM/yyyy' }} – {{ hasta | date: 'dd/MM/yyyy' }}</span>
       </div>
-    </section>
+      <div class="filter-shortcuts">
+        <span class="label">ATAJOS:</span>
+        <button class="btn-shortcut" [class.active]="atajo === '7d'" (click)="aplicarAtajo('7d')">Últimos 7 días</button>
+        <button class="btn-shortcut" [class.active]="atajo === '30d'" (click)="aplicarAtajo('30d')">Últimos 30 días</button>
+        <button class="btn-shortcut" [class.active]="atajo === 'trimestre'" (click)="aplicarAtajo('trimestre')">Último Trimestre</button>
+        <button class="btn-shortcut" [class.active]="atajo === 'anio'" (click)="aplicarAtajo('anio')">Año Actual</button>
+      </div>
+    </div>
+
+    <div class="filter-form">
+      <div class="input-group">
+        <label>FECHA DESDE</label>
+        <input type="date" [(ngModel)]="desde">
+      </div>
+      <div class="input-group">
+        <label>FECHA HASTA</label>
+        <input type="date" [(ngModel)]="hasta">
+      </div>
+      <div class="input-group grow">
+        <label>FILTRAR POR EVENTO</label>
+        <select [(ngModel)]="eventoFiltro">
+          <option value="">Todos los eventos ({{ detalle.length }})</option>
+          <option *ngFor="let d of detalle" [value]="d.eventoId">{{ d.nombreEvento }}</option>
+        </select>
+      </div>
+      <button class="btn-search" (click)="cargar()">🔍 Aplicar Filtro</button>
+    </div>
+  </section>
+
+  <div *ngIf="cargando" class="loading-box">Cargando reporte financiero…</div>
+  <div *ngIf="!cargando && error" class="warning-box">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+    <p>{{ error }}</p>
+  </div>
+
+  <ng-container *ngIf="!cargando && !error && reporte">
 
     <!-- KPI Summary Cards Grid -->
     <section class="kpi-grid">
@@ -85,11 +99,10 @@
           <span><span class="dot red"></span> INGRESOS POR EVENTOS</span>
           <span class="kpi-icon">📅</span>
         </div>
-        <div class="kpi-value">$12.450.000 <small>COP</small></div>
-        <div class="kpi-trend positive">↗ +18.4% vs mes ant.</div>
+        <div class="kpi-value">${{ reporte.ingresosPorEventos | number: '1.0-0' }} <small>COP</small></div>
         <div class="kpi-footer">
-          <span>✔ 100% verificado en plataforma</span>
-          <span>3 eventos liquidados</span>
+          <span>{{ detalle.length }} evento(s) con ingresos</span>
+          <span>{{ reporte.numeroInscritos }} inscritos</span>
         </div>
       </div>
 
@@ -99,11 +112,9 @@
           <span><span class="dot blue"></span> INGRESOS POR SUSCRIPCIONES</span>
           <span class="kpi-icon">💳</span>
         </div>
-        <div class="kpi-value">$1.350.000 <small>COP</small></div>
-        <div class="kpi-trend positive">↗ +6.2% cuotas activas</div>
+        <div class="kpi-value">${{ reporte.ingresosPorSuscripciones | number: '1.0-0' }} <small>COP</small></div>
         <div class="kpi-footer">
-          <span>Cuotas de membresía organizador</span>
-          <span>8 planes Pro vigentes</span>
+          <span>Cuotas de membresía de organizadores</span>
         </div>
       </div>
 
@@ -113,113 +124,45 @@
           <span><span class="dot green"></span> NÚMERO DE INSCRITOS</span>
           <span class="kpi-icon">👥</span>
         </div>
-        <div class="kpi-value">278 <small class="unit">ATLETAS TOTALES</small></div>
-        <div class="kpi-trend positive">↗ +42 atletas este mes</div>
+        <div class="kpi-value">{{ reporte.numeroInscritos }} <small class="unit">ATLETAS TOTALES</small></div>
         <div class="kpi-footer">
-          <span>Promedio: 92.6 cupos/evento</span>
-          <span>100% cupos válidos</span>
+          <span>Promedio: {{ promedioInscritosPorEvento }} cupos/evento</span>
         </div>
       </div>
     </section>
 
-    <!-- Charts & Breakdown Section -->
+    <!-- Breakdown Section -->
     <section class="charts-grid">
-      <!-- Main Chart -->
-      <div class="card chart-card">
-        <div class="card-title-bar">
-          <div>
-            <h3>📈 EVOLUCIÓN DE RECAUDACIÓN VS ATLETAS INSCRITOS</h3>
-            <p>Seguimiento quincenal de ingresos recaudados en COP frente al flujo de registros deportivos.</p>
-          </div>
-          <div class="chart-legend">
-            <span><span class="legend-box red"></span> Recaudación ($ COP)</span>
-            <span><span class="legend-dot green"></span> Inscritos (Atletas)</span>
-          </div>
-        </div>
-
-        <div class="chart-area">
-          <div class="chart-placeholder">
-            <!-- Simulated Area Chart Bars / SVG -->
-            <div class="bar-group" style="height: 35%;">
-              <span class="point-tag">$1.8M (38 atl.)</span>
-              <div class="bar"></div>
-              <span class="bar-label">01 - 07 Oct</span>
-            </div>
-            <div class="bar-group" style="height: 55%;">
-              <span class="point-tag">$5.2M (65 atl.)</span>
-              <div class="bar"></div>
-              <span class="bar-label">08 - 15 Oct</span>
-            </div>
-            <div class="bar-group" style="height: 75%;">
-              <span class="point-tag">$8.7M (82 atl.)</span>
-              <div class="bar"></div>
-              <span class="bar-label">16 - 23 Oct</span>
-            </div>
-            <div class="bar-group" style="height: 90%;">
-              <span class="point-tag highlight">$3.75M (93 atl.)</span>
-              <div class="bar active"></div>
-              <span class="bar-label">24 - 31 Oct</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="chart-footer">
-          <span>↗ Pico máximo de inscripción registrado en la última quincena</span>
-          <span class="stat">+32% tasa de conversión</span>
-        </div>
-      </div>
-
-      <!-- Breakdown Side Card -->
       <div class="card breakdown-card">
         <div class="card-title-bar">
-          <h3>📊 DESGLOSE POR EVENTO</h3>
-          <p>Distribución de los $12.450.000 COP recaudados</p>
-        </div>
-
-        <div class="breakdown-list">
-          <div class="breakdown-item">
-            <div class="item-header">
-              <strong>Carrera Sillas de Ruedas Medellín</strong>
-              <span>45.8%</span>
-            </div>
-            <div class="progress-bar"><div class="fill" style="width: 45.8%;"></div></div>
-            <div class="item-footer">
-              <small>EVT-2024-MED-04</small>
-              <strong>$5.700.000 COP</strong>
-            </div>
-          </div>
-
-          <div class="breakdown-item">
-            <div class="item-header">
-              <strong>Media Maratón Adaptada Bogotá</strong>
-              <span>43.4%</span>
-            </div>
-            <div class="progress-bar"><div class="fill" style="width: 43.4%;"></div></div>
-            <div class="item-footer">
-              <small>EVT-2024-BOG-01</small>
-              <strong>$5.400.000 COP</strong>
-            </div>
-          </div>
-
-          <div class="breakdown-item">
-            <div class="item-header">
-              <strong>Torneo Para-atletismo Cali</strong>
-              <span>10.8%</span>
-            </div>
-            <div class="progress-bar"><div class="fill" style="width: 10.8%;"></div></div>
-            <div class="item-footer">
-              <small>EVT-2024-CALI-02</small>
-              <strong>$1.350.000 COP</strong>
-            </div>
+          <div>
+            <h3>📊 DESGLOSE POR EVENTO</h3>
+            <p>Distribución de los ${{ reporte.ingresosPorEventos | number: '1.0-0' }} COP recaudados por eventos</p>
           </div>
         </div>
 
-        <div class="breakdown-summary">
+        <div class="breakdown-list" *ngIf="detalle.length; else sinEventos">
+          <div class="breakdown-item" *ngFor="let d of detalle">
+            <div class="item-header">
+              <strong>{{ d.nombreEvento }}</strong>
+              <span>{{ porcentajeDelTotalEventos(d.montoTotal) }}%</span>
+            </div>
+            <div class="progress-bar"><div class="fill" [style.width.%]="porcentajeDelTotalEventos(d.montoTotal)"></div></div>
+            <div class="item-footer">
+              <small>{{ d.numeroInscritos }} inscritos</small>
+              <strong>${{ d.montoTotal | number: '1.0-0' }} COP</strong>
+            </div>
+          </div>
+        </div>
+        <ng-template #sinEventos>
+          <p class="empty-note">Sin eventos con ingresos en el período seleccionado.</p>
+        </ng-template>
+
+        <div class="breakdown-summary" *ngIf="totalRecaudado > 0">
           <div class="summary-row">
             <span>Relación Eventos / Suscripciones</span>
-            <strong>90.2% / 9.8%</strong>
+            <strong>{{ porcentajeEventos }}% / {{ porcentajeSuscripciones }}%</strong>
           </div>
-          <small>Mayor concentración en inscripciones directas a competencias federadas.</small>
         </div>
       </div>
     </section>
@@ -229,12 +172,16 @@
       <div class="table-header">
         <div>
           <h3>DETALLE POR EVENTO</h3>
-          <p>Desglose individual de montos recaudados y comisiones aplicadas (8%)</p>
+          <p>Desglose individual de montos recaudados y comisión de plataforma según el plan de cada organizador</p>
         </div>
         <div class="table-controls">
-          <input type="text" placeholder="🔍 Buscar por nombre o código...">
-          <select><option>Mayor Recaudación</option></select>
-          <span class="results-count">3 registros</span>
+          <input type="text" placeholder="🔍 Buscar por nombre…" [(ngModel)]="busqueda">
+          <select [(ngModel)]="orden">
+            <option value="monto">Mayor Recaudación</option>
+            <option value="inscritos">Mayor Inscritos</option>
+            <option value="nombre">Nombre A-Z</option>
+          </select>
+          <span class="results-count">{{ detalleFiltrado.length }} registro(s)</span>
         </div>
       </div>
 
@@ -242,91 +189,55 @@
         <table>
           <thead>
             <tr>
-              <th>CÓDIGO EVENTO</th>
-              <th>NOMBRE DE EVENTO DEPORTIVO ADAPTADO</th>
-              <th>CATEGORÍA / DISCIPLINA</th>
+              <th>EVENTO</th>
+              <th>DISCIPLINA</th>
               <th>NÚMERO INSCRITOS</th>
               <th>MONTO TOTAL (COP)</th>
-              <th>COMISIÓN ESTIMADA (8%)</th>
+              <th>COMISIÓN ESTIMADA</th>
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td class="code-cell">EVT-2024-MED-04</td>
+            <tr *ngFor="let item of detalleFiltrado">
               <td>
                 <div class="event-cell">
-                  <span class="icon red">♿</span>
                   <div>
-                    <strong>Carrera Sillas de Ruedas Medellín</strong>
-                    <small>Sede: Pista Atlética Alfonso Galvis - Medellín</small>
+                    <strong>{{ item.nombreEvento }}</strong>
+                    <small>{{ item.location }}</small>
                   </div>
                 </div>
               </td>
-              <td><span class="tag purple">• Para-atletismo T54</span></td>
-              <td><strong>95 atletas</strong> <small>88% de aforo</small></td>
-              <td><strong class="price">$5.700.000 COP</strong></td>
+              <td><span class="tag blue">{{ item.sportName }}</span></td>
               <td>
-                <strong>$456.000 COP</strong>
-                <small class="tag-sub">8% plataforma</small>
+                <strong>{{ item.numeroInscritos }} atleta(s)</strong>
+                <small *ngIf="porcentajeAforo(item) !== null">{{ porcentajeAforo(item) }}% de aforo</small>
+              </td>
+              <td><strong class="price">${{ item.montoTotal | number: '1.0-0' }} COP</strong></td>
+              <td>
+                <strong>${{ item.comisionEstimada | number: '1.0-0' }} COP</strong>
+                <small class="tag-sub">{{ porcentajeComision(item) }}%</small>
               </td>
             </tr>
-
-            <tr>
-              <td class="code-cell">EVT-2024-BOG-01</td>
-              <td>
-                <div class="event-cell">
-                  <span class="icon blue">👟</span>
-                  <div>
-                    <strong>Media Maratón Adaptada Bogotá</strong>
-                    <small>Sede: Parque Metropolitano Simón Bolívar - Bogotá</small>
-                  </div>
-                </div>
-              </td>
-              <td><span class="tag blue">• Fondo Adaptado / Prótesis</span></td>
-              <td><strong>120 atletas</strong> <small>100% cupos llenos</small></td>
-              <td><strong class="price">$5.400.000 COP</strong></td>
-              <td>
-                <strong>$432.000 COP</strong>
-                <small class="tag-sub">8% plataforma</small>
-              </td>
-            </tr>
-
-            <tr>
-              <td class="code-cell">EVT-2024-CALI-02</td>
-              <td>
-                <div class="event-cell">
-                  <span class="icon yellow">🏅</span>
-                  <div>
-                    <strong>Torneo Para-atletismo Cali</strong>
-                    <small>Sede: Estadio Pedro Grajales - Cali</small>
-                  </div>
-                </div>
-              </td>
-              <td><span class="tag yellow">• Salto y Lanzamiento</span></td>
-              <td><strong>63 atletas</strong> <small>64% de aforo</small></td>
-              <td><strong class="price">$1.350.000 COP</strong></td>
-              <td>
-                <strong>$108.000 COP</strong>
-                <small class="tag-sub">8% plataforma</small>
-              </td>
+            <tr *ngIf="!detalleFiltrado.length">
+              <td colspan="5" class="empty-note">No hay eventos que coincidan con el filtro actual.</td>
             </tr>
           </tbody>
           <tfoot>
             <tr class="total-row">
-              <td colspan="3">TOTALES CONSOLIDADOS DEL PERÍODO</td>
-              <td><strong>278 atletas</strong></td>
-              <td><strong class="price-total">$12.450.000 COP</strong></td>
-              <td><strong class="commission-total">$996.000 COP</strong></td>
+              <td colspan="2">TOTALES CONSOLIDADOS DEL PERÍODO</td>
+              <td><strong>{{ reporte.numeroInscritos }} atletas</strong></td>
+              <td><strong class="price-total">${{ reporte.ingresosPorEventos | number: '1.0-0' }} COP</strong></td>
+              <td><strong class="commission-total">${{ comisionTotalEstimada | number: '1.0-0' }} COP</strong></td>
             </tr>
           </tfoot>
         </table>
       </div>
 
       <div class="table-footer">
-        <span>• Liquidación automática de comisión (8%) calculada sobre inscripciones efectivas.</span>
-        <span>Mostrando 3 de 3 eventos | <a href="#">Volver arriba ↑</a></span>
+        <span>• Comisión de plataforma calculada según el plan de suscripción vigente de cada organizador.</span>
+        <span>Mostrando {{ detalleFiltrado.length }} de {{ detalle.length }} eventos | <a href="javascript:void(0)" (click)="scrollArriba()">Volver arriba ↑</a></span>
       </div>
     </section>
+  </ng-container>
 
     <!-- Global Footer -->
     <footer class="dashboard-footer">
