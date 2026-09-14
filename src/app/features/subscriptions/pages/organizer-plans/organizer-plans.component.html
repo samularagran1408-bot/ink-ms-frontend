@@ -31,7 +31,7 @@
         [class.btn-pro]="!esPlanActual(plan) && (plan.esGratuito || i === 1)"
         [disabled]="esPlanActual(plan) || contratandoId === plan.id"
         (click)="elegir(plan)">
-        {{ esPlanActual(plan) ? 'PLAN ACTUAL' : (contratandoId === plan.id ? 'REDIRIGIENDO…' : 'ELEGIR PLAN →') }}
+        {{ esPlanActual(plan) ? 'PLAN ACTUAL' : (contratandoId === plan.id ? 'ABRIENDO PAGO…' : 'ELEGIR PLAN →') }}
       </button>
     </article>
   </section>
@@ -40,7 +40,7 @@
     <div>
       <div class="banner-kicker">MERCADO PAGO · COP</div>
       <h2>Los cobros se liquidan en pesos colombianos</h2>
-      <p>Checkout Pro de Mercado Pago. Si el plan es gratuito se activa al instante, sin pasarela.</p>
+      <p>El cobro se hace con el formulario seguro de Mercado Pago dentro de InkluSport. Si el plan es gratuito se activa al instante, sin pasarela.</p>
     </div>
   </section>
 

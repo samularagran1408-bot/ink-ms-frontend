@@ -3,11 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 
 import { Plan, Suscripcion } from '../../models/subscriptions';
-import { CheckoutRedirectService } from '../../services/checkout-redirect.service';
 import { SubscriptionsService } from '../../services/subscriptions.service';
-
-import { SubscriptionService } from '../../services/subscription.service';
-import { Plan, SuscripcionResponse } from '../../models/subscription-models';
 
 /** M09 - Estado de la suscripción vigente del organizador (RF57). */
 @Component({
@@ -26,7 +22,6 @@ export class SubscriptionComponent implements OnInit {
 
   constructor(
     private subscriptions: SubscriptionsService,
-    private checkout: CheckoutRedirectService,
     private router: Router
   ) {}
 
@@ -60,10 +55,24 @@ export class SubscriptionComponent implements OnInit {
       return;
     }
     this.renovando = true;
+    const plan = this.planes.find((item) => item.id === (planId ?? this.actual?.planId));
     this.subscriptions.renovar(this.actual.id, planId).subscribe({
       next: (checkout) => {
         this.renovando = false;
-        this.checkout.follow(checkout, { plan: this.actual?.planNombre });
+        if (!checkout.referenciaTransaccion) {
+          void this.router.navigate(['/organizer/subscription']);
+          return;
+        }
+        void this.router.navigate(['/organizer/plans/pago', checkout.referenciaTransaccion], {
+          state: {
+            plan: plan ?? {
+              id: planId ?? this.actual!.planId,
+              nombre: this.actual?.planNombre ?? 'Plan',
+              precio: checkout.monto
+            } as Plan,
+            monto: checkout.monto
+          }
+        });
       },
       error: (error) => {
         this.renovando = false;
