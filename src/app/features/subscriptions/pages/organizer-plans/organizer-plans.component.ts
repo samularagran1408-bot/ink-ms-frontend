@@ -53,7 +53,7 @@ export class OrganizerPlansComponent implements OnInit {
   }
 
   esGratuito(plan: Plan): boolean {
-    return !plan.precio;
+    return plan.esGratuito;
   }
 
   esPlanActual(plan: Plan): boolean {

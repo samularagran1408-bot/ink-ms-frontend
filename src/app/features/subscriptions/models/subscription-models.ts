@@ -1,9 +1,17 @@
 /** M09 - Suscripciones: modelos alineados con los DTO de ink-ms-subscriptions. */
 
-export type EstadoPago = 'PENDIENTE' | 'APROBADO' | 'RECHAZADO';
+export type EstadoPago = 'PENDIENTE' | 'APROBADO' | 'RECHAZADO' | 'REEMBOLSADO' | 'CANCELADO';
 export type EstadoSuscripcion = 'ACTIVA' | 'VENCIDA' | 'CANCELADA' | 'SUSPENDIDA';
 export type TipoPago = 'SUSCRIPCION' | 'EVENTO';
-export type TipoMovimiento = 'CREACION' | 'RENOVACION' | 'CAMBIO_PLAN' | 'CANCELACION';
+export type TipoMovimiento =
+  | 'ASIGNACION_INICIAL'
+  | 'CREACION'
+  | 'RENOVACION'
+  | 'CAMBIO_PLAN'
+  | 'CANCELACION'
+  | 'SUSPENSION'
+  | 'REACTIVACION'
+  | 'VENCIMIENTO';
 
 /** GET /api/planes (PlanResponse) */
 export interface Plan {
@@ -11,11 +19,16 @@ export interface Plan {
   nombre: string;
   descripcion: string | null;
   precio: number;
+  moneda: string;
   limiteEventosMes: number | null;
   porcentajeComision: number | null;
   duracionDias: number;
   activo: boolean;
+  esGratuito: boolean;
+  esPlanInicial: boolean;
+  fechaCreacion: string;
   beneficios: string[];
+  funcionalidades: string[];
 }
 
 /** Cuerpo de POST /api/suscripciones y POST /api/suscripciones/{id}/renovar */
@@ -40,6 +53,10 @@ export interface SuscripcionResponse {
   organizadorId: string;
   planId: number;
   planNombre: string;
+  /** Precio, límite y comisión vigentes al momento de contratar; distintos de los del plan si este cambió después. */
+  precioAplicado: number;
+  limiteEventosAplicado: number | null;
+  porcentajeComisionAplicado: number;
   fechaInicio: string;
   fechaFin: string;
   estado: EstadoSuscripcion;
