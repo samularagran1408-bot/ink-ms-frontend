@@ -1,12 +1,18 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { SharedModule } from '@shared/shared.module';
 
-import { Plan, Suscripcion } from '../../models/subscriptions';
-import { CheckoutRedirectService } from '../../services/checkout-redirect.service';
-import { SubscriptionsService } from '../../services/subscriptions.service';
+import { SubscriptionService } from '../../services/subscription.service';
+import { Plan, SuscripcionResponse } from '../../models/subscription-models';
 
+/**
+ * M09 - Catálogo de planes y contratación (RF54, RF56). El cobro de un plan pago se
+ * hace con el checkout propio (RF70, `PaymentGatewayComponent`) en vez de redirigir a
+ * la interfaz de Mercado Pago: el backend ya no devuelve `checkoutUrl` para pagos de
+ * suscripción (ver `PagoSuscripcionService.iniciarPago`), solo una `referenciaTransaccion`
+ * con la que se navega al formulario de tarjeta embebido.
+ */
 @Component({
   standalone: true,
   imports: [CommonModule, RouterModule, SharedModule],
@@ -16,18 +22,18 @@ import { SubscriptionsService } from '../../services/subscriptions.service';
 })
 export class OrganizerPlansComponent implements OnInit {
   planes: Plan[] = [];
-  actual: Suscripcion | null = null;
+  actual: SuscripcionResponse | null = null;
   loading = true;
   errorMessage: string | null = null;
   contratandoId: number | null = null;
 
   constructor(
-    private subscriptions: SubscriptionsService,
-    private checkout: CheckoutRedirectService
+    private readonly subscriptions: SubscriptionService,
+    private readonly router: Router,
   ) {}
 
   ngOnInit(): void {
-    this.subscriptions.listarPlanes().subscribe({
+    this.subscriptions.getPlanes().subscribe({
       next: (planes) => {
         this.planes = planes;
         this.loading = false;
@@ -40,10 +46,14 @@ export class OrganizerPlansComponent implements OnInit {
         this.loading = false;
       }
     });
-    this.subscriptions.obtenerActual().subscribe({
+    this.subscriptions.getSuscripcionActual().subscribe({
       next: (actual) => (this.actual = actual),
       error: () => (this.actual = null)
     });
+  }
+
+  esGratuito(plan: Plan): boolean {
+    return !plan.precio;
   }
 
   esPlanActual(plan: Plan): boolean {
@@ -51,8 +61,7 @@ export class OrganizerPlansComponent implements OnInit {
   }
 
   precio(plan: Plan): string {
-    const moneda = plan.moneda || 'COP';
-    return new Intl.NumberFormat('es-CO', { style: 'currency', currency: moneda, maximumFractionDigits: 0 })
+    return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 })
       .format(plan.precio ?? 0);
   }
 
@@ -63,16 +72,23 @@ export class OrganizerPlansComponent implements OnInit {
     this.contratandoId = plan.id;
     this.errorMessage = null;
     const request$ = this.actual
-      ? this.subscriptions.renovar(this.actual.id, plan.id)
-      : this.subscriptions.contratar(plan.id);
+      ? this.subscriptions.renovarSuscripcion(this.actual.id, plan.id)
+      : this.subscriptions.crearSuscripcion({ planId: plan.id });
     request$.subscribe({
       next: (checkout) => {
         this.contratandoId = null;
-        this.checkout.follow(checkout, { plan: plan.nombre });
+        if (!checkout.referenciaTransaccion || checkout.estado === 'APROBADO') {
+          // Plan gratuito: la suscripción ya quedó activa, no hay nada que cobrar.
+          void this.router.navigate(['/organizer/subscription']);
+          return;
+        }
+        void this.router.navigate(['/organizer/plans/pago', checkout.referenciaTransaccion], {
+          state: { plan, monto: checkout.monto },
+        });
       },
       error: (error) => {
         this.contratandoId = null;
-        this.errorMessage = error?.error?.message || 'No se pudo iniciar el pago con Mercado Pago.';
+        this.errorMessage = error?.error?.message || 'No se pudo iniciar el pago del plan.';
       }
     });
   }

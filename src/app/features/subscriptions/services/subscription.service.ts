@@ -125,6 +125,13 @@ export class SubscriptionService {
     );
   }
 
+  /** RF58 - suscripciones de un organizador ajeno, más reciente primero. */
+  getSuscripcionesPorOrganizador(organizadorId: string): Observable<SuscripcionResponse[]> {
+    return this.http.get<SuscripcionResponse[]>(
+      `${this.base}/api/suscripciones/admin/organizadores/${encodeURIComponent(organizadorId)}/suscripciones`,
+    );
+  }
+
   // -------------------------------------------------------------------------
   // RF55, RF63 - Configuración de eventos de pago (organizador)
   // -------------------------------------------------------------------------

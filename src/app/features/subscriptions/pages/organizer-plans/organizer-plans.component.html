@@ -13,7 +13,7 @@
   <section class="pricing" *ngIf="!loading">
     <article class="plan-card" *ngFor="let plan of planes; let i = index" [class.featured]="i === 1">
       <div class="reco" *ngIf="i === 1">◉ RECOMENDADO</div>
-      <div class="plan-tag">{{ plan.esGratuito ? 'Nivel entrada' : (i === 1 ? 'Crecimiento' : 'Alto rendimiento') }}</div>
+      <div class="plan-tag">{{ esGratuito(plan) ? 'Nivel entrada' : (i === 1 ? 'Crecimiento' : 'Alto rendimiento') }}</div>
       <h2>{{ plan.nombre }}</h2>
       <p class="plan-desc">{{ plan.descripcion }}</p>
       <div class="price">{{ precio(plan) }}<small> / {{ plan.duracionDias || 30 }} días</small></div>
@@ -22,16 +22,15 @@
         <li>Hasta {{ plan.limiteEventosMes || 'ilimitados' }} eventos al mes</li>
         <li>{{ plan.porcentajeComision }}% comisión por inscripción</li>
         <li *ngFor="let b of plan.beneficios">{{ b }}</li>
-        <li *ngFor="let f of plan.funcionalidades">{{ f }}</li>
       </ul>
       <button
         class="plan-btn"
         [class.btn-current]="esPlanActual(plan)"
-        [class.btn-elite]="!esPlanActual(plan) && !plan.esGratuito && i !== 1"
-        [class.btn-pro]="!esPlanActual(plan) && (plan.esGratuito || i === 1)"
+        [class.btn-elite]="!esPlanActual(plan) && !esGratuito(plan) && i !== 1"
+        [class.btn-pro]="!esPlanActual(plan) && (esGratuito(plan) || i === 1)"
         [disabled]="esPlanActual(plan) || contratandoId === plan.id"
         (click)="elegir(plan)">
-        {{ esPlanActual(plan) ? 'PLAN ACTUAL' : (contratandoId === plan.id ? 'REDIRIGIENDO…' : 'ELEGIR PLAN →') }}
+        {{ esPlanActual(plan) ? 'PLAN ACTUAL' : (contratandoId === plan.id ? 'PROCESANDO…' : 'ELEGIR PLAN →') }}
       </button>
     </article>
   </section>
@@ -40,7 +39,7 @@
     <div>
       <div class="banner-kicker">MERCADO PAGO · COP</div>
       <h2>Los cobros se liquidan en pesos colombianos</h2>
-      <p>Checkout Pro de Mercado Pago. Si el plan es gratuito se activa al instante, sin pasarela.</p>
+      <p>Pagas con tarjeta directamente en InkluSport; Mercado Pago procesa el cobro por debajo. Si el plan es gratuito se activa al instante, sin pasarela.</p>
     </div>
   </section>
 

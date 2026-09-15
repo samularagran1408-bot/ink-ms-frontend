@@ -44,7 +44,7 @@
         </div>
         <div>
           <dt>Precio</dt>
-          <dd>{{ plan.precio | number:'1.0-0' }} {{ plan.moneda || 'COP' }}</dd>
+          <dd>{{ plan.precio | number:'1.0-0' }} COP</dd>
         </div>
       </dl>
     </article>
@@ -69,7 +69,7 @@
         </tr>
         <tr>
           <td>Precio</td>
-          <td *ngFor="let plan of planes" [class.hl]="actual?.planId === plan.id">{{ plan.precio | number:'1.0-0' }} {{ plan.moneda || 'COP' }}</td>
+          <td *ngFor="let plan of planes" [class.hl]="actual?.planId === plan.id">{{ plan.precio | number:'1.0-0' }} COP</td>
         </tr>
       </tbody>
     </table>

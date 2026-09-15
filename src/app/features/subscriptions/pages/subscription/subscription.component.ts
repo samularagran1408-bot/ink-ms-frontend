@@ -2,14 +2,14 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 
-import { Plan, Suscripcion } from '../../models/subscriptions';
-import { CheckoutRedirectService } from '../../services/checkout-redirect.service';
-import { SubscriptionsService } from '../../services/subscriptions.service';
-
 import { SubscriptionService } from '../../services/subscription.service';
 import { Plan, SuscripcionResponse } from '../../models/subscription-models';
 
-/** M09 - Estado de la suscripción vigente del organizador (RF57). */
+/**
+ * M09 - Estado de la suscripción vigente del organizador (RF57). La renovación usa el
+ * checkout propio (RF70, `PaymentGatewayComponent`), no un redirect a la interfaz de
+ * Mercado Pago: el backend ya no devuelve `checkoutUrl` para pagos de suscripción.
+ */
 @Component({
   standalone: true,
   imports: [CommonModule, RouterModule],
@@ -18,23 +18,22 @@ import { Plan, SuscripcionResponse } from '../../models/subscription-models';
   styleUrl: './subscription.component.scss'
 })
 export class SubscriptionComponent implements OnInit {
-  actual: Suscripcion | null = null;
+  actual: SuscripcionResponse | null = null;
   planes: Plan[] = [];
   loading = true;
   errorMessage: string | null = null;
   renovando = false;
 
   constructor(
-    private subscriptions: SubscriptionsService,
-    private checkout: CheckoutRedirectService,
-    private router: Router
+    private readonly subscriptions: SubscriptionService,
+    private readonly router: Router,
   ) {}
 
   ngOnInit(): void {
-    this.subscriptions.listarPlanes().subscribe({
+    this.subscriptions.getPlanes().subscribe({
       next: (planes) => (this.planes = planes)
     });
-    this.subscriptions.obtenerActual().subscribe({
+    this.subscriptions.getSuscripcionActual().subscribe({
       next: (actual) => {
         this.actual = actual;
         this.loading = false;
@@ -60,10 +59,19 @@ export class SubscriptionComponent implements OnInit {
       return;
     }
     this.renovando = true;
-    this.subscriptions.renovar(this.actual.id, planId).subscribe({
+    this.errorMessage = null;
+    const idPlanDestino = planId ?? this.actual.planId;
+    this.subscriptions.renovarSuscripcion(this.actual.id, planId).subscribe({
       next: (checkout) => {
         this.renovando = false;
-        this.checkout.follow(checkout, { plan: this.actual?.planNombre });
+        if (!checkout.referenciaTransaccion || checkout.estado === 'APROBADO') {
+          void this.router.navigate(['/organizer/subscription']);
+          return;
+        }
+        const plan = this.planes.find((p) => p.id === idPlanDestino) ?? null;
+        void this.router.navigate(['/organizer/plans/pago', checkout.referenciaTransaccion], {
+          state: { plan, monto: checkout.monto },
+        });
       },
       error: (error) => {
         this.renovando = false;

@@ -1,3 +1,95 @@
-<div class="event-payment-history-page">
-  <p>Pendiente de diseño — RF57/RF68, historial de pagos de eventos.</p>
+<div class="payments-page">
+
+  <div class="crumb">RF57 · RF68 <span class="sep">|</span> HISTORIAL DE EVENTOS</div>
+
+  <div class="page-head">
+    <div>
+      <h1>Historial de pagos de inscripciones</h1>
+      <p>Consulta tus cobros de inscripción a eventos pagos y descarga los comprobantes. Los montos están en pesos colombianos (COP) vía Mercado Pago.</p>
+    </div>
+  </div>
+
+  <p *ngIf="loading" class="status">Cargando pagos…</p>
+  <p *ngIf="errorMessage" class="error">{{ errorMessage }}</p>
+
+  <section class="kpis" *ngIf="!loading">
+    <div class="kpi">
+      <div class="kpi-top"><span>TOTAL APROBADO</span></div>
+      <div class="kpi-value">{{ totalAprobado() | number:'1.0-0' }}<small>COP</small></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-top"><span>INSCRIPCIONES PAGADAS</span></div>
+      <div class="kpi-value">{{ pagos.length }}</div>
+    </div>
+  </section>
+
+  <div class="filters" *ngIf="!loading && pagos.length">
+    <label class="f-input">
+      <span aria-hidden="true">🧾</span>
+      <input type="search" [(ngModel)]="filtro" placeholder="Buscar por ID, evento o estado">
+    </label>
+  </div>
+
+  <div class="ledger-head" *ngIf="!loading && pagos.length">
+    <div class="ledger-title">
+      <h2>Inscripciones pagadas</h2>
+      <span class="chip">{{ filtrados.length }} REGISTROS</span>
+    </div>
+    <span class="sync">⟳ MERCADO PAGO · COP</span>
+  </div>
+
+  <div class="ledger-cards" *ngIf="!loading">
+    <article class="ledger-card" *ngFor="let pago of filtrados">
+      <header>
+        <span class="txn-id">#{{ pago.id }}</span>
+        <span class="badge" [ngClass]="badge(pago.estado)">{{ pago.estado }}</span>
+      </header>
+      <p class="concept"><b>Inscripción a evento {{ pago.eventoId }}</b></p>
+      <dl>
+        <div>
+          <dt>Fecha</dt>
+          <dd>{{ pago.fechaPago | date:'medium' }}</dd>
+        </div>
+        <div>
+          <dt>Método</dt>
+          <dd>{{ pago.metodoPago || 'Mercado Pago' }}</dd>
+        </div>
+        <div>
+          <dt>Monto</dt>
+          <dd class="amount">{{ pago.monto | number:'1.0-0' }} <small>COP</small></dd>
+        </div>
+      </dl>
+      <button *ngIf="pago.comprobanteId" class="link" type="button" [disabled]="descargandoId === pago.id" (click)="descargar(pago)">
+        {{ descargandoId === pago.id ? 'Descargando…' : 'Comprobante' }}
+      </button>
+    </article>
+    <p class="empty" *ngIf="!loading && filtrados.length === 0">No hay pagos de eventos registrados todavía.</p>
+  </div>
+
+  <div class="ledger-wrap" *ngIf="!loading && pagos.length">
+    <table class="ledger">
+      <thead>
+        <tr><th>ID</th><th>EVENTO</th><th>FECHA</th><th>MÉTODO</th><th>MONTO</th><th>ESTADO</th><th></th></tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let pago of filtrados">
+          <td><span class="txn-id">#{{ pago.id }}</span></td>
+          <td class="concept"><b>{{ pago.eventoId }}</b></td>
+          <td class="date">{{ pago.fechaPago | date:'medium' }}</td>
+          <td class="method">{{ pago.metodoPago || 'Mercado Pago' }}</td>
+          <td class="amount">{{ pago.monto | number:'1.0-0' }}<small>COP</small></td>
+          <td><span class="badge" [ngClass]="badge(pago.estado)">{{ pago.estado }}</span></td>
+          <td>
+            <button *ngIf="pago.comprobanteId" class="link" type="button" [disabled]="descargandoId === pago.id" (click)="descargar(pago)">
+              {{ descargandoId === pago.id ? 'Descargando…' : 'Comprobante' }}
+            </button>
+          </td>
+        </tr>
+        <tr *ngIf="filtrados.length === 0">
+          <td colspan="7">No hay pagos de eventos registrados todavía.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
 </div>
