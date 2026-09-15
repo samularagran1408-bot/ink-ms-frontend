@@ -1,13 +1,18 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
+import { Router, RouterModule } from '@angular/router';
 import { of, Subscription } from 'rxjs';
 
 import { Disability, Routine } from '@features/sports-disabilities/models/sports';
 import { SessionService } from '@core/services/session.service';
 import { ReportsService } from '@features/reports/services/reports.service';
 import { LiveSyncService } from '@features/accessibility/services/live-sync.service';
+import { SharedModule } from '@shared/shared.module';
 
 @Component({
+  standalone: true,
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, SharedModule],
   selector: 'app-trainer-dashboard',
   templateUrl: './trainer-dashboard.component.html',
   styleUrl: './trainer-dashboard.component.scss'
@@ -75,6 +80,16 @@ export class TrainerDashboardComponent implements OnInit, OnDestroy {
 
   goSessions(): void {
     this.router.navigate(['/trainer/sessions']);
+  }
+
+  goSession(routine: Routine): void {
+    this.router.navigate(['/trainer/sessions'], { queryParams: { sesion: routine.id } });
+  }
+
+  occupied(routine: Routine): number {
+    const max = Number(routine.maxCapacity || 0);
+    const available = routine.availableCapacity == null ? max : Number(routine.availableCapacity);
+    return Math.max(max - available, 0);
   }
 
   goSports(): void {

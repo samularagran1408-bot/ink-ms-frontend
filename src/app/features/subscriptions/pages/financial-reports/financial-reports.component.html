@@ -1,0 +1,239 @@
+<div class="dashboard-container">
+    
+    <!-- Top Navigation Header -->
+    <header class="top-nav">
+      <div class="nav-left">
+        <div class="logo">
+          <span class="logo-icon">▲</span> <strong>Inklu</strong>Sport
+        </div>
+        <div class="breadcrumb">
+          <span>FINANZAS</span> / <span class="active">REPORTES FINANCIEROS</span>
+          <span class="badge-code">RF62</span>
+        </div>
+        <div class="role-badge">
+          <span class="dot"></span> ROL: {{ modo === 'global' ? 'ADMINISTRADOR' : 'ORGANIZADOR' }}
+        </div>
+      </div>
+
+    <div class="nav-right">
+      <span class="role-badge">Vista: {{ modo === 'global' ? 'Administrador (Global)' : 'Organizador (Propio)' }}</span>
+      <div class="action-buttons">
+        <button class="btn-outline" [disabled]="!detalle.length" (click)="exportarCsv()">Exportar CSV</button>
+        <button class="btn-icon" title="Actualizar" (click)="cargar()">↻</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Title Section -->
+  <section class="main-title-section">
+    <div class="title-wrapper">
+      <h1>REPORTES FINANCIEROS</h1>
+      <span class="subtitle-badge">Plataforma InkluSport</span>
+    </div>
+    <div class="status-bar">
+      <span>{{ modo === 'global'
+        ? 'Análisis global de ingresos e inscripciones de todos los organizadores y eventos registrados en la plataforma.'
+        : 'Análisis de ingresos e inscripciones propias correspondientes a tus eventos deportivos adaptados registrados en la plataforma.' }}</span>
+      <span class="sync-status" *ngIf="ultimaActualizacion">Última actualización: {{ ultimaActualizacion | date: 'dd/MM/yyyy, HH:mm' }}</span>
+    </div>
+  </section>
+
+  <!-- Filter Card -->
+  <section class="filter-card">
+    <div class="filter-header">
+      <div class="filter-title">
+        <span class="icon">📅</span>
+        <strong>PERÍODO DE CONSULTA</strong>
+        <span class="badge-period" *ngIf="desde && hasta">{{ desde | date: 'dd/MM/yyyy' }} – {{ hasta | date: 'dd/MM/yyyy' }}</span>
+      </div>
+      <div class="filter-shortcuts">
+        <span class="label">ATAJOS:</span>
+        <button class="btn-shortcut" [class.active]="atajo === '7d'" (click)="aplicarAtajo('7d')">Últimos 7 días</button>
+        <button class="btn-shortcut" [class.active]="atajo === '30d'" (click)="aplicarAtajo('30d')">Últimos 30 días</button>
+        <button class="btn-shortcut" [class.active]="atajo === 'trimestre'" (click)="aplicarAtajo('trimestre')">Último Trimestre</button>
+        <button class="btn-shortcut" [class.active]="atajo === 'anio'" (click)="aplicarAtajo('anio')">Año Actual</button>
+      </div>
+    </div>
+
+    <div class="filter-form">
+      <div class="input-group">
+        <label>FECHA DESDE</label>
+        <input type="date" [(ngModel)]="desde">
+      </div>
+      <div class="input-group">
+        <label>FECHA HASTA</label>
+        <input type="date" [(ngModel)]="hasta">
+      </div>
+      <div class="input-group grow">
+        <label>FILTRAR POR EVENTO</label>
+        <select [(ngModel)]="eventoFiltro">
+          <option value="">Todos los eventos ({{ detalle.length }})</option>
+          <option *ngFor="let d of detalle" [value]="d.eventoId">{{ d.nombreEvento }}</option>
+        </select>
+      </div>
+      <button class="btn-search" (click)="cargar()">🔍 Aplicar Filtro</button>
+    </div>
+  </section>
+
+  <div *ngIf="cargando" class="loading-box">Cargando reporte financiero…</div>
+  <div *ngIf="!cargando && error" class="warning-box">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+    <p>{{ error }}</p>
+  </div>
+
+  <ng-container *ngIf="!cargando && !error && reporte">
+
+    <!-- KPI Summary Cards Grid -->
+    <section class="kpi-grid">
+      <!-- KPI 1 -->
+      <div class="kpi-card border-red">
+        <div class="kpi-header">
+          <span><span class="dot red"></span> INGRESOS POR EVENTOS</span>
+          <span class="kpi-icon">📅</span>
+        </div>
+        <div class="kpi-value">${{ reporte.ingresosPorEventos | number: '1.0-0' }} <small>COP</small></div>
+        <div class="kpi-footer">
+          <span>{{ detalle.length }} evento(s) con ingresos</span>
+          <span>{{ reporte.numeroInscritos }} inscritos</span>
+        </div>
+      </div>
+
+      <!-- KPI 2 -->
+      <div class="kpi-card border-blue">
+        <div class="kpi-header">
+          <span><span class="dot blue"></span> INGRESOS POR SUSCRIPCIONES</span>
+          <span class="kpi-icon">💳</span>
+        </div>
+        <div class="kpi-value">${{ reporte.ingresosPorSuscripciones | number: '1.0-0' }} <small>COP</small></div>
+        <div class="kpi-footer">
+          <span>Cuotas de membresía de organizadores</span>
+        </div>
+      </div>
+
+      <!-- KPI 3 -->
+      <div class="kpi-card border-green">
+        <div class="kpi-header">
+          <span><span class="dot green"></span> NÚMERO DE INSCRITOS</span>
+          <span class="kpi-icon">👥</span>
+        </div>
+        <div class="kpi-value">{{ reporte.numeroInscritos }} <small class="unit">ATLETAS TOTALES</small></div>
+        <div class="kpi-footer">
+          <span>Promedio: {{ promedioInscritosPorEvento }} cupos/evento</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Breakdown Section -->
+    <section class="charts-grid">
+      <div class="card breakdown-card">
+        <div class="card-title-bar">
+          <div>
+            <h3>📊 DESGLOSE POR EVENTO</h3>
+            <p>Distribución de los ${{ reporte.ingresosPorEventos | number: '1.0-0' }} COP recaudados por eventos</p>
+          </div>
+        </div>
+
+        <div class="breakdown-list" *ngIf="detalle.length; else sinEventos">
+          <div class="breakdown-item" *ngFor="let d of detalle">
+            <div class="item-header">
+              <strong>{{ d.nombreEvento }}</strong>
+              <span>{{ porcentajeDelTotalEventos(d.montoTotal) }}%</span>
+            </div>
+            <div class="progress-bar"><div class="fill" [style.width.%]="porcentajeDelTotalEventos(d.montoTotal)"></div></div>
+            <div class="item-footer">
+              <small>{{ d.numeroInscritos }} inscritos</small>
+              <strong>${{ d.montoTotal | number: '1.0-0' }} COP</strong>
+            </div>
+          </div>
+        </div>
+        <ng-template #sinEventos>
+          <p class="empty-note">Sin eventos con ingresos en el período seleccionado.</p>
+        </ng-template>
+
+        <div class="breakdown-summary" *ngIf="totalRecaudado > 0">
+          <div class="summary-row">
+            <span>Relación Eventos / Suscripciones</span>
+            <strong>{{ porcentajeEventos }}% / {{ porcentajeSuscripciones }}%</strong>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Table Section -->
+    <section class="card table-card">
+      <div class="table-header">
+        <div>
+          <h3>DETALLE POR EVENTO</h3>
+          <p>Desglose individual de montos recaudados y comisión de plataforma según el plan de cada organizador</p>
+        </div>
+        <div class="table-controls">
+          <input type="text" placeholder="🔍 Buscar por nombre…" [(ngModel)]="busqueda">
+          <select [(ngModel)]="orden">
+            <option value="monto">Mayor Recaudación</option>
+            <option value="inscritos">Mayor Inscritos</option>
+            <option value="nombre">Nombre A-Z</option>
+          </select>
+          <span class="results-count">{{ detalleFiltrado.length }} registro(s)</span>
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>EVENTO</th>
+              <th>DISCIPLINA</th>
+              <th>NÚMERO INSCRITOS</th>
+              <th>MONTO TOTAL (COP)</th>
+              <th>COMISIÓN ESTIMADA</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of detalleFiltrado">
+              <td>
+                <div class="event-cell">
+                  <div>
+                    <strong>{{ item.nombreEvento }}</strong>
+                    <small>{{ item.location }}</small>
+                  </div>
+                </div>
+              </td>
+              <td><span class="tag blue">{{ item.sportName }}</span></td>
+              <td>
+                <strong>{{ item.numeroInscritos }} atleta(s)</strong>
+                <small *ngIf="porcentajeAforo(item) !== null">{{ porcentajeAforo(item) }}% de aforo</small>
+              </td>
+              <td><strong class="price">${{ item.montoTotal | number: '1.0-0' }} COP</strong></td>
+              <td>
+                <strong>${{ item.comisionEstimada | number: '1.0-0' }} COP</strong>
+                <small class="tag-sub">{{ porcentajeComision(item) }}%</small>
+              </td>
+            </tr>
+            <tr *ngIf="!detalleFiltrado.length">
+              <td colspan="5" class="empty-note">No hay eventos que coincidan con el filtro actual.</td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr class="total-row">
+              <td colspan="2">TOTALES CONSOLIDADOS DEL PERÍODO</td>
+              <td><strong>{{ reporte.numeroInscritos }} atletas</strong></td>
+              <td><strong class="price-total">${{ reporte.ingresosPorEventos | number: '1.0-0' }} COP</strong></td>
+              <td><strong class="commission-total">${{ comisionTotalEstimada | number: '1.0-0' }} COP</strong></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <div class="table-footer">
+        <span>• Comisión de plataforma calculada según el plan de suscripción vigente de cada organizador.</span>
+        <span>Mostrando {{ detalleFiltrado.length }} de {{ detalle.length }} eventos | <a href="javascript:void(0)" (click)="scrollArriba()">Volver arriba ↑</a></span>
+      </div>
+    </section>
+  </ng-container>
+
+    <!-- Global Footer -->
+    <footer class="dashboard-footer">
+      InkluSport S.A.S. • Módulo RF82: Generación y Consulta de Reportes Financieros de Gestión Deportiva Adaptada. WCAG 2.1 AA Compliant.
+    </footer>
+
+  </div>

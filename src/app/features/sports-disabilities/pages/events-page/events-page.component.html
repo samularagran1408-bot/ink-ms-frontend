@@ -1,5 +1,4 @@
-<app-panel-shell [fixedSidebar]="mode !== 'user'">
-  <h1 class="page-title">
+<h1 class="page-title">
     {{ mode === 'user'
       ? ((userView === 'history' ? 'EVENTS_PAGE.TITLE_HISTORY' : 'EVENTS_PAGE.TITLE_USER') | translate)
       : ('EVENTS_PAGE.TITLE_MANAGE' | translate) }}
@@ -10,12 +9,44 @@
       : ('EVENTS_PAGE.SUBTITLE_MANAGE' | translate) }}
   </p>
 
-  <p *ngIf="successMessage" class="empty-text">{{ successMessage }}</p>
+  <p *ngIf="successMessage" class="panel-success-banner" role="status">{{ successMessage }}</p>
   <p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
   <p *ngIf="loading" class="empty-text">{{ 'EVENTS_PAGE.LOADING' | translate }}</p>
 
+  <ng-template #eventWhenTpl let-date="date" let-time="time">
+    <div class="event-when">
+      <span class="event-chip event-chip--date">{{ formatEventDate(date) }}</span>
+      <span class="event-chip event-chip--time" *ngIf="formatEventTime(time)">{{ formatEventTime(time) }}</span>
+    </div>
+  </ng-template>
+
+  <ng-template #eventSpotsTpl let-event="event">
+    <div class="event-spots" [attr.data-tone]="occupancyTone(event)">
+      <div class="fill-copy">
+        <strong>{{ occupied(event) }}/{{ event.maxCapacity || 0 }}</strong>
+        <span>{{ spotsHint(event) }}</span>
+      </div>
+      <div
+        class="progress-track"
+        role="progressbar"
+        [attr.aria-valuenow]="occupancyPercent(event)"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        [attr.aria-label]="spotsHint(event)"
+      >
+        <div
+          class="progress-fill"
+          [class.progress-fill--ok]="occupancyTone(event) === 'ok'"
+          [class.progress-fill--warn]="occupancyTone(event) === 'warn'"
+          [class.progress-fill--full]="occupancyTone(event) === 'full'"
+          [style.width.%]="occupancyPercent(event)"
+        ></div>
+      </div>
+    </div>
+  </ng-template>
+
   <div class="actions-row" *ngIf="mode === 'user'">
-    <a *ngIf="userView === 'history'" class="btn-secondary" routerLink="/home/events">
+    <a *ngIf="userView === 'history'" class="btn-secondary" routerLink="/home/events" [queryParams]="emptyQuery">
       {{ 'EVENTS_PAGE.SEE_CATALOG' | translate }}
     </a>
     <a *ngIf="userView === 'catalog'" class="btn-secondary" routerLink="/home/events" [queryParams]="{ vista: 'historial' }">
@@ -41,20 +72,21 @@
       <input
         type="search"
         name="catalogQuery"
-        [(ngModel)]="catalogQuery"
+        [ngModel]="catalogQuery"
+        (ngModelChange)="onCatalogQueryChange($event)"
         [placeholder]="'EVENTS_PAGE.FILTER_PH' | translate"
       />
     </div>
-    <p class="search-count" *ngIf="catalogQuery.trim()">
-      {{ 'COMMON.RESULTS' | translate:{ count: filteredManageRows.length } }}
+    <p class="search-count" *ngIf="catalogQuery.trim() || eventsTotal">
+      {{ 'COMMON.RESULTS' | translate:{ count: eventsTotal } }}
     </p>
     <div class="list-item" *ngIf="lookupEvent">
       <div>
         <strong>{{ lookupEvent.name }}</strong>
-        <div class="kpi-sub">
-          {{ lookupEvent.eventDate }} {{ lookupEvent.eventTime }} ·
-          {{ occupied(lookupEvent) }}/{{ lookupEvent.maxCapacity }} cupos
+        <div class="event-meta">
+          <ng-container *ngTemplateOutlet="eventWhenTpl; context: { date: lookupEvent.eventDate, time: lookupEvent.eventTime }"></ng-container>
         </div>
+        <ng-container *ngTemplateOutlet="eventSpotsTpl; context: { event: lookupEvent }"></ng-container>
       </div>
       <span class="status-pill" [class.status-pill--ok]="lookupEvent.status === 'active'" [class.status-pill--warn]="lookupEvent.status === 'draft'" [class.status-pill--bad]="lookupEvent.status === 'cancelled'">
         {{ lookupEvent.status || '—' }}
@@ -81,10 +113,12 @@
     <div class="list-item" *ngFor="let item of calendarItems">
       <div>
         <strong>{{ item.title }}</strong>
-        <div class="kpi-sub">
-          {{ item.sportName || 'Deporte' }} · {{ item.startDate }} {{ item.startTime }} ·
-          {{ item.location || 'Sin ubicación' }} · {{ occupied(item) }}/{{ item.maxCapacity }} cupos
+        <div class="event-meta">
+          <span class="event-chip">{{ item.sportName || ('COMMON.SPORT' | translate) }}</span>
+          <ng-container *ngTemplateOutlet="eventWhenTpl; context: { date: item.startDate, time: item.startTime }"></ng-container>
         </div>
+        <div class="kpi-sub" *ngIf="item.location">{{ item.location }}</div>
+        <ng-container *ngTemplateOutlet="eventSpotsTpl; context: { event: item }"></ng-container>
       </div>
     </div>
     <p *ngIf="calendarLoaded && !calendarItems.length" class="empty-text">
@@ -169,20 +203,12 @@
     <div class="next-event-body">
       <div class="next-event-kicker">{{ 'EVENTS_PAGE.NEXT_EVENT' | translate }}</div>
       <h2 class="next-event-title">{{ event.name }}</h2>
-      <p class="kpi-sub">
-        {{ event.sportName || ('COMMON.SPORT' | translate) }} · {{ eventStartLabel(event) }}
-      </p>
-      <p class="kpi-sub" *ngIf="event.location">{{ event.location }}</p>
-
-      <div class="fill-row">
-        <div class="fill-copy">
-          <strong>{{ occupied(event) }}/{{ event.maxCapacity }}</strong>
-          <span>{{ 'EVENTS_PAGE.FILL_RATE' | translate }} · {{ nextOccupancyPercent }}%</span>
-        </div>
-        <div class="progress-track" role="progressbar" [attr.aria-valuenow]="nextOccupancyPercent" aria-valuemin="0" aria-valuemax="100">
-          <div class="progress-fill" [style.width.%]="nextOccupancyPercent"></div>
-        </div>
+      <div class="event-meta">
+        <span class="event-chip">{{ event.sportName || ('COMMON.SPORT' | translate) }}</span>
+        <ng-container *ngTemplateOutlet="eventWhenTpl; context: { date: event.eventDate, time: event.eventTime }"></ng-container>
       </div>
+      <p class="kpi-sub" *ngIf="event.location">{{ event.location }}</p>
+      <ng-container *ngTemplateOutlet="eventSpotsTpl; context: { event: event }"></ng-container>
 
       <div class="next-event-actions">
         <span
@@ -239,7 +265,7 @@
   <div class="card" *ngIf="mode === 'user' && userView === 'history' && !loading && !nextRegisteredEvent" style="margin-bottom: 16px;">
     <h3 class="section-title">{{ 'EVENTS_PAGE.NEXT_EVENT' | translate }}</h3>
     <p class="empty-text">{{ 'EVENTS_PAGE.NO_NEXT' | translate }}</p>
-    <a class="btn-secondary" routerLink="/home/events">{{ 'EVENTS_PAGE.SEE_CATALOG' | translate }}</a>
+    <a class="btn-secondary" routerLink="/home/events" [queryParams]="emptyQuery">{{ 'EVENTS_PAGE.SEE_CATALOG' | translate }}</a>
   </div>
 
   <div class="card" *ngIf="mode === 'user' && userView === 'history'" id="historial-eventos" style="margin-bottom: 16px;">
@@ -332,15 +358,16 @@
       <input
         type="search"
         name="catalogQuery"
-        [(ngModel)]="catalogQuery"
+        [ngModel]="catalogQuery"
+        (ngModelChange)="onCatalogQueryChange($event)"
         [placeholder]="'EVENTS_PAGE.FILTER_PH' | translate"
       />
       <button class="btn-secondary" type="button" *ngIf="catalogQuery.trim()" (click)="clearCatalogQuery()">
         {{ 'COMMON.CLEAR' | translate }}
       </button>
     </div>
-    <p class="search-count" *ngIf="catalogQuery.trim()">
-      {{ 'COMMON.RESULTS' | translate:{ count: filteredEvents.length } }}
+    <p class="search-count" *ngIf="catalogQuery.trim() || eventsTotal">
+      {{ 'COMMON.RESULTS' | translate:{ count: eventsTotal } }}
     </p>
     <div
       class="event-user-row"
@@ -352,10 +379,11 @@
         <div class="event-thumb" [style.background-image]="'url(' + eventImage(event) + ')'"></div>
         <div class="event-list-body">
           <strong>{{ event.name }}</strong>
-          <div class="kpi-sub">
-            {{ event.sportName || ('COMMON.SPORT' | translate) }} · {{ event.eventDate }} {{ event.eventTime }} ·
-            {{ occupied(event) }}/{{ event.maxCapacity }} cupos
+          <div class="event-meta">
+            <span class="event-chip">{{ event.sportName || ('COMMON.SPORT' | translate) }}</span>
+            <ng-container *ngTemplateOutlet="eventWhenTpl; context: { date: event.eventDate, time: event.eventTime }"></ng-container>
           </div>
+          <ng-container *ngTemplateOutlet="eventSpotsTpl; context: { event: event }"></ng-container>
         </div>
       </div>
       <div class="event-actions">
@@ -408,6 +436,15 @@
         ? ('EVENTS_PAGE.CATALOG_EMPTY_SEARCH' | translate)
         : ('EVENTS_PAGE.CATALOG_EMPTY' | translate) }}
     </p>
+    <div class="actions-row" *ngIf="eventsTotalPages > 1" style="margin-top: 12px; justify-content: space-between;">
+      <button class="btn-secondary" type="button" [disabled]="catalogPage <= 0" (click)="prevCatalogPage()">
+        {{ 'COMMON.PREV' | translate }}
+      </button>
+      <span class="kpi-sub">{{ 'EVENTS_PAGE.PAGE' | translate:{ page: catalogPage + 1, pages: eventsTotalPages } }}</span>
+      <button class="btn-secondary" type="button" [disabled]="catalogPage + 1 >= eventsTotalPages" (click)="nextCatalogPage()">
+        {{ 'COMMON.NEXT' | translate }}
+      </button>
+    </div>
   </div>
 
   <!-- Vista gestión -->
@@ -417,11 +454,16 @@
         <div class="event-thumb" [style.background-image]="'url(' + eventImage(row.event) + ')'"></div>
         <div class="event-list-body">
           <strong>{{ row.event.name }}</strong>
-          <div class="kpi-sub">
-            {{ row.event.sportName || 'Deporte' }} · {{ row.event.eventDate }} {{ row.event.eventTime }} ·
-            {{ occupied(row.event) }}/{{ row.event.maxCapacity }} cupos ·
-            Waitlist: {{ row.waitlist.length }}
+          <div class="event-meta">
+            <span class="event-chip">{{ row.event.sportName || ('COMMON.SPORT' | translate) }}</span>
+            <ng-container *ngTemplateOutlet="eventWhenTpl; context: { date: row.event.eventDate, time: row.event.eventTime }"></ng-container>
+            <span class="event-chip event-chip--waitlist">
+              {{ row.waitlistLoaded
+                ? ('EVENTS_PAGE.WAITLIST_COUNT' | translate:{ count: row.waitlist.length })
+                : ('EVENTS_PAGE.WAITLIST_UNKNOWN' | translate) }}
+            </span>
           </div>
+          <ng-container *ngTemplateOutlet="eventSpotsTpl; context: { event: row.event }"></ng-container>
           <app-event-location-map
             *ngIf="row.event.location || (row.event.latitude != null && row.event.longitude != null)"
             style="margin-top: 8px; display: block;"
@@ -464,6 +506,9 @@
           <button class="btn-secondary" type="button" (click)="toggleWaitlist(row)">
             {{ row.showWaitlist ? 'Ocultar waitlist' : 'Ver waitlist' }}
           </button>
+          <a class="btn-secondary" [routerLink]="['/organizer/events', row.event.id, 'pago-config']">
+            Configurar pago
+          </a>
         </div>
       </div>
 
@@ -501,6 +546,7 @@
       </form>
 
       <div *ngIf="row.showWaitlist" style="padding-left: 8px;">
+        <p *ngIf="row.waitlistLoading" class="empty-text">{{ 'EVENTS_PAGE.WAITLIST_LOADING' | translate }}</p>
         <div class="list-item" *ngFor="let item of row.waitlist">
           <div class="user-cell">
             <img *ngIf="item.userProfilePicture" class="table-avatar" [src]="item.userProfilePicture" alt="" />
@@ -511,12 +557,21 @@
             </div>
           </div>
         </div>
-        <p *ngIf="!row.waitlist.length" class="empty-text">Sin personas en waitlist.</p>
+        <p *ngIf="row.waitlistLoaded && !row.waitlist.length" class="empty-text">Sin personas en waitlist.</p>
       </div>
     </div>
     <p *ngIf="!loading && !filteredManageRows.length" class="empty-text">
       {{ catalogQuery.trim() ? 'No hay eventos que coincidan con la búsqueda.' : 'No hay eventos.' }}
     </p>
+    <div class="actions-row" *ngIf="eventsTotalPages > 1" style="margin-top: 12px; justify-content: space-between;">
+      <button class="btn-secondary" type="button" [disabled]="catalogPage <= 0" (click)="prevCatalogPage()">
+        {{ 'COMMON.PREV' | translate }}
+      </button>
+      <span class="kpi-sub">{{ 'EVENTS_PAGE.PAGE' | translate:{ page: catalogPage + 1, pages: eventsTotalPages } }}</span>
+      <button class="btn-secondary" type="button" [disabled]="catalogPage + 1 >= eventsTotalPages" (click)="nextCatalogPage()">
+        {{ 'COMMON.NEXT' | translate }}
+      </button>
+    </div>
   </div>
 
   <!-- Modal check-in organizador -->
@@ -567,7 +622,7 @@
         </button>
       </div>
 
-      <p *ngIf="checkInMessage" class="empty-text">{{ checkInMessage }}</p>
+      <p *ngIf="checkInMessage" class="panel-success-banner" role="status">{{ checkInMessage }}</p>
       <p *ngIf="checkInError" class="error-text">{{ checkInError }}</p>
     </div>
   </div>
@@ -676,4 +731,3 @@
       </ng-container>
     </div>
   </div>
-</app-panel-shell>

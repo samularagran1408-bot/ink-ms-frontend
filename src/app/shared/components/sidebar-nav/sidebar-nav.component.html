@@ -61,11 +61,13 @@
 
     <nav class="sidebar-nav-list">
       <a
-        *ngFor="let item of navItems"
+        *ngFor="let item of navItems; trackBy: trackByNav"
         [routerLink]="item.route"
-        [queryParams]="item.queryParams || {}"
+        [queryParams]="item.queryParams || emptyQuery"
         [class.sidebar-nav-item--active]="isNavActive(item)"
         class="sidebar-nav-item"
+        (pointerenter)="prefetchNav(item)"
+        (focus)="prefetchNav(item)"
         (click)="closeSidebar()"
       >
         <span class="nav-item-main">
@@ -78,11 +80,13 @@
       <ng-container *ngIf="secondaryItems.length">
         <div class="drawer-nav-divider"></div>
         <a
-          *ngFor="let item of secondaryItems"
+          *ngFor="let item of secondaryItems; trackBy: trackByNav"
           [routerLink]="item.route"
-          [queryParams]="item.queryParams || {}"
+          [queryParams]="item.queryParams || emptyQuery"
           [class.sidebar-nav-item--active]="isNavActive(item)"
           class="sidebar-nav-item"
+          (pointerenter)="prefetchNav(item)"
+          (focus)="prefetchNav(item)"
           (click)="closeSidebar()"
         >
           <span class="nav-item-main">
@@ -137,11 +141,13 @@
 
   <nav class="role-nav-list">
     <a
-      *ngFor="let item of navItems"
+      *ngFor="let item of navItems; trackBy: trackByNav"
       [routerLink]="item.route"
-      [queryParams]="item.queryParams || {}"
+      [queryParams]="item.queryParams || emptyQuery"
       [class.role-nav-item--active]="isNavActive(item)"
       class="role-nav-item"
+      (pointerenter)="prefetchNav(item)"
+      (focus)="prefetchNav(item)"
     >
       <span class="nav-item-main">
         <app-icon [name]="item.icon" [size]="20"></app-icon>
@@ -153,11 +159,13 @@
     <ng-container *ngIf="secondaryItems.length">
       <div class="role-nav-divider"></div>
       <a
-        *ngFor="let item of secondaryItems"
+        *ngFor="let item of secondaryItems; trackBy: trackByNav"
         [routerLink]="item.route"
-        [queryParams]="item.queryParams || {}"
+        [queryParams]="item.queryParams || emptyQuery"
         [class.role-nav-item--active]="isNavActive(item)"
         class="role-nav-item"
+        (pointerenter)="prefetchNav(item)"
+        (focus)="prefetchNav(item)"
       >
         <span class="nav-item-main">
           <app-icon [name]="item.icon" [size]="20"></app-icon>

@@ -11,6 +11,7 @@ import { AccessibilityService } from '@features/accessibility/services/accessibi
 import { NotificationAnnounceService } from '@features/accessibility/services/notification-announce.service';
 import { PreferencesApiService } from '@features/accessibility/services/preferences-api.service';
 import { UnreadNotificationsService } from '@features/accessibility/services/unread-notifications.service';
+import { PanelRouteReuseStrategy } from '@core/routing/panel-route-reuse.strategy';
 
 const TOKEN_KEY = 'auth_token';
 const PUBLIC_PATHS = new Set(['/', '', '/login', '/register', '/guest', '/forgot-password']);
@@ -120,8 +121,22 @@ export class SessionService {
     this.injector.get(UnreadNotificationsService).stop();
     this.injector.get(NotificationAnnounceService).stop();
     this.injector.get(PreferencesApiService).clearCache();
+    this.injector.get(PanelRouteReuseStrategy).clear();
+    this.clearChatSessionKeys();
     this.clearSession();
     this.router.navigate(['/']);
+  }
+
+  private clearChatSessionKeys(): void {
+    const prefix = 'inklusport.chat.conversacion_id';
+    const keys: string[] = [];
+    for (let i = 0; i < sessionStorage.length; i++) {
+      const key = sessionStorage.key(i);
+      if (key && (key === prefix || key.startsWith(`${prefix}.`))) {
+        keys.push(key);
+      }
+    }
+    keys.forEach((key) => sessionStorage.removeItem(key));
   }
 
   homeForCurrentUser(): string {

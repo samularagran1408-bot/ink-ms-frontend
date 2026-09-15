@@ -1,57 +1,102 @@
-import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
-import { Router } from '@angular/router';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
+import { Router, RouterModule } from '@angular/router';
+import { Subscription } from 'rxjs';
+import { TranslateService } from '@ngx-translate/core';
 
 import { AppRole } from '@core/models/app-role';
-import { ChatCard, ChatCtaAccion, ChatMensajeUi, ChatResponse } from '@features/assistant/models/chat';
+import { ChatCard, ChatCtaAccion, ChatHilo, ChatLimites, ChatMensajeUi, ChatPasoActividad, ChatResponse, ChatStreamEvent } from '@features/assistant/models/chat';
 import { BodyMapData } from '@features/assistant/models/body-map';
 import { ChatService } from '@features/assistant/services/chat.service';
 import { ReportsService } from '@features/reports/services/reports.service';
 import { SessionService } from '@core/services/session.service';
-
-const STORAGE_KEY = 'inklusport.chat.conversacion_id';
+import { ConfirmDialogService } from '@shared/services/confirm-dialog.service';
+import { HeroIconName } from '@shared/icons/heroicons-outline';
+import { SharedModule } from '@shared/shared.module';
 
 @Component({
+  standalone: true,
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, SharedModule],
   selector: 'app-assistant-page',
   templateUrl: './assistant-page.component.html',
-  styleUrl: './assistant-page.component.scss'
+  styleUrl: './assistant-page.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class AssistantPageComponent implements OnInit {
+export class AssistantPageComponent implements OnInit, OnDestroy {
   @ViewChild('timeline') timeline?: ElementRef<HTMLElement>;
   @ViewChild('inputEl') inputEl?: ElementRef<HTMLTextAreaElement>;
 
   mensajes: ChatMensajeUi[] = [];
   borrador = '';
-  limitacion = '';
   enviando = false;
+  pasosAgente: ChatPasoActividad[] = [];
   error: string | null = null;
   estadoA11y = '';
   conversacionId: string | null = null;
   mcpNota: string | null = null;
+  hilos: ChatHilo[] = [];
+  hilosVisibles: ChatHilo[] = [];
+  cargandoHilos = false;
+  cargandoHilo = false;
+  errorHistorial: string | null = null;
+  limites: ChatLimites = {
+    maxMensajesPorChat: 40,
+    maxChatsActivos: 10,
+    maxMensajesPorHora: 20,
+    esperaMinutos: 60,
+    esperaHoras: 1,
+    usadosHora: 0
+  };
+  aviso: string | null = null;
+  bloqueadoHasta = 0;
+  esperaLabel = '';
+  private esperaTimer?: ReturnType<typeof setInterval>;
+
+  private chatSub?: Subscription;
+  private cicloLocal?: ReturnType<typeof setInterval>;
+  private actividadReal = false;
 
   constructor(
     private chat: ChatService,
     private session: SessionService,
     private reports: ReportsService,
-    private router: Router
+    private router: Router,
+    private confirm: ConfirmDialogService,
+    private translate: TranslateService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
-    this.conversacionId = sessionStorage.getItem(STORAGE_KEY);
+    this.conversacionId = this.chat.leerConversacionGuardada();
     this.mcpNota = null;
+    this.cargarHilos(true);
     this.chat.describirMcp().subscribe({
       next: (info) => {
         const que = typeof info['que_es'] === 'string' ? info['que_es'] : null;
         this.mcpNota = que;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.mcpNota = null;
+        this.cdr.markForCheck();
       }
     });
   }
 
+  ngOnDestroy(): void {
+    this.chatSub?.unsubscribe();
+    this.detenerCicloLocal();
+    this.detenerEspera();
+  }
+
+  get chatBloqueado(): boolean {
+    return Date.now() < this.bloqueadoHasta;
+  }
+
   enviar(): void {
     const texto = this.borrador.trim();
-    if (!texto || this.enviando) {
+    if (!texto || this.enviando || this.cargandoHilo || this.chatBloqueado) {
       return;
     }
     this.error = null;
@@ -59,14 +104,28 @@ export class AssistantPageComponent implements OnInit {
     this.estadoA11y = 'Enviando mensaje al asistente';
     this.mensajes.push({ remitente: 'usuario', texto, cards: [], sugerencias: [] });
     this.borrador = '';
+    this.iniciarAnimacionEspera();
     this.scrollAlFinal();
 
-    this.chat.enviar(texto, this.conversacionId, this.limitacion).subscribe({
+    this.chatSub?.unsubscribe();
+    this.chatSub = this.chat.enviarConProgreso(texto, this.conversacionId, (ev) => this.onChatEvento(ev)).subscribe({
       next: (res) => this.aplicarRespuesta(res),
       error: (err) => {
         this.enviando = false;
-        this.error = err?.error?.detail || 'No se pudo contactar al asistente.';
+        this.detenerCicloLocal();
+        this.pasosAgente = [];
+        const ultimo = this.mensajes[this.mensajes.length - 1];
+        if (ultimo?.remitente === 'usuario' && ultimo.texto === texto) {
+          this.mensajes.pop();
+          this.borrador = texto;
+        }
+        const info = this.chat.parsearError(err);
+        this.error = info.mensaje;
+        if (info.codigo === 'chat_limite_hora' || info.retryAfterSegundos > 0) {
+          this.iniciarBloqueo(info.retryAfterSegundos || this.limites.esperaMinutos * 60);
+        }
         this.estadoA11y = this.error || '';
+        this.cdr.markForCheck();
       }
     });
   }
@@ -77,12 +136,164 @@ export class AssistantPageComponent implements OnInit {
   }
 
   nuevaConversacion(): void {
-    this.conversacionId = null;
-    sessionStorage.removeItem(STORAGE_KEY);
+    this.conversacionId = this.chat.idNuevo();
+    this.chat.guardarConversacion(this.conversacionId);
     this.mensajes = [];
     this.error = null;
     this.estadoA11y = 'Conversación nueva';
+    this.chatSub?.unsubscribe();
+    this.enviando = false;
+    this.detenerCicloLocal();
+    this.pasosAgente = [];
     this.inputEl?.nativeElement.focus();
+    this.chat.nueva().subscribe({
+      next: (res) => {
+        const cid = res.conversacion_id || (res as { session_id?: string }).session_id;
+        if (!cid) {
+          return;
+        }
+        this.conversacionId = cid;
+        this.chat.guardarConversacion(cid);
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  filtrarHistorial(): void {
+    this.hilosVisibles = [...this.hilos];
+    this.cdr.markForCheck();
+  }
+
+  readonly trackByHilo = (_index: number, hilo: ChatHilo): string =>
+    hilo?.conversacion_id || hilo?.session_id || String(_index);
+
+  readonly trackByMensaje = (index: number, msg: ChatMensajeUi): string =>
+    `${index}:${msg.remitente}:${msg.texto.slice(0, 32)}`;
+
+  readonly trackByCard = (index: number, card: ChatCard): string =>
+    `${card.tipo}:${card.titulo}:${index}`;
+
+  readonly trackBySugerencia = (index: number, texto: string): string =>
+    texto || String(index);
+
+  readonly trackByPaso = (index: number, paso: ChatPasoActividad): string =>
+    `${paso.tipo}:${paso.code}:${index}`;
+
+  labelPaso(paso: ChatPasoActividad): string {
+    return paso.mensaje || paso.code.replace(/_/g, ' ');
+  }
+
+  iconoPaso(paso: ChatPasoActividad): HeroIconName {
+    if (paso.estado === 'listo') {
+      return 'shield-check';
+    }
+    if (paso.tipo === 'herramienta') {
+      return 'bolt';
+    }
+    return 'sparkles';
+  }
+
+  idDeHilo(hilo: ChatHilo): string {
+    return this.chat.idDeHilo(hilo);
+  }
+
+  tituloDeHilo(hilo: ChatHilo | null | undefined): string {
+    const titulo = String(hilo?.titulo || '').trim();
+    if (titulo) {
+      return titulo;
+    }
+    return this.translate.instant('CHAT.NEW');
+  }
+
+  tituloHiloActual(): string {
+    const actual = this.hilos.find((h) => this.chat.idDeHilo(h) === this.conversacionId);
+    return this.tituloDeHilo(actual) || this.translate.instant('CHAT.NEW');
+  }
+
+  abrirHilo(hilo: ChatHilo): void {
+    const cid = this.chat.idDeHilo(hilo);
+    if (!cid) {
+      this.errorHistorial = this.translate.instant('CHAT.LOAD_ERROR');
+      return;
+    }
+    this.cargarHilo(cid);
+  }
+
+  async borrarHilo(event: Event, hilo: ChatHilo): Promise<void> {
+    event.preventDefault();
+    event.stopPropagation();
+    const cid = this.chat.idDeHilo(hilo);
+    if (!cid) {
+      this.errorHistorial = this.translate.instant('CHAT.LOAD_ERROR');
+      return;
+    }
+    const ok = await this.confirm.ask({
+      title: this.translate.instant('CHAT.DELETE_TITLE'),
+      message: this.translate.instant('CHAT.DELETE_CONFIRM'),
+      confirmLabel: this.translate.instant('CHAT.DELETE'),
+      cancelLabel: this.translate.instant('COMMON.CANCEL') || 'Cancelar',
+      tone: 'danger'
+    });
+    if (!ok) {
+      return;
+    }
+    this.chat.borrarHilo(cid).subscribe({
+      next: () => {
+        if (this.conversacionId === cid) {
+          this.mensajes = [];
+          this.conversacionId = this.chat.idNuevo();
+          this.chat.guardarConversacion(this.conversacionId);
+        }
+        this.cargarHilos();
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.errorHistorial = this.translate.instant('CHAT.LOAD_ERROR');
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  async borrarTodoHistorial(): Promise<void> {
+    if (!this.hilos.length) {
+      return;
+    }
+    const ok = await this.confirm.ask({
+      title: this.translate.instant('CHAT.DELETE_ALL_TITLE'),
+      message: this.translate.instant('CHAT.DELETE_ALL_CONFIRM'),
+      confirmLabel: this.translate.instant('CHAT.DELETE_ALL'),
+      cancelLabel: this.translate.instant('COMMON.CANCEL') || 'Cancelar',
+      tone: 'danger'
+    });
+    if (!ok) {
+      return;
+    }
+    this.chat.borrarTodos().subscribe({
+      next: () => {
+        this.hilos = [];
+        this.hilosVisibles = [];
+        this.mensajes = [];
+        this.conversacionId = this.chat.idNuevo();
+        this.chat.guardarConversacion(this.conversacionId);
+        this.errorHistorial = null;
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.errorHistorial = this.translate.instant('CHAT.LOAD_ERROR');
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  fechaCorta(valor: unknown): string {
+    if (!valor) {
+      return '—';
+    }
+    const fecha = new Date(String(valor));
+    if (Number.isNaN(fecha.getTime())) {
+      return String(valor);
+    }
+    return fecha.toLocaleString();
   }
 
   irACard(card: ChatCard): void {
@@ -97,6 +308,7 @@ export class AssistantPageComponent implements OnInit {
         next: (blob) => this.reports.downloadBlob(blob, filename),
         error: () => {
           this.error = 'No se pudo descargar el PDF.';
+          this.cdr.markForCheck();
         }
       });
       return;
@@ -125,10 +337,76 @@ export class AssistantPageComponent implements OnInit {
     return 'Motor local';
   }
 
+  private cargarHilos(abrirActual = false): void {
+    this.cargandoHilos = true;
+    this.errorHistorial = null;
+    this.chat.listarHilos().subscribe({
+      next: (res) => {
+        this.cargandoHilos = false;
+        const delServidor = res.conversaciones || [];
+        if (res.limites) {
+          this.limites = res.limites;
+          if (res.limites.aviso) {
+            this.aviso = res.limites.aviso;
+          }
+        }
+        this.hilos = delServidor;
+        const ids = new Set(this.hilos.map((hilo) => this.chat.idDeHilo(hilo)).filter(Boolean));
+        if (this.conversacionId && !ids.has(this.conversacionId)) {
+          this.conversacionId = null;
+          this.chat.olvidarConversacion();
+        }
+        this.filtrarHistorial();
+        if (!abrirActual || this.mensajes.length) {
+          return;
+        }
+        const guardado = this.conversacionId && ids.has(this.conversacionId)
+          ? this.conversacionId
+          : this.chat.idDeHilo(this.hilos[0]);
+        if (guardado) {
+          this.cargarHilo(guardado);
+        }
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.cargandoHilos = false;
+        this.errorHistorial = this.translate.instant('CHAT.LOAD_ERROR');
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  private cargarHilo(conversacionId: string): void {
+    this.cargandoHilo = true;
+    this.error = null;
+    this.chat.obtenerHilo(conversacionId).subscribe({
+      next: (detalle) => {
+        this.cargandoHilo = false;
+        const cid = this.chat.idDeHilo(detalle) || conversacionId;
+        this.conversacionId = cid;
+        this.chat.guardarConversacion(cid);
+        this.mensajes = this.chat.mapearMensajes(detalle);
+        if (detalle.limites) {
+          this.limites = detalle.limites;
+        }
+        this.scrollAlFinal();
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.cargandoHilo = false;
+        this.error = this.translate.instant('CHAT.LOAD_ERROR');
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
   private aplicarRespuesta(res: ChatResponse): void {
     this.enviando = false;
+    this.detenerCicloLocal();
+    this.pasosAgente = [];
     this.conversacionId = res.conversacion_id;
-    sessionStorage.setItem(STORAGE_KEY, res.conversacion_id);
+    this.chat.guardarConversacion(res.conversacion_id);
+    this.aplicarCupo(res);
     const cards = res.cards?.length ? res.cards : [];
     this.mensajes.push({
       remitente: 'asistente',
@@ -142,6 +420,8 @@ export class AssistantPageComponent implements OnInit {
         : res.herramientas_usadas,
       cuerpo: this.cuerpoDe(res)
     });
+    this.upsertHiloLocal(res);
+    this.cargarHilos();
     const tools = res.mcp?.llm_eligio_tools
       ? `Tools MCP: ${(res.mcp.tools_usadas || []).join(', ') || 'ninguna'}`
       : res.fuente === 'motor_local'
@@ -149,6 +429,167 @@ export class AssistantPageComponent implements OnInit {
         : 'Respuesta del agente';
     this.estadoA11y = `${tools}. ${res.respuesta}`;
     this.scrollAlFinal();
+    this.cdr.markForCheck();
+  }
+
+  private aplicarCupo(res: ChatResponse): void {
+    const cupo = this.chat.extraerCupo(res);
+    if (cupo) {
+      this.limites = {
+        ...this.limites,
+        maxMensajesPorHora: cupo.maximo,
+        usadosHora: cupo.usados,
+        esperaMinutos: Math.max(1, Math.round(cupo.esperaSegundos / 60)),
+        esperaHoras: Math.max(1, Math.round(cupo.esperaSegundos / 3600))
+      };
+      this.aviso = cupo.aviso;
+      if (cupo.retryAfterSegundos && cupo.retryAfterSegundos > 0) {
+        this.iniciarBloqueo(cupo.retryAfterSegundos);
+      }
+      return;
+    }
+    if (res.aviso) {
+      this.aviso = res.aviso;
+    }
+  }
+
+  private iniciarBloqueo(segundos: number): void {
+    const espera = Math.max(1, Math.floor(segundos));
+    this.bloqueadoHasta = Date.now() + espera * 1000;
+    this.aviso = this.error || this.aviso;
+    this.actualizarEsperaLabel();
+    this.detenerEspera();
+    this.esperaTimer = setInterval(() => {
+      if (!this.chatBloqueado) {
+        this.detenerEspera();
+        this.bloqueadoHasta = 0;
+        this.esperaLabel = '';
+        this.error = null;
+        this.aviso = null;
+        this.cdr.markForCheck();
+        return;
+      }
+      this.actualizarEsperaLabel();
+      this.cdr.markForCheck();
+    }, 1000);
+  }
+
+  private actualizarEsperaLabel(): void {
+    const restante = Math.max(0, Math.ceil((this.bloqueadoHasta - Date.now()) / 1000));
+    const horas = Math.floor(restante / 3600);
+    const min = Math.floor((restante % 3600) / 60);
+    const seg = restante % 60;
+    if (horas > 0) {
+      this.esperaLabel = min > 0 ? `${horas} h ${min} min` : `${horas} h`;
+      return;
+    }
+    this.esperaLabel = min > 0 ? `${min} min ${seg.toString().padStart(2, '0')} s` : `${seg} s`;
+  }
+
+  private detenerEspera(): void {
+    if (this.esperaTimer) {
+      clearInterval(this.esperaTimer);
+      this.esperaTimer = undefined;
+    }
+  }
+
+  private upsertHiloLocal(res: ChatResponse): void {
+    const cid = res.conversacion_id;
+    if (!cid) {
+      return;
+    }
+    const idx = this.hilos.findIndex((h) => this.chat.idDeHilo(h) === cid);
+    const now = new Date().toISOString();
+    if (idx >= 0) {
+      const actual = this.hilos[idx];
+      const actualizado: ChatHilo = {
+        ...actual,
+        ultima_interaccion: now,
+        total_mensajes: (actual.total_mensajes || 0) + 2
+      };
+      this.hilos = [actualizado, ...this.hilos.filter((_, i) => i !== idx)];
+    } else {
+      this.hilos = [
+        {
+          conversacion_id: cid,
+          titulo: (this.mensajes.find((m) => m.remitente === 'usuario')?.texto || '').trim().slice(0, 60)
+            || this.translate.instant('CHAT.NEW'),
+          estado: 'activa',
+          ultima_interaccion: now,
+          total_mensajes: this.mensajes.length + 1
+        },
+        ...this.hilos
+      ];
+    }
+    this.filtrarHistorial();
+  }
+
+  private onChatEvento(ev: ChatStreamEvent): void {
+    if (ev.evento === 'respuesta' || ev.evento === 'fin') {
+      return;
+    }
+    if (ev.evento === 'herramienta' || (ev.evento === 'estado' && ev.detalle !== 'analizando_intencion')) {
+      this.actividadReal = true;
+      this.detenerCicloLocal();
+    }
+    const code = ev.detalle || ev.evento;
+    const estado = (ev.estado === 'listo' ? 'listo' : 'ejecutando') as ChatPasoActividad['estado'];
+    const existente = this.pasosAgente.find((p) => p.code === code && p.tipo === (ev.evento === 'herramienta' ? 'herramienta' : 'estado'));
+    if (existente) {
+      existente.estado = estado;
+      existente.mensaje = ev.mensaje || existente.mensaje;
+      this.pasosAgente = [...this.pasosAgente];
+    } else {
+      this.completarPasoActual();
+      this.pasosAgente = [
+        ...this.pasosAgente,
+        {
+          tipo: ev.evento === 'herramienta' ? 'herramienta' : 'estado',
+          code,
+          estado,
+          mensaje: ev.mensaje
+        }
+      ];
+    }
+    this.scrollAlFinal();
+    this.cdr.markForCheck();
+  }
+
+  private iniciarAnimacionEspera(): void {
+    this.actividadReal = false;
+    this.detenerCicloLocal();
+    this.pasosAgente = [
+      { tipo: 'estado', code: 'analizando_intencion', estado: 'ejecutando', mensaje: 'Entendiendo tu mensaje…' }
+    ];
+    const extras: ChatPasoActividad[] = [
+      { tipo: 'estado', code: 'agente_con_tools', estado: 'ejecutando', mensaje: 'Decidiendo qué consultar…' },
+      { tipo: 'estado', code: 'redactando_respuesta', estado: 'ejecutando', mensaje: 'Redactando la respuesta…' }
+    ];
+    let i = 0;
+    this.cicloLocal = setInterval(() => {
+      if (this.actividadReal || !this.enviando || i >= extras.length) {
+        this.detenerCicloLocal();
+        return;
+      }
+      this.completarPasoActual();
+      this.pasosAgente = [...this.pasosAgente, extras[i]];
+      i += 1;
+      this.scrollAlFinal();
+      this.cdr.markForCheck();
+    }, 1600);
+  }
+
+  private completarPasoActual(): void {
+    this.pasosAgente = this.pasosAgente.map((paso) =>
+      paso.estado === 'ejecutando' ? { ...paso, estado: 'listo' } : paso
+    );
+  }
+
+  private detenerCicloLocal(): void {
+    if (this.cicloLocal) {
+      clearInterval(this.cicloLocal);
+      this.cicloLocal = undefined;
+    }
   }
 
   private cuerpoDe(res: ChatResponse): BodyMapData | null {

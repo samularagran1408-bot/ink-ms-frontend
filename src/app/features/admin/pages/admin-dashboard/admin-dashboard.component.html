@@ -1,8 +1,10 @@
-<app-panel-shell>
-  <h1 class="page-title">{{ 'ADMIN_DASHBOARD.TITLE' | translate }}</h1>
+<h1 class="page-title">{{ 'ADMIN_DASHBOARD.TITLE' | translate }}</h1>
   <p class="page-subtitle">{{ 'ADMIN_DASHBOARD.SUBTITLE' | translate }}</p>
 
-  <p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
+  <div class="sys-msg sys-msg--error" *ngIf="errorMessage" role="alert">
+    <strong>{{ 'COMMON.MSG_ERROR' | translate }}</strong>
+    <span>{{ errorMessage }}</span>
+  </div>
   <p *ngIf="loading" class="empty-text">{{ 'ADMIN_DASHBOARD.LOADING' | translate }}</p>
 
   <div class="actions-row">
@@ -114,4 +116,3 @@
       </div>
     </div>
   </div>
-</app-panel-shell>

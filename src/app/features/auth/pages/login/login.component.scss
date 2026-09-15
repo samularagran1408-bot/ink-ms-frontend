@@ -297,7 +297,7 @@ $inklu-border: #E2E8F0;
             font-weight: 500;
 
             &::placeholder {
-              color: #94A3B8;
+              color: var(--ink-subtle);
             }
           }
 

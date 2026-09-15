@@ -1,10 +1,11 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
-import QRCode from 'qrcode';
-import { Html5Qrcode } from 'html5-qrcode';
-import { Subscription, of } from 'rxjs';
-import { switchMap } from 'rxjs/operators';
+import { CommonModule } from '@angular/common';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { TranslateService } from '@ngx-translate/core';
+import type { Html5Qrcode } from 'html5-qrcode';
+import { Subscription, Subject, of } from 'rxjs';
+import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 
 import {
   AttendanceReport,
@@ -15,8 +16,11 @@ import {
 } from '@features/sports-disabilities/models/sports';
 import { SessionService } from '@core/services/session.service';
 import { SportsService } from '@features/sports-disabilities/services/sports.service';
+import { PaymentsService } from '@features/subscriptions/services/payments.service';
+import { CheckoutRedirectService } from '@features/subscriptions/services/checkout-redirect.service';
 import { ReportsService } from '@features/reports/services/reports.service';
 import { PreferencesApiService } from '@features/accessibility/services/preferences-api.service';
+import { LanguageService } from '@features/accessibility/services/language.service';
 import { LiveSyncService } from '@features/accessibility/services/live-sync.service';
 import { ConfirmDialogService } from '@shared/services/confirm-dialog.service';
 import { AttendanceCheckInMethod, normalizeAttendanceCheckInMethod } from '@features/accessibility/models/accessibility-api';
@@ -26,10 +30,13 @@ import { buildAttendanceCheckinUrl, extractQrCode, eventDateTimeMs } from '@core
 import { userInitials } from '@core/utils/avatar.util';
 import { matchesQuery } from '@core/utils/search.util';
 import { isEventVisible } from '@features/sports-disabilities/utils/event-visibility.util';
+import { SharedModule } from '@shared/shared.module';
 
 interface EventManageRow {
   event: EventItem;
   waitlist: Registration[];
+  waitlistLoaded: boolean;
+  waitlistLoading: boolean;
   showWaitlist: boolean;
   editing: boolean;
   editForm: FormGroup;
@@ -43,7 +50,14 @@ interface MyPassRow {
   loadingQr: boolean;
 }
 
+type CapacityEvent = {
+  maxCapacity?: number | null;
+  availableCapacity?: number | null;
+} | null | undefined;
+
 @Component({
+  standalone: true,
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, SharedModule],
   selector: 'app-events-page',
   templateUrl: './events-page.component.html',
   styleUrl: './events-page.component.scss'
@@ -69,6 +83,11 @@ export class EventsPageComponent implements OnInit, OnDestroy {
   lookupEventId = '';
   lookupEvent: EventItem | null = null;
   catalogQuery = '';
+  catalogPage = 0;
+  catalogPageSize = 12;
+  readonly emptyQuery: Record<string, string> = {};
+  eventsTotal = 0;
+  eventsTotalPages = 0;
   calendarFrom = '';
   calendarTo = '';
   calendarItems: CalendarEvent[] = [];
@@ -105,6 +124,8 @@ export class EventsPageComponent implements OnInit, OnDestroy {
   private html5Qr: Html5Qrcode | null = null;
   private querySub: Subscription | null = null;
   private liveSub: Subscription | null = null;
+  private catalogSearchSub: Subscription | null = null;
+  private readonly catalogSearch$ = new Subject<string>();
   private reportEventId: string | null = null;
   private readonly scannerElementId = 'attendance-qr-reader';
 
@@ -112,12 +133,16 @@ export class EventsPageComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private sportsService: SportsService,
+    private paymentsService: PaymentsService,
+    private checkoutRedirect: CheckoutRedirectService,
     private session: SessionService,
     private reportsService: ReportsService,
     private preferencesApi: PreferencesApiService,
     private liveSync: LiveSyncService,
     private fb: FormBuilder,
-    private confirm: ConfirmDialogService
+    private confirm: ConfirmDialogService,
+    private translate: TranslateService,
+    private language: LanguageService
   ) {
     this.form = this.fb.group({
       sportId: [null, Validators.required],
@@ -151,6 +176,14 @@ export class EventsPageComponent implements OnInit, OnDestroy {
         void this.refreshPassQrImages();
       }
     }, 30_000);
+    this.catalogPageSize = this.mode === 'manage' ? 15 : 12;
+    this.catalogSearchSub = this.catalogSearch$.pipe(
+      debounceTime(400),
+      distinctUntilChanged()
+    ).subscribe(() => {
+      this.catalogPage = 0;
+      this.reload();
+    });
     this.reload();
     this.liveSync.start();
     this.liveSub = this.liveSync.pulse$.subscribe((pulse) => {
@@ -170,6 +203,7 @@ export class EventsPageComponent implements OnInit, OnDestroy {
     this.stopReportPoll();
     this.querySub?.unsubscribe();
     this.liveSub?.unsubscribe();
+    this.catalogSearchSub?.unsubscribe();
     void this.stopScanner();
   }
 
@@ -189,7 +223,7 @@ export class EventsPageComponent implements OnInit, OnDestroy {
   }
 
   get filteredEvents(): EventItem[] {
-    return this.filterEventList(this.visibleEvents);
+    return this.visibleEvents;
   }
 
   /** Eventos en los que el atleta está inscrito o en lista de espera. */
@@ -209,12 +243,7 @@ export class EventsPageComponent implements OnInit, OnDestroy {
   }
 
   get filteredManageRows(): EventManageRow[] {
-    const visible = this.manageRows.filter((row) => isEventVisible(row.event, this.nowMs));
-    const q = this.catalogQuery;
-    if (!q.trim()) {
-      return visible;
-    }
-    return visible.filter((row) => this.eventMatchesQuery(row.event, q));
+    return this.manageRows.filter((row) => isEventVisible(row.event, this.nowMs));
   }
 
   private get visibleEvents(): EventItem[] {
@@ -241,10 +270,33 @@ export class EventsPageComponent implements OnInit, OnDestroy {
     );
   }
 
+  onCatalogQueryChange(value: string): void {
+    this.catalogQuery = value;
+    this.catalogSearch$.next(value.trim());
+  }
+
   clearCatalogQuery(): void {
     this.catalogQuery = '';
     this.lookupEvent = null;
     this.lookupEventId = '';
+    this.catalogPage = 0;
+    this.reload();
+  }
+
+  prevCatalogPage(): void {
+    if (this.catalogPage <= 0) {
+      return;
+    }
+    this.catalogPage -= 1;
+    this.reload();
+  }
+
+  nextCatalogPage(): void {
+    if (this.catalogPage + 1 >= this.eventsTotalPages) {
+      return;
+    }
+    this.catalogPage += 1;
+    this.reload();
   }
 
   reload(silent = false): void {
@@ -258,7 +310,13 @@ export class EventsPageComponent implements OnInit, OnDestroy {
       : this.session.loadProfile();
 
     profile$.pipe(
-      switchMap((profile) => this.reportsService.getEventsPanel(profile?.id, this.mode === 'manage' ? 'manage' : 'user'))
+      switchMap((profile) => this.reportsService.getEventsPanel(
+        profile?.id,
+        this.mode === 'manage' ? 'manage' : 'user',
+        this.catalogPage,
+        this.catalogPageSize,
+        this.catalogQuery.trim() || undefined
+      ))
     ).subscribe({
       next: (panel) => {
         const events = panel.events || [];
@@ -267,6 +325,9 @@ export class EventsPageComponent implements OnInit, OnDestroy {
         this.events = events;
         this.registrations = registrations;
         this.sports = sports;
+        this.eventsTotal = panel.eventsTotal ?? events.length;
+        this.eventsTotalPages = Math.max(panel.eventsTotalPages ?? 1, 1);
+        this.catalogPage = panel.eventsPage ?? this.catalogPage;
         this.attendanceCheckInMethod = normalizeAttendanceCheckInMethod(
           this.preferencesApi.cached?.attendanceCheckInMethod
         );
@@ -285,6 +346,7 @@ export class EventsPageComponent implements OnInit, OnDestroy {
         } else {
           this.loading = false;
         }
+        this.ensureHighlightedEvent();
         this.scrollToHighlighted();
       },
       error: (error) => {
@@ -315,10 +377,10 @@ export class EventsPageComponent implements OnInit, OnDestroy {
 
   private async confirmCreateEvent(): Promise<void> {
     const ok = await this.confirm.ask({
-      title: 'Crear evento',
-      message: `¿Confirmas la creación de "${this.form.value.name}"?`,
-      confirmLabel: 'Confirmar',
-      cancelLabel: 'Cancelar'
+      title: this.translate.instant('EVENTS_PAGE.CONFIRM_CREATE_TITLE'),
+      message: this.translate.instant('EVENTS_PAGE.CONFIRM_CREATE_MSG', { name: this.form.value.name }),
+      confirmLabel: this.translate.instant('COMMON.CONFIRM'),
+      cancelLabel: this.translate.instant('COMMON.CANCEL')
     });
     if (!ok) {
       return;
@@ -345,7 +407,7 @@ export class EventsPageComponent implements OnInit, OnDestroy {
       this.sportsService.createEvent(payload).subscribe({
         next: () => {
           this.creating = false;
-          this.successMessage = 'Evento creado.';
+          this.successMessage = null;
           this.errorMessage = null;
           this.form.patchValue({
             name: '',
@@ -354,7 +416,12 @@ export class EventsPageComponent implements OnInit, OnDestroy {
             latitude: null,
             longitude: null
           });
+          this.catalogPage = 0;
           this.reload();
+          this.notifySuccess(
+            'EVENTS_PAGE.SUCCESS_CREATE_TITLE',
+            this.translate.instant('EVENTS_PAGE.SUCCESS_CREATE_MSG', { name: payload.name })
+          );
         },
         error: (error) => {
           this.creating = false;
@@ -413,10 +480,10 @@ export class EventsPageComponent implements OnInit, OnDestroy {
 
   private async confirmSaveEvent(row: EventManageRow): Promise<void> {
     const ok = await this.confirm.ask({
-      title: 'Guardar cambios',
-      message: `¿Confirmas actualizar "${row.event.name}"? Se notificará a los inscritos si cambia fecha o lugar.`,
-      confirmLabel: 'Confirmar',
-      cancelLabel: 'Cancelar'
+      title: this.translate.instant('EVENTS_PAGE.CONFIRM_SAVE_TITLE'),
+      message: this.translate.instant('EVENTS_PAGE.CONFIRM_SAVE_MSG', { name: row.event.name }),
+      confirmLabel: this.translate.instant('COMMON.CONFIRM'),
+      cancelLabel: this.translate.instant('COMMON.CANCEL')
     });
     if (!ok) {
       return;
@@ -437,9 +504,13 @@ export class EventsPageComponent implements OnInit, OnDestroy {
       next: () => {
         row.saving = false;
         row.editing = false;
-        this.successMessage = 'Evento actualizado. Se notificó a los inscritos si cambió fecha o lugar.';
+        this.successMessage = null;
         this.errorMessage = null;
         this.reload();
+        this.notifySuccess(
+          'EVENTS_PAGE.SUCCESS_UPDATE_TITLE',
+          this.translate.instant('EVENTS_PAGE.SUCCESS_UPDATE_MSG', { name: payload.name })
+        );
       },
       error: (error) => {
         row.saving = false;
@@ -536,10 +607,10 @@ export class EventsPageComponent implements OnInit, OnDestroy {
 
   private async confirmCancelEvent(event: EventItem): Promise<void> {
     const ok = await this.confirm.ask({
-      title: 'Cancelar evento',
-      message: `¿Confirmas cancelar "${event.name}"? Esta acción no se puede deshacer.`,
-      confirmLabel: 'Confirmar',
-      cancelLabel: 'Cancelar',
+      title: this.translate.instant('EVENTS_PAGE.CONFIRM_CANCEL_EVENT_TITLE'),
+      message: this.translate.instant('EVENTS_PAGE.CONFIRM_CANCEL_EVENT_MSG', { name: event.name }),
+      confirmLabel: this.translate.instant('COMMON.CONFIRM'),
+      cancelLabel: this.translate.instant('COMMON.CANCEL'),
       tone: 'danger'
     });
     if (!ok) {
@@ -550,10 +621,14 @@ export class EventsPageComponent implements OnInit, OnDestroy {
     this.sportsService.cancelEvent(event.id).subscribe({
       next: () => {
         this.cancellingId = null;
-        this.successMessage = `Evento "${event.name}" cancelado.`;
+        this.successMessage = null;
         this.errorMessage = null;
         this.reload();
         this.loadCalendar();
+        this.notifySuccess(
+          'EVENTS_PAGE.SUCCESS_CANCEL_EVENT_TITLE',
+          this.translate.instant('EVENTS_PAGE.SUCCESS_CANCEL_EVENT_MSG', { name: event.name })
+        );
       },
       error: (error) => {
         this.cancellingId = null;
@@ -570,12 +645,15 @@ export class EventsPageComponent implements OnInit, OnDestroy {
   private async confirmRegister(event: EventItem): Promise<void> {
     const waitlist = (event.availableCapacity ?? 0) <= 0;
     const ok = await this.confirm.ask({
-      title: waitlist ? 'Lista de espera' : 'Inscribirse',
-      message: waitlist
-        ? `El evento "${event.name}" está lleno. ¿Quieres unirte a la lista de espera?`
-        : `¿Confirmas tu inscripción a "${event.name}"?`,
-      confirmLabel: 'Confirmar',
-      cancelLabel: 'Cancelar'
+      title: waitlist
+        ? this.translate.instant('EVENTS_PAGE.CONFIRM_WAITLIST_TITLE')
+        : this.translate.instant('EVENTS_PAGE.CONFIRM_REGISTER_TITLE'),
+      message: this.translate.instant(
+        waitlist ? 'EVENTS_PAGE.CONFIRM_WAITLIST_MSG' : 'EVENTS_PAGE.CONFIRM_REGISTER_MSG',
+        { name: event.name }
+      ),
+      confirmLabel: this.translate.instant('COMMON.CONFIRM'),
+      cancelLabel: this.translate.instant('COMMON.CANCEL')
     });
     if (!ok) {
       return;
@@ -593,19 +671,45 @@ export class EventsPageComponent implements OnInit, OnDestroy {
       }
 
       this.registeringId = event.id;
-      this.sportsService.registerToEvent(userId, event.id).subscribe({
-        next: (registration) => {
-          this.registeringId = null;
-          this.successMessage = registration?.message
-            || (registration?.waitlistPosition != null
-              ? `El evento está lleno. Quedaste en lista de espera (posición ${registration.waitlistPosition}).`
-              : `Inscripción a ${event.name} realizada.`);
-          this.errorMessage = null;
-          this.reload();
+      this.paymentsService.obtenerConfiguracionEvento(event.id).subscribe({
+        next: (config) => {
+          if (config?.esPago) {
+            this.paymentsService.inscribirse(event.id).subscribe({
+              next: (checkout) => {
+                this.registeringId = null;
+                this.checkoutRedirect.follow(checkout, { evento: event.name });
+              },
+              error: (error) => {
+                this.registeringId = null;
+                this.errorMessage = error?.error?.message || 'No se pudo iniciar el pago de la inscripción.';
+              }
+            });
+            return;
+          }
+          this.sportsService.registerToEvent(userId, event.id).subscribe({
+            next: (registration) => {
+              this.registeringId = null;
+              this.successMessage = null;
+              this.errorMessage = null;
+              this.reload();
+              const onWaitlist = registration?.waitlistPosition != null;
+              this.notifySuccess(
+                onWaitlist ? 'EVENTS_PAGE.SUCCESS_WAITLIST_TITLE' : 'EVENTS_PAGE.SUCCESS_REGISTER_TITLE',
+                registration?.message || this.translate.instant(
+                  onWaitlist ? 'EVENTS_PAGE.SUCCESS_WAITLIST_MSG' : 'EVENTS_PAGE.SUCCESS_REGISTER_MSG',
+                  { name: event.name, position: registration?.waitlistPosition }
+                )
+              );
+            },
+            error: (error) => {
+              this.registeringId = null;
+              this.errorMessage = error?.error?.message || 'No se pudo inscribir.';
+            }
+          });
         },
-        error: (error) => {
+        error: () => {
           this.registeringId = null;
-          this.errorMessage = error?.error?.message || 'No se pudo inscribir.';
+          this.errorMessage = 'No se pudo verificar si el evento es de pago.';
         }
       });
     });
@@ -740,16 +844,9 @@ export class EventsPageComponent implements OnInit, OnDestroy {
     }).length;
   }
 
-  get nextOccupancyPercent(): number {
-    const event = this.nextRegisteredEvent;
-    if (!event?.maxCapacity) {
-      return 0;
-    }
-    return Math.round((this.occupied(event) * 100) / event.maxCapacity);
-  }
-
   eventForRegistration(reg: Registration): EventItem | null {
-    return this.events.find((item) => item.id === reg.eventId) || null;
+    return this.events.find((item) => item.id === reg.eventId)
+      || this.eventFromRegistration(reg);
   }
 
   historyEventImage(reg: Registration): string {
@@ -759,9 +856,9 @@ export class EventsPageComponent implements OnInit, OnDestroy {
 
   historyDateLabel(reg: Registration): string {
     if (reg.eventDate) {
-      return `${reg.eventDate} ${((reg.eventTime || '').substring(0, 5))}`;
+      return this.eventWhenLabel({ eventDate: reg.eventDate, eventTime: reg.eventTime });
     }
-    return reg.registrationDate || 'Sin fecha';
+    return this.formatEventDate(reg.registrationDate);
   }
 
   isHighlighted(eventId: string | number | undefined): boolean {
@@ -827,12 +924,15 @@ export class EventsPageComponent implements OnInit, OnDestroy {
 
     const onWaitlist = registration.waitlistPosition != null;
     const ok = await this.confirm.ask({
-      title: onWaitlist ? 'Salir de lista de espera' : 'Cancelar inscripción',
-      message: onWaitlist
-        ? `¿Confirmas salir de la lista de espera de "${eventName}"?`
-        : `¿Confirmas cancelar tu inscripción a "${eventName}"? Si hay lista de espera, la persona en la posición 1 quedará inscrita automáticamente.`,
-      confirmLabel: 'Confirmar',
-      cancelLabel: 'Volver',
+      title: onWaitlist
+        ? this.translate.instant('EVENTS_PAGE.CONFIRM_LEAVE_WAITLIST_TITLE')
+        : this.translate.instant('EVENTS_PAGE.CONFIRM_CANCEL_REG_TITLE'),
+      message: this.translate.instant(
+        onWaitlist ? 'EVENTS_PAGE.CONFIRM_LEAVE_WAITLIST_MSG' : 'EVENTS_PAGE.CONFIRM_CANCEL_REG_MSG',
+        { name: eventName }
+      ),
+      confirmLabel: this.translate.instant('COMMON.CONFIRM'),
+      cancelLabel: this.translate.instant('COMMON.CANCEL'),
       tone: 'danger'
     });
     if (!ok) {
@@ -843,11 +943,16 @@ export class EventsPageComponent implements OnInit, OnDestroy {
     this.sportsService.cancelRegistration(registration.id).subscribe({
       next: () => {
         this.cancellingRegistrationId = null;
-        this.successMessage = onWaitlist
-          ? `Saliste de la lista de espera de "${eventName}".`
-          : `Inscripción a "${eventName}" cancelada. Si había lista de espera, el primero fue inscrito automáticamente.`;
+        this.successMessage = null;
         this.errorMessage = null;
         this.reload();
+        this.notifySuccess(
+          onWaitlist ? 'EVENTS_PAGE.SUCCESS_LEAVE_WAITLIST_TITLE' : 'EVENTS_PAGE.SUCCESS_CANCEL_REG_TITLE',
+          this.translate.instant(
+            onWaitlist ? 'EVENTS_PAGE.SUCCESS_LEAVE_WAITLIST_MSG' : 'EVENTS_PAGE.SUCCESS_CANCEL_REG_MSG',
+            { name: eventName }
+          )
+        );
       },
       error: (error) => {
         this.cancellingRegistrationId = null;
@@ -961,14 +1066,104 @@ export class EventsPageComponent implements OnInit, OnDestroy {
 
   toggleWaitlist(row: EventManageRow): void {
     row.showWaitlist = !row.showWaitlist;
+    if (!row.showWaitlist || row.waitlistLoaded || row.waitlistLoading) {
+      return;
+    }
+    row.waitlistLoading = true;
+    this.sportsService.getEventWaitlist(row.event.id).subscribe({
+      next: (waitlist) => {
+        row.waitlist = waitlist;
+        row.waitlistLoaded = true;
+        row.waitlistLoading = false;
+      },
+      error: () => {
+        row.waitlistLoading = false;
+        this.errorMessage = 'No se pudo cargar la lista de espera.';
+      }
+    });
   }
 
-  occupied(event: { maxCapacity?: number | null; availableCapacity?: number | null } | null | undefined): number {
+  occupied(event: CapacityEvent): number {
     if (!event) {
       return 0;
     }
     const max = event.maxCapacity || 0;
     return Math.max(max - (event.availableCapacity ?? max), 0);
+  }
+
+  spotsLeft(event: CapacityEvent): number {
+    if (!event) {
+      return 0;
+    }
+    if (event.availableCapacity != null) {
+      return Math.max(event.availableCapacity, 0);
+    }
+    return Math.max((event.maxCapacity || 0) - this.occupied(event), 0);
+  }
+
+  occupancyPercent(event: CapacityEvent): number {
+    const max = event?.maxCapacity || 0;
+    if (!max) {
+      return 0;
+    }
+    return Math.min(100, Math.round((this.occupied(event) * 100) / max));
+  }
+
+  occupancyTone(event: CapacityEvent): 'ok' | 'warn' | 'full' {
+    if (this.spotsLeft(event) <= 0 && (event?.maxCapacity || 0) > 0) {
+      return 'full';
+    }
+    const percent = this.occupancyPercent(event);
+    if (percent >= 75) {
+      return 'warn';
+    }
+    return 'ok';
+  }
+
+  spotsHint(event: CapacityEvent): string {
+    if (this.occupancyTone(event) === 'full') {
+      return this.translate.instant('EVENTS_PAGE.SPOTS_FULL');
+    }
+    return this.translate.instant('EVENTS_PAGE.SPOTS_LEFT', { count: this.spotsLeft(event) });
+  }
+
+  formatEventDate(value?: string | null): string {
+    const date = this.parseLocalDate(value);
+    if (!date) {
+      return value || this.translate.instant('EVENTS_PAGE.NO_DATE');
+    }
+    const today = this.startOfLocalDay(new Date());
+    const target = this.startOfLocalDay(date);
+    const diffDays = Math.round((target.getTime() - today.getTime()) / 86400000);
+    if (diffDays === 0) {
+      return this.translate.instant('EVENTS_PAGE.DATE_TODAY');
+    }
+    if (diffDays === 1) {
+      return this.translate.instant('EVENTS_PAGE.DATE_TOMORROW');
+    }
+    const locale = this.language.currentLang === 'en' ? 'en-US' : 'es-MX';
+    return date.toLocaleDateString(locale, {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    });
+  }
+
+  formatEventTime(value?: string | null): string {
+    if (!value) {
+      return '';
+    }
+    return value.length >= 5 ? value.slice(0, 5) : value;
+  }
+
+  eventWhenLabel(event: { eventDate?: string | null; eventTime?: string | null } | null | undefined): string {
+    if (!event) {
+      return this.translate.instant('EVENTS_PAGE.NO_DATE');
+    }
+    const date = this.formatEventDate(event.eventDate);
+    const time = this.formatEventTime(event.eventTime);
+    return time ? `${date} · ${time}` : date;
   }
 
   eventHasStarted(event: EventItem | null | undefined): boolean {
@@ -995,16 +1190,9 @@ export class EventsPageComponent implements OnInit, OnDestroy {
 
   eventStartLabel(event: EventItem | null | undefined): string {
     if (!event) {
-      return 'hora del evento';
+      return this.translate.instant('EVENTS_PAGE.EVENT_TIME_FALLBACK');
     }
-    const start = this.eventStartMs(event);
-    if (start == null) {
-      return 'hora del evento';
-    }
-    const parsed = new Date(start);
-    const date = `${parsed.getFullYear()}-${String(parsed.getMonth() + 1).padStart(2, '0')}-${String(parsed.getDate()).padStart(2, '0')}`;
-    const time = `${String(parsed.getHours()).padStart(2, '0')}:${String(parsed.getMinutes()).padStart(2, '0')}`;
-    return `${date} ${time}`;
+    return this.eventWhenLabel(event);
   }
 
   openCheckIn(event: EventItem): void {
@@ -1036,7 +1224,7 @@ export class EventsPageComponent implements OnInit, OnDestroy {
     this.scannerError = null;
     try {
       await this.stopScanner();
-      this.html5Qr = new Html5Qrcode(this.scannerElementId);
+      this.html5Qr = new (await import('html5-qrcode')).Html5Qrcode(this.scannerElementId);
       await this.html5Qr.start(
         { facingMode: 'environment' },
         { fps: 8, qrbox: { width: 220, height: 220 } },
@@ -1084,6 +1272,7 @@ export class EventsPageComponent implements OnInit, OnDestroy {
 
     try {
       await this.stopScanner();
+      const { Html5Qrcode } = await import('html5-qrcode');
       const scanner = new Html5Qrcode(this.scannerElementId);
       this.html5Qr = scanner;
       const decoded = await scanner.scanFile(file, true);
@@ -1185,11 +1374,15 @@ export class EventsPageComponent implements OnInit, OnDestroy {
     this.sportsService.markAttendanceByQr(qrCode, verifiedBy, this.checkInNotes).subscribe({
       next: (response) => {
         this.checkInBusy = false;
-        this.checkInMessage = response?.message || 'Asistencia registrada.';
+        this.checkInMessage = response?.message || this.translate.instant('EVENTS_PAGE.SUCCESS_CHECKIN_MSG');
         this.manualQrCode = '';
         this.checkInNotes = '';
         void this.stopScanner();
         this.reload(true);
+        this.notifySuccess(
+          'EVENTS_PAGE.SUCCESS_CHECKIN_TITLE',
+          response?.message || this.translate.instant('EVENTS_PAGE.SUCCESS_CHECKIN_MSG')
+        );
         if (this.reportOpen && this.reportEventId) {
           this.fetchAttendanceReport(this.reportEventId, true);
         }
@@ -1206,10 +1399,45 @@ export class EventsPageComponent implements OnInit, OnDestroy {
       .filter((reg) => reg.waitlistPosition == null)
       .map((registration) => ({
         registration,
-        event: this.events.find((event) => event.id === registration.eventId) || null,
+        event: this.events.find((event) => event.id === registration.eventId)
+          || this.eventFromRegistration(registration),
         qrDataUrl: null,
         loadingQr: false
       }));
+  }
+
+  private eventFromRegistration(reg: Registration): EventItem | null {
+    if (!reg.eventId) {
+      return null;
+    }
+    return {
+      id: reg.eventId,
+      sportId: 0,
+      name: reg.eventName || 'Evento',
+      eventDate: reg.eventDate || '',
+      eventTime: reg.eventTime || '',
+      maxCapacity: 0,
+      status: reg.eventStatus
+    };
+  }
+
+  private ensureHighlightedEvent(): void {
+    const id = this.highlightedEventId;
+    if (!id || this.events.some((event) => event.id === id)) {
+      return;
+    }
+    this.sportsService.getEvent(id).subscribe({
+      next: (event) => {
+        if (!event?.id || this.events.some((item) => item.id === event.id)) {
+          return;
+        }
+        this.events = [event, ...this.events];
+        if (this.mode === 'manage') {
+          this.applyWaitlists(this.events, {});
+        }
+        this.scrollToHighlighted();
+      }
+    });
   }
 
   private async refreshPassQrImages(): Promise<void> {
@@ -1234,6 +1462,7 @@ export class EventsPageComponent implements OnInit, OnDestroy {
     }
     pass.loadingQr = true;
     try {
+      const { default: QRCode } = await import('qrcode');
       pass.qrDataUrl = await QRCode.toDataURL(buildAttendanceCheckinUrl(code as string, pass.event?.id), {
         width: 220,
         margin: 1,
@@ -1304,7 +1533,7 @@ export class EventsPageComponent implements OnInit, OnDestroy {
       if (this.reportOpen && this.reportEventId) {
         this.fetchAttendanceReport(this.reportEventId, true);
       }
-    }, 8000);
+    }, 15000);
   }
 
   private stopReportPoll(): void {
@@ -1320,7 +1549,9 @@ export class EventsPageComponent implements OnInit, OnDestroy {
       const existing = prev.get(event.id);
       return {
         event,
-        waitlist: waitlists[event.id] || [],
+        waitlist: existing?.waitlistLoaded ? existing.waitlist : (waitlists[event.id] || []),
+        waitlistLoaded: existing?.waitlistLoaded || false,
+        waitlistLoading: false,
         showWaitlist: existing?.showWaitlist || false,
         editing: existing?.editing || false,
         editForm: existing?.editing ? existing.editForm : this.buildEditForm(event),
@@ -1328,5 +1559,30 @@ export class EventsPageComponent implements OnInit, OnDestroy {
       };
     });
     this.loading = false;
+  }
+
+  private notifySuccess(titleKey: string, message: string): void {
+    void this.confirm.ack({
+      title: this.translate.instant(titleKey),
+      message,
+      confirmLabel: this.translate.instant('COMMON.GOT_IT')
+    });
+  }
+
+  private parseLocalDate(value?: string | null): Date | null {
+    if (!value) {
+      return null;
+    }
+    const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value.trim());
+    if (match) {
+      const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+      return Number.isNaN(date.getTime()) ? null : date;
+    }
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  private startOfLocalDay(date: Date): Date {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
   }
 }

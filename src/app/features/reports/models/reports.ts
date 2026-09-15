@@ -31,6 +31,13 @@ export interface PanelDashboardResponse {
     waitlist?: Registration[];
     attendanceReport?: AttendanceReport;
   }>;
+  sessionSummaries?: Array<{
+    routine: Routine;
+    registrations?: RoutineRegistration[];
+    enrolledCount?: number;
+    attendedCount?: number;
+    absentCount?: number;
+  }>;
   users?: UserProfile[];
   roles?: RoleInfo[];
   auditLogs?: AdminAuditLog[];
@@ -40,6 +47,14 @@ export interface PanelDashboardResponse {
   athleteCount?: number;
   attendanceRatePercent?: number | null;
   attendanceSampledEvents?: number;
+  eventsTotal?: number;
+  eventsPage?: number;
+  eventsSize?: number;
+  eventsTotalPages?: number;
+  usersTotal?: number;
+  usersPage?: number;
+  usersSize?: number;
+  usersTotalPages?: number;
 }
 
 export interface DashboardFilters {

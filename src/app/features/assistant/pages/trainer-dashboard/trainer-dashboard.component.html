@@ -1,5 +1,4 @@
-<app-panel-shell>
-  <h1 class="page-title">{{ 'TRAINER.TITLE' | translate }}</h1>
+<h1 class="page-title">{{ 'TRAINER.TITLE' | translate }}</h1>
   <p class="page-subtitle">{{ 'TRAINER.SUBTITLE' | translate }}</p>
   <p *ngIf="loading" class="empty-text">{{ 'COMMON.LOADING' | translate }}</p>
   <p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
@@ -50,6 +49,8 @@
             <th>{{ 'SESSIONS_PAGE.FOCUS' | translate }}</th>
             <th>{{ 'CATALOG.STATUS' | translate }}</th>
             <th>{{ 'SESSIONS_PAGE.DURATION' | translate }}</th>
+            <th>{{ 'SESSIONS_PAGE.ATHLETES' | translate }}</th>
+            <th>{{ 'COMMON.ACTIONS' | translate }}</th>
           </tr>
         </thead>
         <tbody>
@@ -62,6 +63,12 @@
               </span>
             </td>
             <td>{{ routine.durationMinutes || '—' }} min</td>
+            <td>{{ occupied(routine) }}/{{ routine.maxCapacity || 0 }}</td>
+            <td>
+              <button class="btn-secondary" type="button" (click)="goSession(routine)" [disabled]="!quizPassed">
+                {{ 'SESSIONS_PAGE.SEE_ATHLETES' | translate }}
+              </button>
+            </td>
           </tr>
         </tbody>
       </table>
@@ -80,4 +87,3 @@
       <p *ngIf="!disabilities.length" class="empty-text">Sin discapacidades activas.</p>
     </div>
   </div>
-</app-panel-shell>

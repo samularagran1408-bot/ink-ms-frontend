@@ -1,6 +1,7 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Router, RouterModule } from '@angular/router';
 import { forkJoin, of, Subscription } from 'rxjs';
 
 import { AttendanceReport, EventItem, Registration, Sport } from '@features/sports-disabilities/models/sports';
@@ -14,6 +15,7 @@ import { EventPlaceLocation } from '@features/sports-disabilities/utils/maps.uti
 import { eventDateTimeMs } from '@core/utils/qr-attendance.util';
 import { userInitials } from '@core/utils/avatar.util';
 import { isEventVisible } from '@features/sports-disabilities/utils/event-visibility.util';
+import { SharedModule } from '@shared/shared.module';
 
 interface EnrolledPreview {
   registrationId: string;
@@ -24,6 +26,8 @@ interface EnrolledPreview {
 }
 
 @Component({
+  standalone: true,
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, SharedModule],
   selector: 'app-organizer-dashboard',
   templateUrl: './organizer-dashboard.component.html',
   styleUrl: './organizer-dashboard.component.scss'

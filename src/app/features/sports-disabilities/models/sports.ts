@@ -16,6 +16,16 @@ export interface SportRequest {
   isActive?: boolean;
 }
 
+export interface PageResponse<T> {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  number: number;
+  size: number;
+  first: boolean;
+  last: boolean;
+}
+
 export interface EventItem {
   id: string;
   sportId: number;
@@ -192,7 +202,15 @@ export interface RoutineRequest {
 export interface RoutineRegistration {
   id: string;
   userId: string;
+  userFullName?: string;
+  userEmail?: string;
+  userProfilePicture?: string;
+  userDisability?: string;
   routineId: string;
+  routineName?: string;
+  trainerId?: string;
   status?: string;
   registeredAt?: string;
+  registrationDate?: string;
+  message?: string;
 }

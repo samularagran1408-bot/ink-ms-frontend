@@ -1,5 +1,7 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { catchError, switchMap } from 'rxjs/operators';
 
@@ -9,8 +11,11 @@ import { PreferencesApiService } from '@features/accessibility/services/preferen
 import { SessionService } from '@core/services/session.service';
 import { SportsService } from '@features/sports-disabilities/services/sports.service';
 import { extractQrCode, eventDateTimeMs } from '@core/utils/qr-attendance.util';
+import { SharedModule } from '@shared/shared.module';
 
 @Component({
+  standalone: true,
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, SharedModule],
   selector: 'app-attendance-checkin-page',
   templateUrl: './attendance-checkin-page.component.html',
   styleUrl: './attendance-checkin-page.component.scss'

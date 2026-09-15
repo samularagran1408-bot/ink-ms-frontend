@@ -87,6 +87,8 @@ export class LoginComponent {
         if (error?.status === 401) {
           this.attemptedEmail = this.loginForm.value.email;
           this.loginFailed = true;
+        } else if (error?.status === 0 || error?.status === 502 || error?.status === 503 || error?.status === 504) {
+          this.errorMessage = this.translate.instant('AUTH.SERVICE_UNAVAILABLE');
         } else {
             this.errorMessage = error?.error?.message || this.translate.instant('AUTH.DENIED_DESC');
         }

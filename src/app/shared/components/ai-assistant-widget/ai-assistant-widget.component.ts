@@ -1,4 +1,4 @@
-import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
@@ -6,7 +6,7 @@ import { filter } from 'rxjs/operators';
 import { TranslateService } from '@ngx-translate/core';
 
 import { AppRole } from '@core/models/app-role';
-import { ChatCard, ChatCtaAccion, ChatHilo, ChatMensajeUi, ChatPasoActividad, ChatResponse, ChatStreamEvent } from '@features/assistant/models/chat';
+import { ChatCard, ChatCtaAccion, ChatHilo, ChatLimites, ChatMensajeUi, ChatPasoActividad, ChatResponse, ChatStreamEvent } from '@features/assistant/models/chat';
 import { BodyMapData } from '@features/assistant/models/body-map';
 import { UserProfile } from '@core/models/user-profile';
 import { AiAssistantService } from '@features/assistant/services/ai-assistant.service';
@@ -15,23 +15,23 @@ import { ChatService } from '@features/assistant/services/chat.service';
 import { ConfirmDialogService } from '@shared/services/confirm-dialog.service';
 import { CompetitionProgressService } from '@features/assistant/services/competition-progress.service';
 import { LiveSyncService } from '@features/accessibility/services/live-sync.service';
+import { UnreadNotificationsService } from '@features/accessibility/services/unread-notifications.service';
 import { ReportsService } from '@features/reports/services/reports.service';
 import { SessionService } from '@core/services/session.service';
 import { UsersService } from '@features/users/services/users.service';
 import { HeroIconName } from '../../icons/heroicons-outline';
 
-const STORAGE_KEY = 'inklusport.chat.conversacion_id';
 const PUBLIC_PATHS = new Set(['/', '', '/login', '/register', '/guest', '/forgot-password']);
 
 @Component({
   selector: 'app-ai-assistant-widget',
   templateUrl: './ai-assistant-widget.component.html',
-  styleUrl: './ai-assistant-widget.component.scss'
+  styleUrl: './ai-assistant-widget.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
   @ViewChild('timeline') timeline?: ElementRef<HTMLElement>;
   @ViewChild('inputEl') inputEl?: ElementRef<HTMLTextAreaElement>;
-  @ViewChild('historyWrap') historyWrap?: ElementRef<HTMLElement>;
 
   visible = false;
   open = false;
@@ -54,13 +54,24 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
   pasosAgente: ChatPasoActividad[] = [];
   errorChat: string | null = null;
   conversacionId: string | null = null;
+  private dueñoHistorial = '';
   hilos: ChatHilo[] = [];
   hilosVisibles: ChatHilo[] = [];
-  historialAbierto = false;
-  busquedaHistorial = '';
   cargandoHilos = false;
   cargandoHilo = false;
   errorHistorial: string | null = null;
+  limites: ChatLimites = {
+    maxMensajesPorChat: 40,
+    maxChatsActivos: 10,
+    maxMensajesPorHora: 20,
+    esperaMinutos: 60,
+    esperaHoras: 1,
+    usadosHora: 0
+  };
+  avisoChat: string | null = null;
+  bloqueadoHasta = 0;
+  esperaLabel = '';
+  private esperaTimer?: ReturnType<typeof setInterval>;
   private chatSub?: Subscription;
   private cicloLocal?: ReturnType<typeof setInterval>;
   private actividadReal = false;
@@ -92,6 +103,9 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
   historialRiesgo: Array<Record<string, unknown>> = [];
   cargandoHistorialRiesgo = false;
   errorHistorialRiesgo: string | null = null;
+  alertasSemana = 0;
+  umbralSemana = 3;
+  avisoUmbral = false;
 
   cargandoCompetencia = false;
   errorCompetencia: string | null = null;
@@ -123,13 +137,18 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     private translate: TranslateService,
     private competitionProgress: CompetitionProgressService,
     private assistantUi: AssistantUiService,
-    private liveSync: LiveSyncService
+    private liveSync: LiveSyncService,
+    private unreadNotifications: UnreadNotificationsService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
-    this.conversacionId = sessionStorage.getItem(STORAGE_KEY);
+    this.aplicarIdentidadChat();
     this.refreshVisibility();
-    this.subs.add(this.session.profile$.subscribe(() => this.refreshVisibility()));
+    this.subs.add(this.session.profile$.subscribe(() => {
+      this.aplicarIdentidadChat();
+      this.refreshVisibility();
+    }));
     this.subs.add(this.session.roles$.subscribe(() => this.refreshVisibility()));
     this.subs.add(
       this.router.events
@@ -153,11 +172,16 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
       if (id === 'riesgo' && !this.cargandoHistorialRiesgo) {
         this.cargarHistorialRiesgo();
       }
+      if (id === 'chat') {
+        this.cargarHilos();
+      }
+      this.cdr.markForCheck();
     }));
     this.subs.add(this.competitionProgress.raw$.subscribe((raw) => {
       if (raw && (raw['activo'] || raw['vista'])) {
         this.competencia = raw;
       }
+      this.cdr.markForCheck();
     }));
     this.liveSync.start();
     this.subs.add(this.liveSync.pulse$.subscribe(() => this.onLiveSync()));
@@ -167,6 +191,7 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     this.subs.unsubscribe();
     this.chatSub?.unsubscribe();
     this.detenerCicloLocal();
+    this.detenerEspera();
     if (this.closeTimeout) {
       clearTimeout(this.closeTimeout);
     }
@@ -175,10 +200,6 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
   @HostListener('document:keydown.escape')
   onEscape(): void {
     if (this.confirm.state$.value) {
-      return;
-    }
-    if (this.historialAbierto) {
-      this.cerrarHistorial();
       return;
     }
     if (this.open) {
@@ -195,8 +216,10 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
   }
 
   selectSection(id: AssistantSection): void {
-    this.cerrarHistorial();
     this.section = id;
+    if (id === 'chat') {
+      this.cargarHilos();
+    }
     if (id === 'estadisticas' && !this.cargandoStats) {
       this.cargarEstadisticas(this.statsObjetivoId || undefined, this.statsNombre || undefined);
     }
@@ -209,11 +232,16 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     if (id === 'riesgo') {
       this.cargarHistorialRiesgo();
     }
+    this.cdr.markForCheck();
+  }
+
+  get chatBloqueado(): boolean {
+    return Date.now() < this.bloqueadoHasta;
   }
 
   enviarChat(): void {
     const texto = this.borrador.trim();
-    if (!texto || this.enviando || this.cargandoHilo) {
+    if (!texto || this.enviando || this.cargandoHilo || this.chatBloqueado) {
       return;
     }
     this.errorChat = null;
@@ -223,13 +251,23 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     this.iniciarAnimacionEspera();
     this.scrollChat();
     this.chatSub?.unsubscribe();
-    this.chatSub = this.chat.enviarConProgreso(texto, this.conversacionId, (ev) => this.onChatEvento(ev), this.limitacion).subscribe({
+    this.chatSub = this.chat.enviarConProgreso(texto, this.conversacionId, (ev) => this.onChatEvento(ev)).subscribe({
       next: (res) => this.aplicarChat(res),
       error: (err) => {
+        this.cdr.markForCheck();
         this.enviando = false;
         this.detenerCicloLocal();
         this.pasosAgente = [];
-        this.errorChat = err?.error?.detail || err?.message || 'No se pudo contactar al asistente.';
+        const ultimo = this.mensajes[this.mensajes.length - 1];
+        if (ultimo?.remitente === 'usuario' && ultimo.texto === texto) {
+          this.mensajes.pop();
+          this.borrador = texto;
+        }
+        const info = this.chat.parsearError(err);
+        this.errorChat = info.mensaje;
+        if (info.codigo === 'chat_limite_hora' || info.retryAfterSegundos > 0) {
+          this.iniciarBloqueo(info.retryAfterSegundos || this.limites.esperaMinutos * 60);
+        }
       }
     });
   }
@@ -240,9 +278,8 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
   }
 
   nuevaConversacion(): void {
-    this.cerrarHistorial();
-    this.conversacionId = null;
-    sessionStorage.removeItem(STORAGE_KEY);
+    this.conversacionId = this.chat.idNuevo();
+    this.chat.guardarConversacion(this.conversacionId);
     this.mensajes = [];
     this.errorChat = null;
     this.chatSub?.unsubscribe();
@@ -251,54 +288,39 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     this.pasosAgente = [];
     this.chat.nueva().subscribe({
       next: (res) => {
-        const cid = res.conversacion_id || (res as { session_id?: string }).session_id;
+        this.cdr.markForCheck();
+        const cid = this.chat.idDeHilo(res) || res.conversacion_id || (res as { session_id?: string }).session_id;
         if (!cid) {
           return;
         }
         this.conversacionId = cid;
-        sessionStorage.setItem(STORAGE_KEY, cid);
+        this.chat.guardarConversacion(cid);
         this.cargarHilos();
       }
     });
   }
 
-  toggleHistorial(event?: Event): void {
-    event?.preventDefault();
-    event?.stopPropagation();
-    this.historialAbierto = !this.historialAbierto;
-    if (this.historialAbierto) {
-      this.busquedaHistorial = '';
-      this.cargarHilos();
-    }
-  }
-
-  cerrarHistorial(): void {
-    this.historialAbierto = false;
-    this.busquedaHistorial = '';
-    this.filtrarHistorial();
-  }
-
   filtrarHistorial(): void {
-    const q = this.busquedaHistorial.trim().toLowerCase();
-    this.hilosVisibles = q
-      ? this.hilos.filter((h) => (this.tituloDeHilo(h) || '').toLowerCase().includes(q))
-      : [...this.hilos];
+    this.hilosVisibles = [...this.hilos];
+    this.cdr.markForCheck();
   }
 
-  textoHistorial(): string {
-    const n = this.hilosVisibles.length;
-    if (n > 0) {
-      return n === 1 ? '1 conversación' : `${n} conversaciones`;
-    }
-    if (this.hilos.length) {
-      return this.translate.instant('CHAT.NO_RESULTS');
-    }
-    return 'Aún no hay conversaciones guardadas.';
-  }
+  readonly trackByHilo = (_index: number, hilo: ChatHilo): string =>
+    hilo?.conversacion_id || hilo?.session_id || String(_index);
 
-  trackByHilo(_index: number, hilo: ChatHilo): string {
-    return this.idDeHilo(hilo) || String(_index);
-  }
+  readonly trackByTab = (_index: number, tab: { id: AssistantSection }): string => tab.id;
+
+  readonly trackByMensaje = (index: number, msg: ChatMensajeUi): string =>
+    `${index}:${msg.remitente}:${msg.texto.slice(0, 32)}`;
+
+  readonly trackByCard = (index: number, card: ChatCard): string =>
+    `${card.tipo}:${card.titulo}:${index}`;
+
+  readonly trackBySugerencia = (index: number, texto: string): string =>
+    texto || String(index);
+
+  readonly trackByPaso = (index: number, paso: ChatPasoActividad): string =>
+    `${paso.tipo}:${paso.code}:${index}`;
 
   abrirHilo(event: Event, hilo: ChatHilo): void {
     event.preventDefault();
@@ -335,35 +357,60 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     }
     this.chat.borrarHilo(cid).subscribe({
       next: () => {
+        this.cdr.markForCheck();
         if (this.conversacionId === cid) {
           this.mensajes = [];
-          this.conversacionId = null;
-          sessionStorage.removeItem(STORAGE_KEY);
+          this.conversacionId = this.chat.idNuevo();
+          this.chat.guardarConversacion(this.conversacionId);
         }
         this.cargarHilos();
       },
       error: () => {
+        this.cdr.markForCheck();
+        this.errorHistorial = this.translate.instant('CHAT.LOAD_ERROR');
+      }
+    });
+  }
+
+  async borrarTodoHistorial(event: Event): Promise<void> {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!this.hilos.length) {
+      return;
+    }
+    const ok = await this.confirm.ask({
+      title: this.translate.instant('CHAT.DELETE_ALL_TITLE'),
+      message: this.translate.instant('CHAT.DELETE_ALL_CONFIRM'),
+      confirmLabel: this.translate.instant('CHAT.DELETE_ALL'),
+      cancelLabel: this.translate.instant('COMMON.CANCEL') || 'Cancelar',
+      tone: 'danger'
+    });
+    if (!ok) {
+      return;
+    }
+    this.chat.borrarTodos().subscribe({
+      next: () => {
+        this.cdr.markForCheck();
+        this.hilos = [];
+        this.hilosVisibles = [];
+        this.mensajes = [];
+        this.conversacionId = this.chat.idNuevo();
+        this.chat.guardarConversacion(this.conversacionId);
+        this.errorHistorial = null;
+      },
+      error: () => {
+        this.cdr.markForCheck();
         this.errorHistorial = this.translate.instant('CHAT.LOAD_ERROR');
       }
     });
   }
 
   idDeHilo(hilo: ChatHilo | Record<string, unknown> | null | undefined): string {
-    if (!hilo) {
-      return '';
-    }
-    const row = hilo as Record<string, unknown>;
-    const raw = row['conversacion_id'] ?? row['session_id'] ?? row['conversacionId'] ?? row['sessionId'];
-    return raw == null ? '' : String(raw).trim();
+    return this.chat.idDeHilo(hilo);
   }
 
   private normalizarHilo(hilo: ChatHilo): ChatHilo {
-    const id = this.idDeHilo(hilo);
-    return {
-      ...hilo,
-      conversacion_id: id || hilo.conversacion_id,
-      session_id: hilo.session_id || id
-    };
+    return this.chat.normalizarHilo(hilo);
   }
 
   tituloHiloActual(): string {
@@ -434,6 +481,7 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     this.reports.exportDashboardPdf().subscribe({
       next: (blob) => this.reports.downloadBlob(blob, filename),
       error: () => {
+        this.cdr.markForCheck();
         this.errorChat = 'No se pudo descargar el PDF.';
       }
     });
@@ -442,6 +490,7 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
   private descargarPdfAuditoria(filename: string, analisis: boolean): void {
     this.users.getAuditLogs().subscribe({
       next: (logs) => {
+        this.cdr.markForCheck();
         const payload = {
           logs: (logs || []).map((log) => ({
             id: log.id,
@@ -460,11 +509,13 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
         req$.subscribe({
           next: (blob) => this.reports.downloadBlob(blob, filename),
           error: () => {
+        this.cdr.markForCheck();
             this.errorChat = 'No se pudo descargar el PDF.';
           }
         });
       },
       error: () => {
+        this.cdr.markForCheck();
         this.errorChat = 'No se pudo descargar el PDF.';
       }
     });
@@ -479,10 +530,12 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
       duracion_minutos: this.rutinaMinutos
     }).subscribe({
       next: (res) => {
+        this.cdr.markForCheck();
         this.cargandoRutina = false;
         this.rutina = res;
       },
       error: (err) => {
+        this.cdr.markForCheck();
         this.cargandoRutina = false;
         this.errorRutina = err?.error?.detail || 'No se pudo generar la rutina.';
       }
@@ -501,12 +554,14 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
       nivel: this.planNivel
     }).subscribe({
       next: (res) => {
+        this.cdr.markForCheck();
         this.cargandoPlan = false;
         this.plan = res;
         const id = res['plan_id'];
         this.planes = [res, ...this.planes.filter((p) => p['plan_id'] !== id)];
       },
       error: (err) => {
+        this.cdr.markForCheck();
         this.cargandoPlan = false;
         this.errorPlan = err?.error?.detail || 'No se pudo generar el plan.';
       }
@@ -518,6 +573,7 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     this.errorPlan = null;
     this.ai.listarPlanes().subscribe({
       next: (res) => {
+        this.cdr.markForCheck();
         this.cargandoPlan = false;
         const lista = res['planes'];
         this.planes = Array.isArray(lista) ? lista as Array<Record<string, unknown>> : [];
@@ -526,6 +582,7 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
         }
       },
       error: (err) => {
+        this.cdr.markForCheck();
         this.cargandoPlan = false;
         this.errorPlan = err?.error?.detail || 'No se pudieron cargar los planes.';
       }
@@ -599,12 +656,19 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
       limitacion: this.limitacion
     }).subscribe({
       next: (res) => {
+        this.cdr.markForCheck();
         this.cargandoRiesgo = false;
         this.riesgo = res;
+        const umbral = res['umbral_semanal'];
+        this.avisoUmbral = !!(umbral && typeof umbral === 'object' && (umbral as Record<string, unknown>)['notificado']);
+        if (this.avisoUmbral) {
+          this.unreadNotifications.refresh();
+        }
         this.cargarHistorialRiesgo();
         this.cargarEstadisticas(this.statsObjetivoId || undefined, this.statsNombre || undefined, true);
       },
       error: (err) => {
+        this.cdr.markForCheck();
         this.cargandoRiesgo = false;
         this.errorRiesgo = this.httpErrorDetail(err, 'No se pudo evaluar el riesgo.');
       }
@@ -621,11 +685,13 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     }
     this.ai.obtenerModo().subscribe({
       next: (res) => {
+        this.cdr.markForCheck();
         this.cargandoCompetencia = false;
         this.competencia = res;
         this.competitionProgress.publish(res);
       },
       error: () => {
+        this.cdr.markForCheck();
         if (this.competenciaModoActivo() && this.checklistItems().length) {
           this.cargandoCompetencia = false;
           return;
@@ -640,6 +706,7 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     this.errorCompetencia = null;
     this.ai.analizarCompetencia().subscribe({
       next: (res) => {
+        this.cdr.markForCheck();
         this.cargandoCompetencia = false;
         if (this.competenciaModoActivo() && this.checklistItems().length) {
           return;
@@ -648,6 +715,7 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
         this.competitionProgress.publish(res);
       },
       error: (err) => {
+        this.cdr.markForCheck();
         this.cargandoCompetencia = false;
         this.errorCompetencia = this.httpErrorDetail(err, 'No se pudo analizar la competencia.');
       }
@@ -659,11 +727,13 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     this.errorCompetencia = null;
     this.ai.modoCompetencia(activar, this.objetivoCompetencia || undefined).subscribe({
       next: (res) => {
+        this.cdr.markForCheck();
         this.cargandoCompetencia = false;
         this.competencia = res;
         this.competitionProgress.publish(res);
       },
       error: (err) => {
+        this.cdr.markForCheck();
         this.cargandoCompetencia = false;
         this.errorCompetencia = this.httpErrorDetail(err, 'No se pudo actualizar el modo competencia.');
         this.cargarEstadoCompetencia(true);
@@ -679,9 +749,11 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     this.errorCompetencia = null;
     this.competitionProgress.marcarChecklist(item.id, !item.hecho).subscribe({
       next: () => {
+        this.cdr.markForCheck();
         this.loggingChecklistId = null;
       },
       error: (err) => {
+        this.cdr.markForCheck();
         this.loggingChecklistId = null;
         this.errorCompetencia = this.httpErrorDetail(err, 'No se pudo actualizar la lista del plan.');
       }
@@ -696,9 +768,11 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     this.errorCompetencia = null;
     this.competitionProgress.registrarSesion(routineId).subscribe({
       next: () => {
+        this.cdr.markForCheck();
         this.loggingRoutineId = null;
       },
       error: (err) => {
+        this.cdr.markForCheck();
         this.loggingRoutineId = null;
         this.errorCompetencia = this.httpErrorDetail(err, 'No se pudo registrar la sesión.');
       }
@@ -726,10 +800,12 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     this.statsNombre = nombre || this.statsNombre;
     this.ai.dashboard(usuarioId || this.statsObjetivoId || undefined).subscribe({
       next: (res) => {
+        this.cdr.markForCheck();
         this.cargandoStats = false;
         this.stats = res;
       },
       error: (err) => {
+        this.cdr.markForCheck();
         this.cargandoStats = false;
         this.errorStats = this.httpErrorDetail(err, 'No se pudieron cargar las estadísticas.');
       }
@@ -745,10 +821,12 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     this.buscandoAdmin = true;
     this.users.searchUsers(q).subscribe({
       next: (lista) => {
+        this.cdr.markForCheck();
         this.buscandoAdmin = false;
         this.usuariosAdmin = lista.slice(0, 8);
       },
       error: () => {
+        this.cdr.markForCheck();
         this.buscandoAdmin = false;
         this.usuariosAdmin = [];
       }
@@ -880,6 +958,22 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     return texto;
   }
 
+  lineasBurbuja(texto: string): string[] {
+    const t = this.textoBurbuja(texto).replace(/\r\n/g, '\n').trim();
+    if (!t) {
+      return [];
+    }
+    const porSalto = t.split(/\n+/).map((linea) => linea.trim()).filter(Boolean);
+    if (porSalto.length > 1) {
+      return porSalto;
+    }
+    const oraciones = porSalto[0].split(/(?<=[.!?])\s+(?=[A-ZÁÉÍÓÚÑ¿¡0-9])/);
+    if (oraciones.length >= 3) {
+      return oraciones.map((linea) => linea.trim()).filter(Boolean);
+    }
+    return porSalto;
+  }
+
   sugerenciasRol(): string[] {
     if (this.esAdmin()) {
       return [
@@ -922,11 +1016,15 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     this.errorHistorialRiesgo = null;
     this.ai.historialRiesgo().subscribe({
       next: (res) => {
+        this.cdr.markForCheck();
         this.cargandoHistorialRiesgo = false;
         const lista = res['evaluaciones'];
         this.historialRiesgo = Array.isArray(lista) ? lista as Array<Record<string, unknown>> : [];
+        this.alertasSemana = Number(res['alertas_semana'] ?? this.historialRiesgo.length) || 0;
+        this.umbralSemana = Number(res['umbral_semana'] || 3) || 3;
       },
       error: () => {
+        this.cdr.markForCheck();
         this.cargandoHistorialRiesgo = false;
         this.errorHistorialRiesgo = 'No se pudo cargar el historial de riesgo.';
       }
@@ -951,6 +1049,7 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     this.ai.borrarEvaluacionRiesgo(id).subscribe({
       next: () => this.cargarHistorialRiesgo(),
       error: () => {
+        this.cdr.markForCheck();
         this.errorHistorialRiesgo = 'No se pudo borrar esa evaluación.';
       }
     });
@@ -972,10 +1071,14 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     }
     this.ai.vaciarHistorialRiesgo().subscribe({
       next: () => {
+        this.cdr.markForCheck();
         this.historialRiesgo = [];
         this.riesgo = null;
+        this.avisoUmbral = false;
+        this.alertasSemana = 0;
       },
       error: () => {
+        this.cdr.markForCheck();
         this.errorHistorialRiesgo = 'No se pudo vaciar el historial.';
       }
     });
@@ -1190,6 +1293,7 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     if (this.section === 'competencia' || this.competenciaModoActivo()) {
       this.cargarEstadoCompetencia(true);
     }
+    this.cdr.markForCheck();
   }
 
   private httpErrorDetail(err: unknown, fallback: string): string {
@@ -1227,27 +1331,48 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
   private openPanel(): void {
     this.open = true;
     this.closing = false;
-    this.cargarHilos();
-    if (this.conversacionId && !this.mensajes.length) {
-      this.cargarHilo(this.conversacionId);
-    }
+    this.cargarHilos(true);
     setTimeout(() => this.inputEl?.nativeElement.focus(), 280);
+    this.cdr.markForCheck();
   }
 
-  private cargarHilos(): void {
+  private cargarHilos(abrirActual = false): void {
     this.cargandoHilos = true;
     this.errorHistorial = null;
     this.chat.listarHilos().subscribe({
       next: (res) => {
+        this.cdr.markForCheck();
         this.cargandoHilos = false;
-        this.hilos = (res.conversaciones || [])
+        const delServidor = (res.conversaciones || [])
           .filter((hilo): hilo is ChatHilo => !!hilo && typeof hilo === 'object')
           .map((hilo) => this.normalizarHilo(hilo));
+        if (res.limites) {
+          this.limites = res.limites;
+          if (res.limites.aviso) {
+            this.avisoChat = res.limites.aviso;
+          }
+        }
+        this.hilos = delServidor;
+        const ids = new Set(this.hilos.map((hilo) => this.idDeHilo(hilo)).filter(Boolean));
+        if (this.conversacionId && !ids.has(this.conversacionId)) {
+          this.conversacionId = null;
+          this.chat.olvidarConversacion();
+        }
         this.filtrarHistorial();
+        if (!abrirActual || this.mensajes.length) {
+          return;
+        }
+        const guardado = this.conversacionId && ids.has(this.conversacionId)
+          ? this.conversacionId
+          : this.idDeHilo(this.hilos[0]);
+        if (guardado) {
+          this.cargarHilo(guardado);
+        }
       },
-      error: () => {
+      error: (err) => {
+        this.cdr.markForCheck();
         this.cargandoHilos = false;
-        this.errorHistorial = this.translate.instant('CHAT.LOAD_ERROR');
+        this.errorHistorial = this.httpErrorDetail(err, this.translate.instant('CHAT.LOAD_ERROR'));
       }
     });
   }
@@ -1257,22 +1382,19 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     this.errorChat = null;
     this.chat.obtenerHilo(conversacionId).subscribe({
       next: (detalle) => {
+        this.cdr.markForCheck();
         this.cargandoHilo = false;
         const cid = this.idDeHilo(detalle) || conversacionId;
         this.conversacionId = cid;
-        sessionStorage.setItem(STORAGE_KEY, cid);
-        this.mensajes = (detalle.mensajes || []).map((m) => ({
-          remitente: m.remitente === 'usuario' ? 'usuario' : 'asistente',
-          texto: m.mensaje || '',
-          cards: Array.isArray(m.cards) ? m.cards : [],
-          sugerencias: Array.isArray(m.sugerencias) ? m.sugerencias : [],
-          fuente: m.fuente,
-          cuerpo: m.cuerpo || null
-        }));
-        this.cerrarHistorial();
+        this.chat.guardarConversacion(cid);
+        this.mensajes = this.chat.mapearMensajes(detalle);
+        if (detalle.limites) {
+          this.limites = detalle.limites;
+        }
         this.scrollChat();
       },
       error: () => {
+        this.cdr.markForCheck();
         this.cargandoHilo = false;
         this.errorChat = this.translate.instant('CHAT.LOAD_ERROR');
       }
@@ -1280,22 +1402,55 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
   }
 
   private closePanel(): void {
-    this.cerrarHistorial();
     this.closing = true;
     this.closeTimeout = setTimeout(() => {
       this.open = false;
       this.closing = false;
+      this.cdr.markForCheck();
     }, 220);
+    this.cdr.markForCheck();
   }
 
   private refreshVisibility(): void {
     if (!this.session.isAuthenticated()) {
       this.visible = false;
       this.open = false;
+      this.reiniciarChatLocal();
+      this.cdr.markForCheck();
       return;
     }
     const path = (this.router.url || '/').split('?')[0];
     this.visible = !PUBLIC_PATHS.has(path);
+    this.cdr.markForCheck();
+  }
+
+  private aplicarIdentidadChat(): void {
+    const dueño = this.session.isAuthenticated() ? this.chat.identidadHistorial() : '';
+    if (dueño === this.dueñoHistorial) {
+      return;
+    }
+    this.dueñoHistorial = dueño;
+    this.reiniciarChatLocal();
+    if (dueño) {
+      this.conversacionId = this.chat.leerConversacionGuardada();
+      this.cargarHilos(true);
+    }
+  }
+
+  private reiniciarChatLocal(): void {
+    this.mensajes = [];
+    this.hilos = [];
+    this.hilosVisibles = [];
+    this.errorHistorial = null;
+    this.errorChat = null;
+    this.avisoChat = null;
+    this.chatSub?.unsubscribe();
+    this.enviando = false;
+    this.detenerCicloLocal();
+    this.pasosAgente = [];
+    if (!this.session.isAuthenticated()) {
+      this.conversacionId = null;
+    }
   }
 
   private onChatEvento(ev: ChatStreamEvent): void {
@@ -1326,6 +1481,7 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
       ];
     }
     this.scrollChat();
+    this.cdr.markForCheck();
   }
 
   private iniciarAnimacionEspera(): void {
@@ -1348,6 +1504,7 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
       this.pasosAgente = [...this.pasosAgente, extras[i]];
       i += 1;
       this.scrollChat();
+      this.cdr.markForCheck();
     }, 1600);
   }
 
@@ -1369,7 +1526,8 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
     this.detenerCicloLocal();
     this.pasosAgente = [];
     this.conversacionId = res.conversacion_id;
-    sessionStorage.setItem(STORAGE_KEY, res.conversacion_id);
+    this.chat.guardarConversacion(res.conversacion_id);
+    this.aplicarCupo(res);
     this.mensajes.push({
       remitente: 'asistente',
       texto: res.respuesta,
@@ -1380,8 +1538,106 @@ export class AiAssistantWidgetComponent implements OnInit, OnDestroy {
       herramientas: res.mcp?.tools_usadas?.length ? res.mcp.tools_usadas : res.herramientas_usadas,
       cuerpo: this.cuerpoDe(res)
     });
+    this.upsertHiloLocal(res);
     this.cargarHilos();
     this.scrollChat();
+    this.cdr.markForCheck();
+  }
+
+  private aplicarCupo(res: ChatResponse | { limites?: ChatLimites } | null): void {
+    const cupo = res && 'cupo' in res ? this.chat.extraerCupo(res) : null;
+    if (cupo) {
+      this.limites = {
+        ...this.limites,
+        maxMensajesPorHora: cupo.maximo,
+        usadosHora: cupo.usados,
+        esperaMinutos: Math.max(1, Math.round(cupo.esperaSegundos / 60)),
+        esperaHoras: Math.max(1, Math.round(cupo.esperaSegundos / 3600))
+      };
+      this.avisoChat = cupo.aviso;
+      if (cupo.retryAfterSegundos && cupo.retryAfterSegundos > 0) {
+        this.iniciarBloqueo(cupo.retryAfterSegundos);
+      }
+      return;
+    }
+    if (res && 'aviso' in res && typeof res.aviso === 'string') {
+      this.avisoChat = res.aviso;
+    }
+  }
+
+  private iniciarBloqueo(segundos: number): void {
+    const espera = Math.max(1, Math.floor(segundos));
+    this.bloqueadoHasta = Date.now() + espera * 1000;
+    this.avisoChat = this.errorChat || this.avisoChat;
+    this.actualizarEsperaLabel();
+    this.detenerEspera();
+    this.esperaTimer = setInterval(() => {
+      if (!this.chatBloqueado) {
+        this.detenerEspera();
+        this.bloqueadoHasta = 0;
+        this.esperaLabel = '';
+        this.errorChat = null;
+        this.avisoChat = null;
+        this.cdr.markForCheck();
+        return;
+      }
+      this.actualizarEsperaLabel();
+      this.cdr.markForCheck();
+    }, 1000);
+  }
+
+  private actualizarEsperaLabel(): void {
+    const restante = Math.max(0, Math.ceil((this.bloqueadoHasta - Date.now()) / 1000));
+    const horas = Math.floor(restante / 3600);
+    const min = Math.floor((restante % 3600) / 60);
+    const seg = restante % 60;
+    if (horas > 0) {
+      this.esperaLabel = min > 0 ? `${horas} h ${min} min` : `${horas} h`;
+      return;
+    }
+    this.esperaLabel = min > 0 ? `${min} min ${seg.toString().padStart(2, '0')} s` : `${seg} s`;
+  }
+
+  private detenerEspera(): void {
+    if (this.esperaTimer) {
+      clearInterval(this.esperaTimer);
+      this.esperaTimer = undefined;
+    }
+  }
+
+  private upsertHiloLocal(res: ChatResponse): void {
+    const cid = res.conversacion_id;
+    if (!cid) {
+      return;
+    }
+    const idx = this.hilos.findIndex((h) => this.idDeHilo(h) === cid);
+    const now = new Date().toISOString();
+    if (idx >= 0) {
+      const actual = this.hilos[idx];
+      const actualizado: ChatHilo = {
+        ...actual,
+        ultima_interaccion: now,
+        total_mensajes: (actual.total_mensajes || 0) + 2
+      };
+      this.hilos = [actualizado, ...this.hilos.filter((_, i) => i !== idx)];
+    } else {
+      this.hilos = [
+        {
+          conversacion_id: cid,
+          titulo: this.tituloDesdeMensajes() || this.translate.instant('CHAT.NEW'),
+          estado: 'activa',
+          ultima_interaccion: now,
+          total_mensajes: this.mensajes.length
+        },
+        ...this.hilos
+      ];
+    }
+    this.filtrarHistorial();
+  }
+
+  private tituloDesdeMensajes(): string {
+    const primero = this.mensajes.find((m) => m.remitente === 'usuario' && m.texto.trim());
+    return (primero?.texto || '').trim().slice(0, 60);
   }
 
   private scrollChat(): void {

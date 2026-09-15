@@ -51,7 +51,7 @@
 .place-map--empty::after {
   content: 'Selecciona un lugar para ver el mapa';
   font-size: 12px;
-  color: #94A3B8;
+  color: var(--ink-subtle);
 }
 
 /* El dropdown de Places debe quedar sobre cards/modales. */

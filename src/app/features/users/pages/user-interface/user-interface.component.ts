@@ -1,6 +1,9 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
+import { Router, RouterModule } from '@angular/router';
 import { Subscription, of } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
 import { TranslateService } from '@ngx-translate/core';
 
 import { EventItem, Registration, Routine, RoutineRegistration, Sport, Disability, SportDisability, CalendarEvent } from '@features/sports-disabilities/models/sports';
@@ -17,10 +20,13 @@ import { CompetitionModeState } from '@features/assistant/models/competition';
 import { resolveEventImage } from '@features/sports-disabilities/utils/event-image.util';
 import { eventDateTimeMs } from '@core/utils/qr-attendance.util';
 import { isEventVisible } from '@features/sports-disabilities/utils/event-visibility.util';
+import { SharedModule } from '@shared/shared.module';
 
-type CatalogFilter = 'all' | 'sports' | 'disabilities' | 'associations' | 'routines';
+type CatalogFilter = 'all' | 'events' | 'sports' | 'disabilities' | 'associations' | 'routines';
 
 @Component({
+  standalone: true,
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, SharedModule],
   selector: 'app-user-interface',
   templateUrl: './user-interface.component.html',
   styleUrl: './user-interface.component.scss'
@@ -45,7 +51,7 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
   competition: CompetitionModeState | null = null;
 
   catalogQuery = '';
-  catalogFilter: CatalogFilter = 'all';
+  catalogFilter: CatalogFilter = 'events';
   sports: Sport[] = [];
   disabilities: Disability[] = [];
   associations: SportDisability[] = [];
@@ -102,38 +108,38 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
       ? of(this.session.getProfile())
       : this.session.loadProfile();
 
-    profile$.subscribe((profile) => {
-      this.reportsService.getHomePanel(profile?.id).subscribe({
-        next: (panel) => {
-          const rawEvents = panel.events || [];
-          const events = rawEvents.filter((event) => isEventVisible(event));
-          const registrations = (panel.registrations || []).filter((reg) => {
-            const event = rawEvents.find((item) => item.id === reg.eventId);
-            return !event || isEventVisible(event);
-          });
-          this.allEvents = this.sortEvents(events);
-          this.events = this.resolveFeaturedEvents(this.allEvents, registrations);
-          this.registrations = this.sortRegistrations(registrations);
-          this.nextEvent = this.resolveNextEvent(events, registrations);
-          this.applyEventsToCalendar(this.allEvents);
-          this.sports = panel.sports || [];
-          this.disabilities = panel.disabilities || [];
-          this.associations = panel.associations || [];
-          this.routines = panel.routines || [];
-          this.routineRegistrations = panel.routineRegistrations || [];
-          this.sportsLoaded = true;
-          this.disabilitiesLoaded = true;
-          this.associationsLoaded = true;
-          this.routinesLoaded = true;
+    profile$.pipe(
+      switchMap((profile) => this.reportsService.getHomePanel(profile?.id))
+    ).subscribe({
+      next: (panel) => {
+        const rawEvents = panel.events || [];
+        const events = rawEvents.filter((event) => isEventVisible(event));
+        const registrations = (panel.registrations || []).filter((reg) => {
+          const event = rawEvents.find((item) => item.id === reg.eventId);
+          return !event || isEventVisible(event);
+        });
+        this.allEvents = this.sortEvents(events);
+        this.events = this.resolveFeaturedEvents(this.allEvents, registrations);
+        this.registrations = this.sortRegistrations(registrations);
+        this.nextEvent = this.resolveNextEvent(events, registrations);
+        this.applyEventsToCalendar(this.allEvents);
+        this.sports = panel.sports || [];
+        this.disabilities = panel.disabilities || [];
+        this.associations = panel.associations || [];
+        this.routines = panel.routines || [];
+        this.routineRegistrations = panel.routineRegistrations || [];
+        this.sportsLoaded = true;
+        this.disabilitiesLoaded = true;
+        this.associationsLoaded = true;
+        this.routinesLoaded = true;
+        this.loading = false;
+      },
+      error: () => {
+        if (!silent) {
+          this.errorMessage = this.translate.instant('HOME.LOAD_ERROR');
           this.loading = false;
-        },
-        error: () => {
-          if (!silent) {
-            this.errorMessage = this.translate.instant('HOME.LOAD_ERROR');
-            this.loading = false;
-          }
         }
-      });
+      }
     });
   }
 
@@ -400,10 +406,21 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
 
       this.registeringId = event.id;
       this.sportsService.registerToEvent(userId, event.id).subscribe({
-        next: () => {
+        next: (registration) => {
           this.registeringId = null;
           this.errorMessage = null;
           this.loadHomeData();
+          const onWaitlist = registration?.waitlistPosition != null;
+          void this.confirm.ack({
+            title: this.translate.instant(
+              onWaitlist ? 'EVENTS_PAGE.SUCCESS_WAITLIST_TITLE' : 'EVENTS_PAGE.SUCCESS_REGISTER_TITLE'
+            ),
+            message: registration?.message || this.translate.instant(
+              onWaitlist ? 'EVENTS_PAGE.SUCCESS_WAITLIST_MSG' : 'EVENTS_PAGE.SUCCESS_REGISTER_MSG',
+              { name: event.name, position: registration?.waitlistPosition }
+            ),
+            confirmLabel: this.translate.instant('COMMON.GOT_IT')
+          });
         },
         error: (error) => {
           this.registeringId = null;
@@ -496,11 +513,18 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
       next: () => {
         this.cancellingRegistrationId = null;
         this.errorMessage = null;
-        this.successMessage = this.translate.instant(
-          onWaitlist ? 'HOME.LEAVE_WAITLIST_OK' : 'HOME.CANCEL_REGISTRATION_OK',
-          { name: eventName }
-        );
+        this.successMessage = null;
         this.loadHomeData();
+        void this.confirm.ack({
+          title: this.translate.instant(
+            onWaitlist ? 'EVENTS_PAGE.SUCCESS_LEAVE_WAITLIST_TITLE' : 'EVENTS_PAGE.SUCCESS_CANCEL_REG_TITLE'
+          ),
+          message: this.translate.instant(
+            onWaitlist ? 'HOME.LEAVE_WAITLIST_OK' : 'HOME.CANCEL_REGISTRATION_OK',
+            { name: eventName }
+          ),
+          confirmLabel: this.translate.instant('COMMON.GOT_IT')
+        });
       },
       error: (error) => {
         this.cancellingRegistrationId = null;
@@ -569,6 +593,10 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
     return;
   }
 
+  get showEvents(): boolean {
+    return this.catalogFilter === 'all' || this.catalogFilter === 'events';
+  }
+
   get showSports(): boolean {
     return this.catalogFilter === 'all' || this.catalogFilter === 'sports';
   }
@@ -583,6 +611,19 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
 
   get showRoutinesCatalog(): boolean {
     return this.catalogFilter === 'all' || this.catalogFilter === 'routines';
+  }
+
+  get filteredCatalogEvents(): EventItem[] {
+    return this.allEvents.filter((event) =>
+      this.matchesQuery(
+        event.name,
+        event.sportName,
+        event.location,
+        event.description,
+        event.eventDate,
+        String(event.id)
+      )
+    );
   }
 
   get filteredSports(): Sport[] {
@@ -713,8 +754,17 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
   }
 
   private resolveFeaturedEvents(events: EventItem[], registrations: Registration[]): EventItem[] {
+    const upcoming = this.sortEvents(events).filter((event) => {
+      const status = (event.status || '').toLowerCase();
+      if (status === 'cancelled' || status === 'finished') {
+        return false;
+      }
+      const when = eventDateTimeMs(event.eventDate, event.eventTime);
+      return when == null || when >= Date.now();
+    });
     const next = this.resolveNextEvent(events, registrations);
-    return next ? [next] : [];
+    const rest = upcoming.filter((event) => event.id !== next?.id);
+    return [next, ...rest].filter((event): event is EventItem => !!event).slice(0, 4);
   }
 
   get nextRegisteredEvent(): EventItem | null {

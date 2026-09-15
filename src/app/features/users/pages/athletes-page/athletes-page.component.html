@@ -1,5 +1,4 @@
-<app-panel-shell>
-  <h1 class="page-title">{{ 'ATHLETES.TITLE' | translate }}</h1>
+<h1 class="page-title">{{ 'ATHLETES.TITLE' | translate }}</h1>
   <p class="page-subtitle">{{ 'ATHLETES.SUBTITLE' | translate }}</p>
   <p *ngIf="loading" class="empty-text">{{ 'COMMON.LOADING' | translate }}</p>
   <p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
@@ -9,6 +8,7 @@
       type="search"
       name="athleteQuery"
       [(ngModel)]="searchQuery"
+      (ngModelChange)="onSearchChange()"
       [placeholder]="'ATHLETES.SEARCH_PH' | translate"
     />
     <button class="btn-secondary" type="button" *ngIf="searchQuery.trim()" (click)="clearSearch()">
@@ -16,10 +16,10 @@
     </button>
   </div>
   <p class="search-count" *ngIf="searchQuery.trim()">
-    {{ 'COMMON.RESULTS' | translate:{ count: visibleSummaries().length } }}
+    {{ 'COMMON.RESULTS' | translate:{ count: visibleSummaries.length } }}
   </p>
 
-  <div class="card" *ngFor="let summary of visibleSummaries()" style="margin-bottom: 12px;">
+  <div class="card" *ngFor="let summary of visibleSummaries; trackBy: trackBySummary" style="margin-bottom: 12px;">
     <h3 class="section-title">{{ summary.event.name }}</h3>
     <div class="kpi-sub" style="margin-bottom: 10px;">
       {{ 'ATHLETES.ENROLLED' | translate:{ occupied: summary.occupied, capacity: summary.event.maxCapacity, waitlist: summary.waitlist.length } }}
@@ -40,7 +40,7 @@
         [class.filter-chip--active]="summary.filter === 'attended'"
         (click)="setFilter(summary, 'attended')"
       >
-        {{ 'ATHLETES.ATTENDED' | translate:{ count: attendedCount(summary) } }}
+        {{ 'ATHLETES.ATTENDED' | translate:{ count: summary.attendedCount } }}
       </button>
       <button
         type="button"
@@ -48,11 +48,11 @@
         [class.filter-chip--active]="summary.filter === 'absent'"
         (click)="setFilter(summary, 'absent')"
       >
-        {{ 'ATHLETES.ABSENT' | translate:{ count: absentCount(summary) } }}
+        {{ 'ATHLETES.ABSENT' | translate:{ count: summary.absentCount } }}
       </button>
     </div>
 
-    <div class="table-wrap" *ngIf="filteredEnrolled(summary).length; else noEnrolled">
+    <div class="table-wrap" *ngIf="summary.visibleEnrolled.length; else noEnrolled">
       <table class="data-table">
         <thead>
           <tr>
@@ -64,7 +64,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let row of filteredEnrolled(summary)">
+          <tr *ngFor="let row of summary.visibleEnrolled; trackBy: trackByEnrolled">
             <td>
               <span class="user-cell">
                 <img *ngIf="row.profilePicture" class="table-avatar" [src]="row.profilePicture" alt="" />
@@ -107,7 +107,6 @@
   </div>
 
   <p *ngIf="!loading && !summaries.length" class="empty-text">{{ 'ATHLETES.EMPTY' | translate }}</p>
-  <p *ngIf="!loading && summaries.length && !visibleSummaries().length" class="empty-text">
+  <p *ngIf="!loading && summaries.length && !visibleSummaries.length" class="empty-text">
     {{ 'ATHLETES.EMPTY_FILTER' | translate }}
   </p>
-</app-panel-shell>

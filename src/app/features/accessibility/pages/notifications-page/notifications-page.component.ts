@@ -1,4 +1,7 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
+import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 
@@ -8,8 +11,11 @@ import { PreferencesApiService } from '@features/accessibility/services/preferen
 import { NotificationAnnounceService } from '@features/accessibility/services/notification-announce.service';
 import { TtsService } from '@features/accessibility/services/tts.service';
 import { UnreadNotificationsService } from '@features/accessibility/services/unread-notifications.service';
+import { SharedModule } from '@shared/shared.module';
 
 @Component({
+  standalone: true,
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, SharedModule],
   selector: 'app-notifications-page',
   templateUrl: './notifications-page.component.html',
   styleUrl: './notifications-page.component.scss'
@@ -53,10 +59,6 @@ export class NotificationsPageComponent implements OnInit, OnDestroy {
       clearInterval(this.pollTimer);
       this.pollTimer = null;
     }
-  }
-
-  get fixedSidebar(): boolean {
-    return this.session.getPrimaryRole() !== 'USUARIO';
   }
 
   reload(showLoading = true): void {

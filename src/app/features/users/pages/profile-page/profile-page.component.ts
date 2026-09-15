@@ -1,5 +1,7 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { RouterModule } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { TranslateService } from '@ngx-translate/core';
 import { Subscription, of } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
@@ -8,8 +10,11 @@ import { SessionService } from '@core/services/session.service';
 import { UsersService } from '@features/users/services/users.service';
 import { UpdateProfileRequest } from '@core/models/user-profile';
 import { companionRequirement, hasCompanionData } from '@features/auth/models/register-request';
+import { SharedModule } from '@shared/shared.module';
 
 @Component({
+  standalone: true,
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, SharedModule],
   selector: 'app-profile-page',
   templateUrl: './profile-page.component.html',
   styleUrl: './profile-page.component.scss'
@@ -94,10 +99,6 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.disabilitySub?.unsubscribe();
     this.revokePreviewUrl();
-  }
-
-  get fixedSidebar(): boolean {
-    return this.session.getPrimaryRole() !== 'USUARIO';
   }
 
   get initials(): string {

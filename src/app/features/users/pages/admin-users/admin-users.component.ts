@@ -1,22 +1,31 @@
-import { Component, HostListener, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, HostListener, OnDestroy, OnInit } from '@angular/core';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
+import { Router, RouterModule } from '@angular/router';
 import { TranslateService } from '@ngx-translate/core';
-import { of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { Subject, Subscription, of } from 'rxjs';
+import { catchError, debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
 import { AdminUserActivityItem, UserProfile } from '@core/models/user-profile';
 import { UsersService } from '@features/users/services/users.service';
 import { SessionService } from '@core/services/session.service';
 import { ReportsService } from '@features/reports/services/reports.service';
 import { ConfirmDialogService } from '@shared/services/confirm-dialog.service';
+import { FlashMessageService } from '@shared/services/flash-message.service';
+import { SharedModule } from '@shared/shared.module';
 
 @Component({
+  standalone: true,
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, SharedModule],
   selector: 'app-admin-users',
   templateUrl: './admin-users.component.html',
-  styleUrl: './admin-users.component.scss'
+  styleUrl: './admin-users.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class AdminUsersComponent implements OnInit {
+export class AdminUsersComponent implements OnInit, OnDestroy {
   users: UserProfile[] = [];
+  filteredUsers: UserProfile[] = [];
+  pagedUsers: UserProfile[] = [];
   loading = true;
   errorMessage: string | null = null;
   successMessage: string | null = null;
@@ -28,10 +37,16 @@ export class AdminUsersComponent implements OnInit {
   disabilityQuery = '';
   readonly pageSize = 6;
   currentPage = 1;
+  totalPages = 1;
+  showingFrom = 0;
+  showingTo = 0;
+  allVisibleSelected = false;
   activityUser: UserProfile | null = null;
   activityItems: AdminUserActivityItem[] = [];
   activityLastLogin: string | null = null;
   activityLoading = false;
+  private readonly search$ = new Subject<string>();
+  private searchSub?: Subscription;
 
   readonly disabilityOptions = [
     { value: '', labelKey: 'ADMIN_USERS.ALL_DISABILITIES' },
@@ -48,73 +63,77 @@ export class AdminUsersComponent implements OnInit {
     private reportsService: ReportsService,
     private session: SessionService,
     private confirm: ConfirmDialogService,
+    private flash: FlashMessageService,
     private router: Router,
-    private translate: TranslateService
+    private translate: TranslateService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
+    this.searchSub = this.search$.pipe(
+      debounceTime(400),
+      distinctUntilChanged()
+    ).subscribe(() => {
+      this.currentPage = 1;
+      this.reload();
+    });
     this.reload();
+  }
+
+  ngOnDestroy(): void {
+    this.searchSub?.unsubscribe();
   }
 
   get selectedCount(): number {
     return this.selected.size;
   }
 
-  get allVisibleSelected(): boolean {
-    return this.pagedUsers.length > 0 && this.pagedUsers.every((u) => this.selected.has(u.email));
-  }
-
-  get filteredUsers(): UserProfile[] {
-    const name = this.nameQuery.trim().toLowerCase();
-    const disability = this.disabilityQuery.trim().toLowerCase();
-    return this.users.filter((user) => {
-      const matchesName = !name
-        || (user.fullName || '').toLowerCase().includes(name)
-        || (user.email || '').toLowerCase().includes(name);
-      const matchesDisability = !disability
-        || (user.disability || '').toLowerCase().includes(disability);
-      return matchesName && matchesDisability;
-    });
-  }
-
-  get totalPages(): number {
-    return Math.max(1, Math.ceil(this.filteredUsers.length / this.pageSize));
-  }
-
   get pageNumbers(): number[] {
     return Array.from({ length: this.totalPages }, (_, i) => i + 1);
   }
 
-  get pagedUsers(): UserProfile[] {
-    const page = Math.min(Math.max(1, this.currentPage), this.totalPages);
-    const start = (page - 1) * this.pageSize;
-    return this.filteredUsers.slice(start, start + this.pageSize);
+  trackByUser(_index: number, user: UserProfile): string {
+    return user.id || user.email;
   }
 
-  get showingFrom(): number {
-    if (!this.filteredUsers.length) {
-      return 0;
+  trackByActivity(_index: number, item: AdminUserActivityItem): string {
+    return `${item.createdAt || ''}-${item.action || ''}-${item.source || ''}-${_index}`;
+  }
+
+  reload(silent = false): void {
+    if (!silent) {
+      this.loading = true;
     }
-    return (Math.min(this.currentPage, this.totalPages) - 1) * this.pageSize + 1;
-  }
-
-  get showingTo(): number {
-    return Math.min(this.showingFrom + this.pageSize - 1, this.filteredUsers.length);
-  }
-
-  reload(): void {
-    this.loading = true;
     this.errorMessage = null;
-    this.reportsService.getUsersPanel(this.filter).subscribe({
+    this.reportsService.getUsersPanel(
+      this.filter,
+      this.currentPage - 1,
+      this.pageSize,
+      this.nameQuery,
+      this.disabilityQuery
+    ).subscribe({
       next: (panel) => {
         this.users = panel.users || [];
-        this.selected.clear();
-        this.currentPage = 1;
+        this.filteredUsers = this.users;
+        this.pagedUsers = this.users;
+        this.totalPages = Math.max(1, panel.usersTotalPages || 1);
+        this.currentPage = Math.min(Math.max(1, this.currentPage), this.totalPages);
+        const total = panel.usersTotal ?? this.users.length;
+        const start = total ? (this.currentPage - 1) * this.pageSize : 0;
+        this.showingFrom = total ? start + 1 : 0;
+        this.showingTo = Math.min(start + this.users.length, total);
+        if (!silent) {
+          this.selected.clear();
+        }
         this.loading = false;
+        this.syncSelectionFlags();
+        this.cdr.markForCheck();
       },
       error: (error) => {
         this.errorMessage = error?.error?.message || this.translate.instant('ADMIN_USERS.LOAD_LIST_ERROR');
         this.loading = false;
+        this.notifyError(this.errorMessage);
+        this.cdr.markForCheck();
       }
     });
   }
@@ -129,7 +148,7 @@ export class AdminUsersComponent implements OnInit {
   }
 
   onSearchChange(): void {
-    this.currentPage = 1;
+    this.search$.next(`${this.nameQuery}|${this.disabilityQuery}`);
   }
 
   goToPage(page: number): void {
@@ -137,6 +156,7 @@ export class AdminUsersComponent implements OnInit {
       return;
     }
     this.currentPage = page;
+    this.reload(true);
   }
 
   toggleOne(email: string, checked: boolean): void {
@@ -145,6 +165,8 @@ export class AdminUsersComponent implements OnInit {
     } else {
       this.selected.delete(email);
     }
+    this.syncSelectionFlags();
+    this.cdr.markForCheck();
   }
 
   toggleAll(checked: boolean): void {
@@ -153,6 +175,13 @@ export class AdminUsersComponent implements OnInit {
     } else {
       this.pagedUsers.forEach((u) => this.selected.delete(u.email));
     }
+    this.syncSelectionFlags();
+    this.cdr.markForCheck();
+  }
+
+  private syncSelectionFlags(): void {
+    this.allVisibleSelected = this.pagedUsers.length > 0
+      && this.pagedUsers.every((user) => this.selected.has(user.email));
   }
 
   isSelected(email: string): boolean {
@@ -181,12 +210,12 @@ export class AdminUsersComponent implements OnInit {
   }
 
   private async confirmBlock(user: UserProfile): Promise<void> {
-    const ok = await this.confirm.ask({
+    const ok = await this.confirm.warning({
       title: this.translate.instant('ADMIN_USERS.BLOCK_TITLE'),
       message: this.translate.instant('ADMIN_USERS.BLOCK_CONFIRM', { name: user.fullName || user.email }),
       confirmLabel: this.translate.instant('COMMON.CONFIRM'),
       cancelLabel: this.translate.instant('COMMON.CANCEL'),
-      tone: 'danger'
+      kindLabel: this.translate.instant('COMMON.MSG_WARNING')
     });
     if (!ok) {
       return;
@@ -195,11 +224,15 @@ export class AdminUsersComponent implements OnInit {
     this.usersService.blockUser(user.email, { reason: this.translate.instant('ADMIN_USERS.BLOCK_TITLE'), permanent: false }).subscribe({
       next: () => {
         this.actionEmail = null;
-        this.reload();
+        this.successMessage = this.translate.instant('ADMIN_USERS.BLOCKED_OK', { name: user.fullName || user.email });
+        this.notifyInfo(this.translate.instant('ADMIN_USERS.BLOCK_TITLE'), this.successMessage);
+        this.reload(true);
       },
       error: (error) => {
         this.actionEmail = null;
         this.errorMessage = error?.error?.message || this.translate.instant('ADMIN_USERS.BLOCK_ERROR');
+        this.notifyError(this.errorMessage);
+        this.cdr.markForCheck();
       }
     });
   }
@@ -222,11 +255,15 @@ export class AdminUsersComponent implements OnInit {
     this.usersService.activateUser(user.email).subscribe({
       next: () => {
         this.actionEmail = null;
-        this.reload();
+        this.successMessage = this.translate.instant('ADMIN_USERS.ACTIVATED_OK', { name: user.fullName || user.email });
+        this.notifyInfo(this.translate.instant('ADMIN_USERS.ACTIVATE_TITLE'), this.successMessage);
+        this.reload(true);
       },
       error: (error) => {
         this.actionEmail = null;
         this.errorMessage = error?.error?.message || this.translate.instant('ADMIN_USERS.ACTIVATE_ERROR');
+        this.notifyError(this.errorMessage);
+        this.cdr.markForCheck();
       }
     });
   }
@@ -235,6 +272,7 @@ export class AdminUsersComponent implements OnInit {
     const me = this.session.getProfile()?.email;
     if (me && me.toLowerCase() === user.email.toLowerCase()) {
       this.errorMessage = this.translate.instant('ADMIN_USERS.CANNOT_DELETE_SELF');
+      this.notifyError(this.errorMessage);
       return;
     }
     void this.confirmDeleteOne(user);
@@ -246,7 +284,8 @@ export class AdminUsersComponent implements OnInit {
       message: this.translate.instant('ADMIN_USERS.DELETE_ONE_CONFIRM', { name: user.fullName || user.email }),
       confirmLabel: this.translate.instant('COMMON.CONFIRM'),
       cancelLabel: this.translate.instant('COMMON.CANCEL'),
-      tone: 'danger'
+      tone: 'danger',
+      kindLabel: this.translate.instant('COMMON.MSG_CONFIRM')
     });
     if (!ok) {
       return;
@@ -258,12 +297,15 @@ export class AdminUsersComponent implements OnInit {
       next: (result) => {
         this.actionEmail = null;
         this.successMessage = result?.message || this.translate.instant('ADMIN_USERS.DELETED_OK', { name: user.fullName || user.email });
-        this.reload();
+        this.notifyInfo(this.translate.instant('ADMIN_USERS.DELETE_TITLE'), this.successMessage);
+        this.reload(true);
       },
       error: (error) => {
         this.actionEmail = null;
         this.errorMessage = error?.error?.message
           || this.translate.instant('ADMIN_USERS.DELETE_BLOCKED_EVENTS');
+        this.notifyError(this.errorMessage);
+        this.cdr.markForCheck();
       }
     });
   }
@@ -279,6 +321,7 @@ export class AdminUsersComponent implements OnInit {
       : emails;
     if (!filtered.length) {
       this.errorMessage = this.translate.instant('ADMIN_USERS.CANNOT_DELETE_SELF');
+      this.notifyError(this.errorMessage);
       return;
     }
     void this.confirmDeleteSelected(filtered);
@@ -290,7 +333,8 @@ export class AdminUsersComponent implements OnInit {
       message: this.translate.instant('ADMIN_USERS.DELETE_BULK_CONFIRM', { count: filtered.length }),
       confirmLabel: this.translate.instant('COMMON.CONFIRM'),
       cancelLabel: this.translate.instant('COMMON.CANCEL'),
-      tone: 'danger'
+      tone: 'danger',
+      kindLabel: this.translate.instant('COMMON.MSG_CONFIRM')
     });
     if (!ok) {
       return;
@@ -298,6 +342,7 @@ export class AdminUsersComponent implements OnInit {
     this.bulkLoading = true;
     this.errorMessage = null;
     this.successMessage = null;
+    this.cdr.markForCheck();
     this.usersService.bulkDeleteUsers(filtered).subscribe({
       next: (result) => {
         this.bulkLoading = false;
@@ -305,14 +350,18 @@ export class AdminUsersComponent implements OnInit {
           succeeded: result.succeeded,
           failed: result.failed
         });
+        this.notifyInfo(this.translate.instant('ADMIN_USERS.DELETE_TITLE'), this.successMessage);
         if (result.errors?.length) {
           this.errorMessage = result.errors.join(' · ');
+          this.notifyError(this.errorMessage);
         }
-        this.reload();
+        this.reload(true);
       },
       error: (error) => {
         this.bulkLoading = false;
         this.errorMessage = error?.error?.message || this.translate.instant('ADMIN_USERS.DELETE_SELECTION_ERROR');
+        this.notifyError(this.errorMessage);
+        this.cdr.markForCheck();
       }
     });
   }
@@ -358,6 +407,7 @@ export class AdminUsersComponent implements OnInit {
         this.activityLastLogin = response.lastLoginAt || user.lastLoginAt || null;
         this.activityItems = response.items || [];
         this.activityLoading = false;
+        this.cdr.markForCheck();
       }
     });
   }
@@ -367,6 +417,7 @@ export class AdminUsersComponent implements OnInit {
     this.activityItems = [];
     this.activityLastLogin = null;
     this.activityLoading = false;
+    this.cdr.markForCheck();
   }
 
   @HostListener('document:keydown.escape')
@@ -410,5 +461,31 @@ export class AdminUsersComponent implements OnInit {
       return details;
     }
     return details;
+  }
+
+  private notifyError(message: string | null): void {
+    if (!message) {
+      return;
+    }
+    this.flash.error(this.translate.instant('COMMON.MSG_ERROR'), message);
+    void this.confirm.error({
+      title: this.translate.instant('COMMON.MSG_ERROR'),
+      message,
+      confirmLabel: this.translate.instant('COMMON.GOT_IT'),
+      kindLabel: this.translate.instant('COMMON.MSG_ERROR')
+    });
+  }
+
+  private notifyInfo(title: string, message: string | null): void {
+    if (!message) {
+      return;
+    }
+    this.flash.info(title, message);
+    void this.confirm.info({
+      title,
+      message,
+      confirmLabel: this.translate.instant('COMMON.GOT_IT'),
+      kindLabel: this.translate.instant('COMMON.MSG_INFO')
+    });
   }
 }

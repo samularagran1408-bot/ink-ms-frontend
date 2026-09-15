@@ -1,0 +1,29 @@
+<div class="proof-page">
+
+  <div class="page-meta">
+    <div class="breadcrumb">FACTURACIÓN<span class="sep">›</span>SUSCRIPCIONES<span class="sep">›</span><b>COMPROBANTE</b></div>
+  </div>
+
+  <section class="success">
+    <div class="check-wrap">
+      <div class="check-main">✓</div>
+    </div>
+    <div class="kicker">COMPROBANTE DIGITAL</div>
+    <h1>Pago registrado</h1>
+    <p>Tu transacción {{ plan ? 'del plan ' + plan : '' }} quedó registrada. El comprobante se emite en COP a través de Mercado Pago.</p>
+    <div class="chips">
+      <span class="chip" *ngIf="pagoId">🧾 Pago #{{ pagoId }}</span>
+      <span class="chip" *ngIf="referencia">{{ referencia }}</span>
+      <span class="chip dark">MERCADO PAGO · COP</span>
+    </div>
+    <p *ngIf="errorMessage" class="error">{{ errorMessage }}</p>
+  </section>
+
+  <div class="actions">
+    <button class="btn btn-brand" type="button" [disabled]="!pagoId || descargando" (click)="descargar()">
+      {{ descargando ? 'DESCARGANDO…' : 'DESCARGAR COMPROBANTE (PDF)' }}
+    </button>
+    <button class="btn btn-blue" type="button" (click)="irAlPanel()">Ir a mi panel →</button>
+  </div>
+
+</div>

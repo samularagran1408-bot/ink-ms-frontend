@@ -1,11 +1,16 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { RouterModule } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 
 import { RoleInfo, UserProfile } from '@core/models/user-profile';
 import { UsersService } from '@features/users/services/users.service';
 import { ReportsService } from '@features/reports/services/reports.service';
+import { SharedModule } from '@shared/shared.module';
 
 @Component({
+  standalone: true,
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, SharedModule],
   selector: 'app-admin-roles',
   templateUrl: './admin-roles.component.html',
   styleUrl: './admin-roles.component.scss'

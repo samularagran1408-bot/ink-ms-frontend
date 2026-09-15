@@ -1,5 +1,4 @@
-<app-panel-shell>
-  <h1 class="page-title">{{ 'ADMIN_ROLES.TITLE' | translate }}</h1>
+<h1 class="page-title">{{ 'ADMIN_ROLES.TITLE' | translate }}</h1>
   <p class="page-subtitle">{{ 'ADMIN_ROLES.SUBTITLE' | translate }}</p>
   <p *ngIf="message" class="empty-text">{{ message }}</p>
   <p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
@@ -36,4 +35,3 @@
       <span class="status-pill status-pill--ok">ID {{ role.id }}</span>
     </div>
   </div>
-</app-panel-shell>

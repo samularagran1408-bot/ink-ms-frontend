@@ -1,5 +1,4 @@
-<app-panel-shell>
-  <h1 class="page-title">{{ 'SPORTS_PAGE.TITLE' | translate }}</h1>
+<h1 class="page-title">{{ 'SPORTS_PAGE.TITLE' | translate }}</h1>
   <p class="page-subtitle">{{ 'SPORTS_PAGE.SUBTITLE' | translate }}</p>
   <p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
 
@@ -71,4 +70,3 @@
       {{ (searchQuery.trim() ? 'SPORTS_PAGE.EMPTY_SEARCH' : 'SPORTS_PAGE.EMPTY') | translate }}
     </p>
   </div>
-</app-panel-shell>

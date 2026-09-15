@@ -186,9 +186,11 @@ export class AccessibilityService implements OnDestroy {
     }
     const root = document.documentElement;
     root.dataset['fontSize'] = snapshot.fontSize;
+    root.dataset['contrast'] = snapshot.highContrast ? 'high' : 'normal';
     root.style.setProperty('--font-offset', `${FONT_OFFSETS[snapshot.fontSize]}px`);
     root.style.setProperty('--a11y-font-scale', String(1 + FONT_OFFSETS[snapshot.fontSize] * 0.08));
     document.body.classList.toggle('high-contrast-mode', snapshot.highContrast);
+    document.body.classList.toggle('low-contrast-mode', !snapshot.highContrast);
     document.body.classList.toggle('reader-mode', snapshot.readerMode);
     document.body.classList.toggle('reduced-motion', snapshot.reducedMotion);
     document.body.classList.toggle('screen-reader-mode', snapshot.screenReader);

@@ -1,0 +1,110 @@
+<div class="page">
+  <div class="breadcrumb">
+    SUSCRIPCIONES <span class="sep">›</span> ADMINISTRACIÓN <span class="rf-badge">RF65</span>
+  </div>
+
+  <div class="page-head">
+    <div>
+      <h1>ADMINISTRAR PLANES</h1>
+      <p class="subtitle">Configuración y control de los planes de suscripción disponibles para organizadores en la plataforma.</p>
+    </div>
+    <button class="btn-create" type="button" (click)="nuevoPlan()"><span class="plus">+</span> Crear nuevo plan</button>
+  </div>
+
+  <hr class="divider">
+
+  <div *ngIf="error" class="banner-error">{{ error }}</div>
+  <div *ngIf="cargando" class="state-box">Cargando planes…</div>
+
+  <div class="grid" *ngIf="!cargando">
+    <!-- Registered plans -->
+    <section class="card">
+      <div class="table-head">
+        <h2>PLANES REGISTRADOS</h2>
+        <span>{{ planes.length }} plan(es) en catálogo</span>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>NOMBRE</th>
+            <th>PRECIO (COP)</th>
+            <th>LÍMITE MES</th>
+            <th>COMISIÓN</th>
+            <th>DURACIÓN</th>
+            <th>ESTADO</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let plan of planes">
+            <td class="plan-cell"><b>{{ plan.nombre }}</b><small>{{ plan.descripcion }}</small></td>
+            <td class="price">${{ plan.precio | number: '1.0-0' }} COP</td>
+            <td>{{ plan.limiteEventosMes ?? 'Ilimitado' }}</td>
+            <td>{{ plan.porcentajeComision ?? 0 }}%</td>
+            <td>{{ plan.duracionDias }} días</td>
+            <td><span class="pill" [class.on]="plan.activo" [class.off]="!plan.activo">{{ plan.activo ? 'Activo' : 'Inactivo' }}</span></td>
+            <td class="row-actions">
+              <button class="btn-edit" type="button" (click)="editarPlan(plan)">Editar</button>
+              <button class="btn-deactivate" type="button" *ngIf="plan.activo" (click)="desactivar(plan)">Desactivar</button>
+            </td>
+          </tr>
+          <tr *ngIf="!planes.length">
+            <td colspan="7" class="state-box">Todavía no hay planes creados.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Plan form -->
+    <aside class="card form-card">
+      <h2>{{ editando ? 'EDITAR PLAN' : 'FORMULARIO DE PLAN' }}</h2>
+      <p class="hint">Complete exclusivamente los campos del modelo de plan.</p>
+      <hr class="form-sep">
+
+      <div class="f-label">NOMBRE</div>
+      <input class="f-input" type="text" placeholder="Ej: Impulso Deportivo" [(ngModel)]="form.nombre">
+
+      <div class="f-label">DESCRIPCIÓN</div>
+      <textarea class="f-area" rows="2" placeholder="Breve resumen del propósito del plan" [(ngModel)]="form.descripcion"></textarea>
+
+      <div class="f-row">
+        <div>
+          <div class="f-label">PRECIO (COP)</div>
+          <input class="f-input" type="number" min="0" [(ngModel)]="form.precio">
+        </div>
+        <div>
+          <div class="f-label">DURACIÓN (DÍAS)</div>
+          <input class="f-input" type="number" min="1" [(ngModel)]="form.duracionDias">
+        </div>
+      </div>
+
+      <div class="f-row">
+        <div>
+          <div class="f-label">LÍMITE EVENTOS / MES</div>
+          <input class="f-input" type="number" min="0" [(ngModel)]="form.limiteEventosMes">
+        </div>
+        <div>
+          <div class="f-label">% COMISIÓN</div>
+          <input class="f-input" type="number" min="0" step="0.1" [(ngModel)]="form.porcentajeComision">
+        </div>
+      </div>
+
+      <div class="f-label">BENEFICIOS (UNO POR LÍNEA)</div>
+      <textarea
+        class="f-area"
+        rows="3"
+        placeholder="Acceso prioritario a torneos&#10;Soporte técnico preferencial&#10;Certificados adaptados"
+        [(ngModel)]="beneficiosTexto"
+      ></textarea>
+
+      <div class="field-error" *ngIf="formError">{{ formError }}</div>
+
+      <div class="form-actions">
+        <button class="btn-cancel" type="button" (click)="nuevoPlan()">Cancelar</button>
+        <button class="btn-save" type="button" [disabled]="guardando" (click)="guardar()">
+          {{ guardando ? 'Guardando…' : 'Guardar plan' }}
+        </button>
+      </div>
+    </aside>
+  </div>
+</div>

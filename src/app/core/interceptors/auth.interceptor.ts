@@ -15,22 +15,36 @@ export class AuthInterceptor implements HttpInterceptor {
 
   intercept(req: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
     const token = this.session.getToken();
-    const noCacheHeaders = {
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
-      Pragma: 'no-cache'
-    };
-
     let headers = req.headers;
-    Object.entries(noCacheHeaders).forEach(([key, value]) => {
-      if (!headers.has(key)) {
-        headers = headers.set(key, value);
-      }
-    });
+
+    if (this.shouldBypassCache(req)) {
+      const noCacheHeaders = {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        Pragma: 'no-cache'
+      };
+      Object.entries(noCacheHeaders).forEach(([key, value]) => {
+        if (!headers.has(key)) {
+          headers = headers.set(key, value);
+        }
+      });
+    }
 
     if (token && !headers.has('Authorization')) {
       headers = headers.set('Authorization', `Bearer ${token}`);
     }
 
     return next.handle(req.clone({ headers }));
+  }
+
+  private shouldBypassCache(req: HttpRequest<unknown>): boolean {
+    if (this.isStaticAsset(req.url)) {
+      return false;
+    }
+    const method = req.method.toUpperCase();
+    return method !== 'GET' && method !== 'HEAD';
+  }
+
+  private isStaticAsset(url: string): boolean {
+    return url.includes('/assets/');
   }
 }

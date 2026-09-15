@@ -1,0 +1,144 @@
+<div class="page">
+  <div class="breadcrumb">
+    SUSCRIPCIONES <span class="sep">›</span> ADMINISTRACIÓN <span class="rf-badge">RF58</span>
+  </div>
+
+  <div class="page-head">
+    <div>
+      <h1>SUSCRIPCIONES DE ORGANIZADORES</h1>
+      <p class="subtitle">Busca a un organizador por correo para auditar su historial y controlar el estado de su suscripción.</p>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <section class="card search-card">
+    <div class="search-row">
+      <input
+        class="f-input"
+        type="email"
+        placeholder="correo@organizador.com"
+        [(ngModel)]="emailBusqueda"
+        (keyup.enter)="buscar()"
+      >
+      <button class="btn-create" type="button" [disabled]="buscando" (click)="buscar()">
+        {{ buscando ? 'Buscando…' : 'Buscar' }}
+      </button>
+    </div>
+    <div *ngIf="errorBusqueda" class="banner-error">{{ errorBusqueda }}</div>
+  </section>
+
+  <div class="grid" *ngIf="organizador">
+    <div class="col-main">
+      <!-- Organizer summary -->
+      <section class="card">
+        <div class="table-head">
+          <h2>{{ (organizador.fullName || organizador.email) | uppercase }}</h2>
+          <span>{{ organizador.email }}</span>
+        </div>
+
+        <div *ngIf="cargandoDetalle" class="state-box">Cargando suscripción…</div>
+
+        <ng-container *ngIf="!cargandoDetalle && suscripcion as s">
+          <div class="org-metrics">
+            <div class="metric-box">
+              <small>PLAN ACTUAL</small>
+              <strong>{{ s.planNombre }}</strong>
+              <span class="pill" [class.on]="s.estado === 'ACTIVA'" [class.off]="s.estado !== 'ACTIVA'">{{ s.estado }}</span>
+            </div>
+            <div class="metric-box">
+              <small>VIGENCIA</small>
+              <strong>{{ s.fechaInicio | date:'dd/MM/yy' }} – {{ s.fechaFin | date:'dd/MM/yy' }}</strong>
+            </div>
+            <div class="metric-box">
+              <small>EVENTOS DEL MES</small>
+              <strong>{{ s.eventosCreadosMes }} / {{ s.limiteEventosMes ?? '∞' }}</strong>
+            </div>
+            <div class="metric-box">
+              <small>RENOVACIÓN AUTOMÁTICA</small>
+              <strong>{{ s.renovacionAutomatica ? 'Activa' : 'Inactiva' }}</strong>
+            </div>
+          </div>
+        </ng-container>
+
+        <div *ngIf="!cargandoDetalle && !suscripcion" class="state-box">
+          Este usuario todavía no tiene ninguna suscripción de organizador.
+        </div>
+      </section>
+
+      <!-- Movement timeline -->
+      <section class="timeline-card" *ngIf="!cargandoDetalle && historial.length">
+        <div class="tl-head">
+          <div class="tl-title">
+            <div class="tl-ic">◷</div>
+            <div>
+              <h2>LÍNEA TEMPORAL DEL ORGANIZADOR</h2>
+              <p>{{ historial.length }} movimiento(s) registrados</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="timeline">
+          <div class="t-item" *ngFor="let mov of historial">
+            <div class="t-node" [class.red]="mov.tipoMovimiento === 'CAMBIO_PLAN' || mov.tipoMovimiento === 'RENOVACION'" [class.dark]="mov.tipoMovimiento === 'CREACION' || mov.tipoMovimiento === 'CANCELACION'">
+              <ng-container [ngSwitch]="mov.tipoMovimiento">
+                <span *ngSwitchCase="'CAMBIO_PLAN'">⇄</span>
+                <span *ngSwitchCase="'RENOVACION'">↻</span>
+                <span *ngSwitchCase="'CREACION'">🗓</span>
+                <span *ngSwitchDefault>✕</span>
+              </ng-container>
+            </div>
+            <div class="t-card">
+              <div class="t-top">
+                <span class="t-badge pink">{{ mov.tipoMovimiento | slice:0:20 }}</span>
+                <span class="t-date">{{ mov.fechaMovimiento | date:"dd 'de' MMMM 'de' yyyy" }}</span>
+              </div>
+              <div class="plan-row">
+                <div>
+                  <small>{{ mov.planAnteriorNombre ? 'PLAN ANTERIOR → NUEVO' : 'PLAN' }}</small>
+                  <b>{{ mov.planAnteriorNombre ? (mov.planAnteriorNombre + ' → ' + mov.planNuevoNombre) : mov.planNuevoNombre }}</b>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- State transition panel -->
+    <aside class="card form-card" *ngIf="!cargandoDetalle && suscripcion">
+      <h2>TRANSICIÓN DE ESTADO</h2>
+      <p class="hint">Aplica cambios operativos directos sobre la suscripción de este organizador.</p>
+      <hr class="form-sep">
+
+      <div class="state-buttons" *ngIf="!accionSeleccionada">
+        <button
+          *ngFor="let accion of acciones"
+          class="btn-state"
+          type="button"
+          [class.danger]="accion.peligrosa"
+          [disabled]="!accionDisponible(accion)"
+          (click)="seleccionarAccion(accion)"
+        >
+          <span class="state-info">
+            <b>{{ accion.titulo }}</b>
+            <small>{{ accion.descripcion }}</small>
+          </span>
+          <span class="arrow">→</span>
+        </button>
+      </div>
+
+      <div class="confirm-box" *ngIf="accionSeleccionada as accion">
+        <p>¿Confirmas cambiar el estado de esta suscripción a <b>{{ accion.estado }}</b>?</p>
+        <p class="hint" *ngIf="accion.peligrosa">Esto restringe de inmediato el acceso del organizador a la creación de eventos.</p>
+        <div class="field-error" *ngIf="errorCambio">{{ errorCambio }}</div>
+        <div class="form-actions">
+          <button class="btn-cancel" type="button" [disabled]="aplicandoCambio" (click)="cancelarAccion()">Cancelar</button>
+          <button class="btn-save" type="button" [disabled]="aplicandoCambio" (click)="confirmarCambio()">
+            {{ aplicandoCambio ? 'Aplicando…' : 'Confirmar' }}
+          </button>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>

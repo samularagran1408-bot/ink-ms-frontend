@@ -1,0 +1,540 @@
+/* M09 · Checkout propio de Mercado Pago — paleta alineada con organizer-plans (--brand:#7c0f12). */
+.payment-gateway-page {
+  --brand: #7c0f12;
+  --brand-dark: #5e0a0c;
+  --brand-light: #fdf3f3;
+  --pink: #fbe7e9;
+  --pink-text: #b13a46;
+  --ink: #1c1b1f;
+  --muted: #6b666e;
+  --line: #efe6e6;
+  --card: #faf6f6;
+  --success: #10b981;
+  --success-light: #d1fae5;
+  --info: #2563eb;
+  --info-light: #dbeafe;
+  --radius: 16px;
+  --shadow: 0 1px 2px rgba(28,27,31,.04), 0 10px 30px rgba(28,27,31,.06);
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.payment-gateway-page * {
+  box-sizing: border-box;
+}
+
+.breadcrumb {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-bottom: 1.5rem;
+
+  .sep {
+    margin: 0 0.5rem;
+    color: var(--line);
+  }
+
+  .cur {
+    color: var(--brand);
+  }
+}
+
+.state-box {
+  color: var(--muted);
+  padding: 2rem 0;
+  text-align: center;
+}
+
+.banner {
+  border-radius: 12px;
+  padding: 0.875rem 1rem;
+  margin: 0 0 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.9rem;
+
+  &--error {
+    background: var(--pink);
+    border: 1px solid #efb4ba;
+    color: var(--brand-dark);
+  }
+
+  &--success {
+    background: var(--success-light);
+    border: 1px solid #6ee7b7;
+    color: #065f46;
+  }
+
+  &--info {
+    background: var(--info-light);
+    border: 1px solid #93c5fd;
+    color: #1e40af;
+  }
+}
+
+.btn-retry {
+  flex-shrink: 0;
+  background: #fff;
+  border: 1px solid currentColor;
+  border-radius: 8px;
+  padding: 0.4rem 0.75rem;
+  font-weight: 700;
+  font-size: 0.8rem;
+  cursor: pointer;
+  color: inherit;
+  font-family: inherit;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1.55fr 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.pay-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.kicker {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--brand);
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+
+  &::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--brand);
+  }
+}
+
+.pay-head h1 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.pay-head p {
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.6;
+  margin-top: 0.5rem;
+  max-width: 400px;
+}
+
+.mp-badge {
+  background: var(--pink);
+  border: 1px solid #efb4ba;
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  text-align: center;
+  height: fit-content;
+
+  b {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.7rem;
+    letter-spacing: 0.06em;
+    color: var(--brand-dark);
+  }
+
+  small {
+    display: block;
+    font-size: 0.6rem;
+    letter-spacing: 0.12em;
+    color: var(--info);
+    font-weight: 700;
+    margin-top: 0.15rem;
+  }
+}
+
+.method {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  margin-bottom: 1rem;
+  overflow: hidden;
+}
+
+.method-body {
+  padding: 1.5rem 1.25rem;
+}
+
+.cc {
+  background: linear-gradient(135deg, #3d0708 0%, var(--brand) 55%, #b13a46 100%);
+  border-radius: 14px;
+  padding: 1.25rem 1.5rem;
+  color: #fff;
+  max-width: 420px;
+  margin-bottom: 1.5rem;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 12px 28px rgba(124, 15, 18, 0.25);
+}
+
+.cc-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.cc-num {
+  font-size: 1.2rem;
+  letter-spacing: 0.14em;
+  margin: 1.5rem 0 1rem;
+}
+
+.cc-bot {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+
+  span {
+    display: block;
+    font-size: 0.55rem;
+    letter-spacing: 0.14em;
+    opacity: 0.75;
+    margin-bottom: 0.25rem;
+    font-weight: 700;
+  }
+
+  b {
+    font-size: 0.75rem;
+    letter-spacing: 0.06em;
+  }
+}
+
+.f-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin: 1rem 0 0.4rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  text-transform: uppercase;
+
+  .lock {
+    color: var(--brand);
+    text-transform: none;
+    letter-spacing: normal;
+    font-weight: 600;
+  }
+}
+
+.f-input {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #fff;
+  padding: 0.7rem 0.85rem;
+  font-size: 0.85rem;
+  width: 100%;
+  font-family: inherit;
+  color: var(--ink);
+
+  input,
+  select {
+    border: 0;
+    outline: 0;
+    background: transparent;
+    font: inherit;
+    width: 100%;
+    color: var(--ink);
+  }
+}
+
+.f-input.mp-field {
+  height: 42px;
+  padding: 0;
+  /* El SDK de Mercado Pago inyecta un <iframe> dentro de este div; se estira solo. */
+}
+
+select.f-input {
+  cursor: pointer;
+  appearance: none;
+}
+
+.f-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+}
+
+.f-duo {
+  display: grid;
+  grid-template-columns: 190px 1fr;
+  gap: 0.85rem;
+}
+
+.assurances {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.assur {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1.1rem;
+  box-shadow: var(--shadow);
+
+  .a-ic {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--pink);
+    color: var(--brand);
+    display: grid;
+    place-items: center;
+    font-size: 0.85rem;
+    margin-bottom: 0.7rem;
+  }
+
+  b {
+    font-size: 0.85rem;
+    display: block;
+  }
+
+  p {
+    color: var(--muted);
+    font-size: 0.75rem;
+    line-height: 1.6;
+    margin-top: 0.35rem;
+  }
+}
+
+.summary {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1.5rem;
+  position: sticky;
+  top: 1.5rem;
+}
+
+.sum-kicker {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+}
+
+.sum-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin: 0.5rem 0 0.85rem;
+
+  h2 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin: 0;
+  }
+}
+
+.sum-ic {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--brand);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.cycle {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.1rem;
+
+  .pill {
+    background: var(--brand);
+    color: #fff;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    border-radius: 5px;
+    padding: 0.3rem 0.55rem;
+  }
+
+  span {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+  }
+}
+
+.bene-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin-bottom: 0.6rem;
+}
+
+.bene {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  margin: 0 0 1.25rem;
+  padding: 0;
+
+  li {
+    display: flex;
+    gap: 0.55rem;
+    color: var(--ink);
+
+    &::before {
+      content: '✓';
+      color: var(--success);
+      font-weight: 700;
+    }
+  }
+}
+
+.total-box {
+  background: var(--pink);
+  border-radius: 12px;
+  padding: 1rem 1.1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.85rem;
+  gap: 0.75rem;
+
+  small {
+    display: block;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--brand-dark);
+  }
+
+  .amount {
+    font-size: 1.7rem;
+    font-weight: 800;
+    color: var(--brand);
+    text-align: right;
+    line-height: 1;
+    white-space: nowrap;
+
+    small {
+      display: block;
+      font-size: 0.6rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      margin-top: 0.3rem;
+    }
+  }
+}
+
+.btn-pay {
+  width: 100%;
+  background: var(--brand);
+  color: #fff;
+  border: 0;
+  border-radius: 10px;
+  padding: 0.95rem;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  font-family: inherit;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1.25rem;
+  box-shadow: 0 8px 20px rgba(124, 15, 18, 0.22);
+
+  &:hover:not(:disabled) {
+    background: var(--brand-dark);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.btn-back {
+  width: 100%;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.8rem;
+  font-weight: 700;
+  font-size: 0.75rem;
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--ink);
+  margin-top: 0.75rem;
+  letter-spacing: 0.04em;
+
+  &:hover {
+    border-color: var(--brand);
+    color: var(--brand);
+  }
+}
+
+.sum-foot {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--muted);
+  margin-top: 1rem;
+  letter-spacing: 0.03em;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+@media (max-width: 1000px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .summary {
+    position: static;
+  }
+
+  .assurances {
+    grid-template-columns: 1fr;
+  }
+}

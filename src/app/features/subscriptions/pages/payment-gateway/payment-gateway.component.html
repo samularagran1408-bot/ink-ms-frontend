@@ -1,0 +1,137 @@
+<!-- M09 · Checkout propio de Mercado Pago (RF70) -->
+<div class="payment-gateway-page">
+
+  <div class="breadcrumb">SUSCRIPCIONES<span class="sep">›</span>PLANES<span class="sep">›</span><span class="cur">PAGO</span></div>
+
+  <div *ngIf="cargando" class="state-box">Cargando datos del pago…</div>
+
+  <div *ngIf="!cargando" class="grid">
+    <!-- LEFT: formulario -->
+    <div>
+      <div class="pay-head">
+        <div>
+          <div class="kicker">ACREDITACIÓN INMEDIATA</div>
+          <h1>Pago con tarjeta</h1>
+          <p>Ingresa los datos de tu tarjeta. El cobro lo procesa Mercado Pago; tus datos viajan directo a sus servidores, nunca por los nuestros.</p>
+        </div>
+        <div class="mp-badge">
+          <b>💠 MERCADO PAGO</b>
+          <small>PROCESADOR DEL PAGO</small>
+        </div>
+      </div>
+
+      <div *ngIf="error" class="banner banner--error">{{ error }}</div>
+
+      <div *ngIf="resultado" class="banner" [ngClass]="{
+          'banner--success': resultado === 'exito',
+          'banner--error': resultado === 'rechazado',
+          'banner--info': resultado === 'pendiente'
+        }">
+        {{ mensajeResultado }}
+        <button *ngIf="resultado === 'rechazado'" type="button" class="btn-retry" (click)="resultado = null">Intentar de nuevo</button>
+      </div>
+
+      <div class="method" [hidden]="resultado === 'exito'">
+        <div class="method-body">
+          <div class="cc">
+            <div class="cc-top"><span>◉ INKLUSPORT</span><span class="visa">💳</span></div>
+            <div class="cc-num">•••• &nbsp;&nbsp; •••• &nbsp;&nbsp; •••• &nbsp;&nbsp; ••••</div>
+            <div class="cc-bot">
+              <div><span>TITULAR</span><b>&nbsp;</b></div>
+              <div><span>VENCE</span><b>••/••</b></div>
+            </div>
+          </div>
+
+          <form id="form-checkout" [hidden]="procesando">
+            <div class="f-label">NÚMERO DE TARJETA <span class="lock">🔒 CAMPO SEGURO DE MERCADO PAGO</span></div>
+            <div class="f-input mp-field" id="form-checkout__cardNumber"></div>
+
+            <div class="f-label">NOMBRE Y APELLIDO DEL TITULAR (COMO FIGURA EN LA TARJETA)</div>
+            <div class="f-input"><input type="text" id="form-checkout__cardholderName" placeholder="Como aparece en la tarjeta"></div>
+
+            <div class="f-row">
+              <div>
+                <div class="f-label">VENCIMIENTO (MM/AA)</div>
+                <div class="f-input mp-field" id="form-checkout__expirationDate"></div>
+              </div>
+              <div>
+                <div class="f-label">CÓDIGO DE SEGURIDAD (CVV)</div>
+                <div class="f-input mp-field" id="form-checkout__securityCode"></div>
+              </div>
+            </div>
+
+            <div class="f-label">DOCUMENTO DEL TITULAR <span>REQUERIDO POR MERCADO PAGO</span></div>
+            <div class="f-duo">
+              <select class="f-input f-select" id="form-checkout__identificationType">
+                <option *ngFor="let tipo of tiposIdentificacion" [value]="tipo.id">{{ tipo.name }}</option>
+              </select>
+              <div class="f-input"><input type="text" id="form-checkout__identificationNumber" placeholder="Número de documento"></div>
+            </div>
+
+            <div class="f-label">CORREO ELECTRÓNICO</div>
+            <div class="f-input"><input type="email" id="form-checkout__cardholderEmail" placeholder="tu@correo.com"></div>
+
+            <div class="f-label">BANCO EMISOR</div>
+            <select class="f-input f-select" id="form-checkout__issuer"></select>
+
+            <div class="f-label">CUOTAS</div>
+            <select class="f-input f-select" id="form-checkout__installments"></select>
+
+            <button type="submit" id="form-checkout__submit" class="btn-pay">
+              <span>🔒&nbsp; PAGAR</span>
+              <span>${{ monto | number: '1.0-0' }} COP&nbsp;&nbsp;→</span>
+            </button>
+          </form>
+
+          <div *ngIf="procesando" class="state-box">Procesando el pago con Mercado Pago…</div>
+
+          <button type="button" class="btn-back" (click)="volver()">←&nbsp; VOLVER A SELECCIÓN DE PLANES</button>
+        </div>
+      </div>
+
+      <div class="assurances">
+        <div class="assur">
+          <div class="a-ic">🔒</div>
+          <b>Tokenización PCI</b>
+          <p>El número de tarjeta y el CVV se capturan directo en servidores de Mercado Pago; InkluSport nunca los recibe ni los almacena.</p>
+        </div>
+        <div class="assur">
+          <div class="a-ic">🛡</div>
+          <b>Procesado por Mercado Pago</b>
+          <p>La transacción se cobra a través de la API de Mercado Pago, con la misma seguridad que su checkout oficial.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: resumen -->
+    <aside class="summary">
+      <div class="sum-kicker">RESUMEN DE SUSCRIPCIÓN</div>
+      <div class="sum-head">
+        <h2>{{ plan?.nombre ?? 'Tu plan' }}</h2>
+        <div class="sum-ic">🏅</div>
+      </div>
+      <div class="cycle" *ngIf="plan?.duracionDias as dias">
+        <span class="pill">CICLO</span>
+        <span>{{ dias }} DÍAS DE ACCESO</span>
+      </div>
+
+      <ng-container *ngIf="plan?.beneficios as beneficios">
+        <div class="bene-label" *ngIf="beneficios.length">BENEFICIOS INCLUIDOS:</div>
+        <ul class="bene" *ngIf="beneficios.length">
+          <li *ngFor="let beneficio of beneficios">{{ beneficio }}</li>
+        </ul>
+      </ng-container>
+
+      <div class="total-box">
+        <div><small>TOTAL A PAGAR</small></div>
+        <div class="amount">${{ monto | number: '1.0-0' }}<small>COP</small></div>
+      </div>
+
+      <div class="sum-foot">
+        <span>🔒 Conexión cifrada</span>
+        <span>💠 Mercado Pago</span>
+      </div>
+    </aside>
+  </div>
+
+</div>

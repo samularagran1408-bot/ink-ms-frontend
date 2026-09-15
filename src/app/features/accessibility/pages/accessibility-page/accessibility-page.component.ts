@@ -1,5 +1,7 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup } from '@angular/forms';
+import { RouterModule } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { TranslateService } from '@ngx-translate/core';
 
 import { SessionService } from '@core/services/session.service';
@@ -8,8 +10,11 @@ import { LanguageService } from '@features/accessibility/services/language.servi
 import { AccessibilityService } from '@features/accessibility/services/accessibility.service';
 import { TtsService } from '@features/accessibility/services/tts.service';
 import { NotificationAnnounceService } from '@features/accessibility/services/notification-announce.service';
+import { SharedModule } from '@shared/shared.module';
 
 @Component({
+  standalone: true,
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, SharedModule],
   selector: 'app-accessibility-page',
   templateUrl: './accessibility-page.component.html',
   styleUrl: './accessibility-page.component.scss'
@@ -120,10 +125,6 @@ export class AccessibilityPageComponent implements OnInit {
       ? this.translate.instant('ACCESSIBILITY.TTS_TEST_PHRASE')
       : this.translate.instant('ACCESSIBILITY.TTS_TEST_PHRASE');
     this.tts.speak(phrase, { force: true });
-  }
-
-  get fixedSidebar(): boolean {
-    return this.session.getPrimaryRole() !== 'USUARIO';
   }
 
   save(): void {

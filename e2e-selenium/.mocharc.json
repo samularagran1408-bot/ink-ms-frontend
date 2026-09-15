@@ -1,0 +1,7 @@
+{
+  "spec": ["e2e-selenium/tests/**/*.spec.js"],
+  "timeout": 60000,
+  "slow": 10000,
+  "exit": true,
+  "bail": false
+}
