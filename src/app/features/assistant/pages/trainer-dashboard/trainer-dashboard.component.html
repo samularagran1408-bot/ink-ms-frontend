@@ -1,5 +1,17 @@
-<h1 class="page-title">{{ 'TRAINER.TITLE' | translate }}</h1>
-  <p class="page-subtitle">{{ 'TRAINER.SUBTITLE' | translate }}</p>
+<div class="dash-hero">
+    <div>
+      <h1 class="page-title">{{ 'TRAINER.TITLE' | translate }}</h1>
+      <p class="page-subtitle">{{ 'TRAINER.SUBTITLE' | translate }}</p>
+    </div>
+    <div class="actions-row">
+      <button class="btn-primary" type="button" (click)="goQuiz()" *ngIf="!quizPassed">{{ 'TRAINER.DO_QUIZ' | translate }}</button>
+      <button class="btn-primary" type="button" (click)="goSessions()" [disabled]="!quizPassed">{{ 'TRAINER.MANAGE_SESSIONS' | translate }}</button>
+      <button class="btn-secondary" type="button" (click)="goSports()" [disabled]="!quizPassed">{{ 'TRAINER.SPORTS' | translate }}</button>
+      <button class="btn-secondary" type="button" (click)="goDisabilities()" [disabled]="!quizPassed">{{ 'TRAINER.DISABILITIES' | translate }}</button>
+      <button class="btn-secondary" type="button" (click)="goAssociations()" [disabled]="!quizPassed">{{ 'TRAINER.ASSOCIATIONS' | translate }}</button>
+    </div>
+  </div>
+
   <p *ngIf="loading" class="empty-text">{{ 'COMMON.LOADING' | translate }}</p>
   <p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
   <p *ngIf="!loading && !quizPassed" class="error-text">
@@ -19,9 +31,24 @@
       <div class="kpi-sub">{{ 'TRAINER.READY' | translate }}</div>
     </div>
     <div class="kpi-card">
+      <div class="kpi-label">{{ 'TRAINER.DRAFTS' | translate }}</div>
+      <div class="kpi-value">{{ draftsCount }}</div>
+      <div class="kpi-sub">{{ 'TRAINER.DRAFTS_SUB' | translate }}</div>
+    </div>
+    <div class="kpi-card">
       <div class="kpi-label">{{ 'TRAINER.ATHLETES' | translate }}</div>
       <div class="kpi-value">{{ athleteCount }}</div>
       <div class="kpi-sub">{{ 'TRAINER.ENROLLED' | translate }}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">{{ 'TRAINER.ENROLLMENTS' | translate }}</div>
+      <div class="kpi-value">{{ enrollments }}</div>
+      <div class="kpi-sub">{{ 'TRAINER.ENROLLMENTS_SUB' | translate }}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">{{ 'TRAINER.OCCUPANCY' | translate }}</div>
+      <div class="kpi-value">{{ occupancyPct }}%</div>
+      <div class="kpi-sub">{{ 'TRAINER.OCCUPANCY_SUB' | translate }}</div>
     </div>
     <div class="kpi-card">
       <div class="kpi-label">{{ 'TRAINER.DISABILITIES' | translate }}</div>
@@ -30,12 +57,31 @@
     </div>
   </div>
 
-  <div class="actions-row">
-    <button class="btn-primary" type="button" (click)="goQuiz()" *ngIf="!quizPassed">{{ 'TRAINER.DO_QUIZ' | translate }}</button>
-    <button class="btn-primary" type="button" (click)="goSessions()" [disabled]="!quizPassed">{{ 'TRAINER.MANAGE_SESSIONS' | translate }}</button>
-    <button class="btn-secondary" type="button" (click)="goSports()" [disabled]="!quizPassed">{{ 'TRAINER.SPORTS' | translate }}</button>
-    <button class="btn-secondary" type="button" (click)="goDisabilities()" [disabled]="!quizPassed">{{ 'TRAINER.DISABILITIES' | translate }}</button>
-    <button class="btn-secondary" type="button" (click)="goAssociations()" [disabled]="!quizPassed">{{ 'TRAINER.ASSOCIATIONS' | translate }}</button>
+  <div class="analysis-grid">
+    <div class="card">
+      <h3 class="section-title">{{ 'TRAINER.WEEKLY_TREND' | translate }}</h3>
+      <p class="chart-sub">{{ 'TRAINER.WEEKLY_TREND_SUB' | translate }}</p>
+      <div class="bar-chart" *ngIf="hasWeeklyData; else noTrainerTrend">
+        <div class="bar-item" *ngFor="let bar of weeklyBars">
+          <div class="bar-tooltip">{{ bar.value }}</div>
+          <div class="bar" [class.bar--accent]="bar.highlight === 'accent'" [class.bar--peak]="bar.highlight === 'peak'" [style.height.%]="bar.height"></div>
+          <span class="bar-label">{{ bar.label }}</span>
+        </div>
+      </div>
+      <ng-template #noTrainerTrend><p class="empty-text">{{ 'TRAINER.NO_TREND' | translate }}</p></ng-template>
+    </div>
+    <div class="card">
+      <h3 class="section-title">{{ 'TRAINER.BY_FOCUS' | translate }}</h3>
+      <p class="chart-sub">{{ 'TRAINER.BY_FOCUS_SUB' | translate }}</p>
+      <div class="bar-chart" *ngIf="focusBars.length; else noFocus">
+        <div class="bar-item" *ngFor="let bar of focusBars">
+          <div class="bar-tooltip">{{ bar.value }}</div>
+          <div class="bar" [class.bar--peak]="bar.highlight === 'peak'" [class.bar--accent]="bar.highlight === 'accent'" [style.height.%]="bar.height"></div>
+          <span class="bar-label" [title]="bar.label">{{ bar.label }}</span>
+        </div>
+      </div>
+      <ng-template #noFocus><p class="empty-text">{{ 'TRAINER.NO_FOCUS' | translate }}</p></ng-template>
+    </div>
   </div>
 
   <div class="grid-2">

@@ -16,6 +16,13 @@ import { eventDateTimeMs } from '@core/utils/qr-attendance.util';
 import { userInitials } from '@core/utils/avatar.util';
 import { isEventVisible } from '@features/sports-disabilities/utils/event-visibility.util';
 import { SharedModule } from '@shared/shared.module';
+import {
+  DashBar,
+  buildCountBars,
+  buildWeeklyBars,
+  countByKey,
+  resolveWeeklyTrend
+} from '@shared/utils/dashboard-charts.util';
 
 interface EnrolledPreview {
   registrationId: string;
@@ -50,6 +57,8 @@ export class OrganizerDashboardComponent implements OnInit, OnDestroy {
   nextEnrolled: EnrolledPreview[] = [];
   nextReport: AttendanceReport | null = null;
   loadingNextDetails = false;
+  weeklyBars: DashBar[] = [];
+  sportBars: DashBar[] = [];
   private liveSub: Subscription | null = null;
 
   constructor(
@@ -111,6 +120,14 @@ export class OrganizerDashboardComponent implements OnInit, OnDestroy {
     return Math.round((this.athleteCount * 100) / this.totalCapacity);
   }
 
+  get freeSpots(): number {
+    return Math.max(this.totalCapacity - this.athleteCount, 0);
+  }
+
+  get hasWeeklyData(): boolean {
+    return this.weeklyBars.some((bar) => bar.value > 0);
+  }
+
   get nextOccupancyPercent(): number {
     if (!this.nextEvent?.maxCapacity) {
       return 0;
@@ -152,6 +169,7 @@ export class OrganizerDashboardComponent implements OnInit, OnDestroy {
           this.athleteCount = panel.athleteCount ?? panel.metrics?.['athletes'] ?? 0;
           this.attendanceRatePercent = panel.attendanceRatePercent ?? null;
           this.attendanceSampledEvents = panel.attendanceSampledEvents ?? 0;
+          this.applyCharts(panel.weeklyTrend, panel.eventCounts);
           if (this.sports.length && !this.form.value.sportId) {
             this.form.patchValue({ sportId: this.sports[0].id });
           }
@@ -305,6 +323,13 @@ export class OrganizerDashboardComponent implements OnInit, OnDestroy {
   occupied(event: EventItem): number {
     const max = event.maxCapacity || 0;
     return Math.max(max - (event.availableCapacity ?? max), 0);
+  }
+
+  private applyCharts(weeklyTrend?: Record<string, number>, eventCounts?: Record<string, number>): void {
+    this.weeklyBars = buildWeeklyBars(resolveWeeklyTrend(weeklyTrend, this.events));
+    this.sportBars = buildCountBars(eventCounts && Object.keys(eventCounts).length
+      ? eventCounts
+      : countByKey(this.events, 'sportName', 'Sin deporte'));
   }
 
   initials(name?: string | null): string {

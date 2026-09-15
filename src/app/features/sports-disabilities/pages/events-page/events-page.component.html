@@ -54,81 +54,37 @@
     </a>
   </div>
 
-  <div class="card" *ngIf="mode === 'manage'" style="margin-bottom: 16px;">
-    <h3 class="section-title">{{ 'EVENTS_PAGE.SEARCH' | translate }}</h3>
-    <form class="form-grid" (ngSubmit)="searchEvent()">
-      <label>
-        {{ 'EVENTS_PAGE.ID_OR_NAME' | translate }}
-        <input name="lookupEventId" [(ngModel)]="lookupEventId" [placeholder]="'EVENTS_PAGE.ID_PH' | translate" />
-      </label>
-      <div style="display: flex; align-items: end; gap: 8px;">
-        <button class="btn-secondary" type="submit">{{ 'EVENTS_PAGE.SEARCH_BY_ID' | translate }}</button>
-        <button class="btn-secondary" type="button" *ngIf="lookupEventId || catalogQuery" (click)="clearCatalogQuery()">
-          {{ 'COMMON.CLEAR' | translate }}
-        </button>
+  <div class="card manage-desk" *ngIf="mode === 'manage'">
+    <div class="manage-toolbar">
+      <div class="search-bar">
+        <input
+          type="search"
+          name="catalogQuery"
+          [ngModel]="catalogQuery"
+          (ngModelChange)="onCatalogQueryChange($event)"
+          [placeholder]="'EVENTS_PAGE.FILTER_PH' | translate"
+        />
       </div>
-    </form>
-    <div class="search-bar">
-      <input
-        type="search"
-        name="catalogQuery"
-        [ngModel]="catalogQuery"
-        (ngModelChange)="onCatalogQueryChange($event)"
-        [placeholder]="'EVENTS_PAGE.FILTER_PH' | translate"
-      />
-    </div>
-    <p class="search-count" *ngIf="catalogQuery.trim() || eventsTotal">
-      {{ 'COMMON.RESULTS' | translate:{ count: eventsTotal } }}
-    </p>
-    <div class="list-item" *ngIf="lookupEvent">
-      <div>
-        <strong>{{ lookupEvent.name }}</strong>
-        <div class="event-meta">
-          <ng-container *ngTemplateOutlet="eventWhenTpl; context: { date: lookupEvent.eventDate, time: lookupEvent.eventTime }"></ng-container>
-        </div>
-        <ng-container *ngTemplateOutlet="eventSpotsTpl; context: { event: lookupEvent }"></ng-container>
-      </div>
-      <span class="status-pill" [class.status-pill--ok]="lookupEvent.status === 'active'" [class.status-pill--warn]="lookupEvent.status === 'draft'" [class.status-pill--bad]="lookupEvent.status === 'cancelled'">
-        {{ lookupEvent.status || '—' }}
-      </span>
-    </div>
-  </div>
-
-  <div class="card" *ngIf="mode === 'manage'" style="margin-bottom: 16px;">
-    <h3 class="section-title">Calendario de eventos</h3>
-    <form class="form-grid" (ngSubmit)="loadCalendar()">
-      <label>
-        Desde
+      <label class="manage-date">
+        {{ 'EVENTS_PAGE.CALENDAR_FROM' | translate }}
         <input type="date" name="calendarFrom" [(ngModel)]="calendarFrom" />
       </label>
-      <label>
-        Hasta
+      <label class="manage-date">
+        {{ 'EVENTS_PAGE.CALENDAR_TO' | translate }}
         <input type="date" name="calendarTo" [(ngModel)]="calendarTo" />
       </label>
-      <div style="display: flex; gap: 8px; align-items: end;">
-        <button class="btn-primary" type="submit">Filtrar rango</button>
-        <button class="btn-secondary" type="button" (click)="clearCalendarFilter()">Ver todos</button>
-      </div>
-    </form>
-    <div class="list-item" *ngFor="let item of calendarItems">
-      <div>
-        <strong>{{ item.title }}</strong>
-        <div class="event-meta">
-          <span class="event-chip">{{ item.sportName || ('COMMON.SPORT' | translate) }}</span>
-          <ng-container *ngTemplateOutlet="eventWhenTpl; context: { date: item.startDate, time: item.startTime }"></ng-container>
-        </div>
-        <div class="kpi-sub" *ngIf="item.location">{{ item.location }}</div>
-        <ng-container *ngTemplateOutlet="eventSpotsTpl; context: { event: item }"></ng-container>
-      </div>
+      <button class="btn-secondary" type="button" *ngIf="catalogQuery.trim() || calendarFrom || calendarTo" (click)="clearCatalogQuery()">
+        {{ 'COMMON.CLEAR' | translate }}
+      </button>
+      <button *ngIf="canManage" class="btn-primary" type="button" (click)="creatingForm = !creatingForm">
+        {{ creatingForm ? ('COMMON.CANCEL' | translate) : ('EVENTS_PAGE.TAB_CREATE' | translate) }}
+      </button>
     </div>
-    <p *ngIf="calendarLoaded && !calendarItems.length" class="empty-text">
-      No hay eventos en el calendario para el rango seleccionado.
+    <p class="search-count" *ngIf="catalogQuery.trim() || calendarFrom || calendarTo || eventsTotal">
+      {{ 'COMMON.RESULTS' | translate:{ count: filteredManageRows.length } }}
     </p>
-  </div>
 
-  <div class="card" *ngIf="canManage && mode === 'manage'" style="margin-bottom: 16px;">
-    <h3 class="section-title">Crear evento</h3>
-    <form class="form-grid" [formGroup]="form" (ngSubmit)="createEvent()">
+    <form *ngIf="canManage && creatingForm" class="form-grid manage-create" [formGroup]="form" (ngSubmit)="createEvent()">
       <label>
         Deporte
         <select formControlName="sportId">
@@ -172,6 +128,144 @@
         <button class="btn-primary" type="submit" [disabled]="creating">{{ creating ? 'Creando...' : 'Crear' }}</button>
       </div>
     </form>
+
+    <div *ngFor="let row of filteredManageRows" class="manage-event" [class.manage-event--open]="row.actionsOpen" (click)="$event.stopPropagation()">
+      <div class="list-item event-list-item" style="border-bottom: none;">
+        <div class="event-thumb" [style.background-image]="'url(' + eventImage(row.event) + ')'"></div>
+        <div class="event-list-body">
+          <strong>{{ row.event.name }}</strong>
+          <div class="event-meta">
+            <span class="event-chip">{{ row.event.sportName || ('COMMON.SPORT' | translate) }}</span>
+            <ng-container *ngTemplateOutlet="eventWhenTpl; context: { date: row.event.eventDate, time: row.event.eventTime }"></ng-container>
+            <span class="event-chip event-chip--waitlist">
+              {{ row.waitlistLoaded
+                ? ('EVENTS_PAGE.WAITLIST_COUNT' | translate:{ count: row.waitlist.length })
+                : ('EVENTS_PAGE.WAITLIST_UNKNOWN' | translate) }}
+            </span>
+          </div>
+          <ng-container *ngTemplateOutlet="eventSpotsTpl; context: { event: row.event }"></ng-container>
+        </div>
+        <div class="manage-actions">
+          <span
+            class="status-pill"
+            [class.status-pill--ok]="row.event.status === 'active' || row.event.status === 'draft'"
+            [class.status-pill--bad]="row.event.status === 'cancelled'"
+            [class.status-pill--warn]="row.event.status === 'finished'"
+          >{{ row.event.status || 'active' }}</span>
+          <button
+            class="btn-primary actions-toggle"
+            type="button"
+            (click)="toggleActions(row, $event)"
+            [attr.aria-expanded]="row.actionsOpen"
+          >
+            {{ 'EVENTS_PAGE.ACTIONS' | translate }}
+            <span class="actions-chevron" [class.is-open]="row.actionsOpen">▾</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="actions-panel" *ngIf="row.actionsOpen">
+        <div class="actions-grid">
+          <button
+            class="action-tile"
+            type="button"
+            (click)="openCheckIn(row.event)"
+            [disabled]="!canRecordAttendance(row.event)"
+            [title]="canRecordAttendance(row.event) ? '' : ('Se habilita a partir de ' + eventStartLabel(row.event))"
+          >
+            <span class="action-tile__label">Check-in QR</span>
+          </button>
+          <button class="action-tile" type="button" (click)="openAttendanceReport(row.event)">
+            <span class="action-tile__label">Reporte asistencia</span>
+          </button>
+          <button class="action-tile" type="button" (click)="startEdit(row)" *ngIf="!row.editing">
+            <span class="action-tile__label">Editar datos</span>
+          </button>
+          <button class="action-tile" type="button" (click)="toggleWaitlist(row)">
+            <span class="action-tile__label">{{ row.showWaitlist ? 'Ocultar waitlist' : 'Ver waitlist' }}</span>
+          </button>
+          <a class="action-tile" [routerLink]="['/organizer/events', row.event.id, 'pago-config']">
+            <span class="action-tile__label">Configurar pago</span>
+          </a>
+          <button
+            class="action-tile action-tile--danger"
+            type="button"
+            [disabled]="cancellingId === row.event.id"
+            (click)="cancelManagedEvent(row.event)"
+          >
+            <span class="action-tile__label">{{ cancellingId === row.event.id ? 'Cancelando...' : 'Cancelar evento' }}</span>
+          </button>
+        </div>
+        <app-event-location-map
+          *ngIf="row.event.location || (row.event.latitude != null && row.event.longitude != null)"
+          style="margin-top: 12px; display: block;"
+          [location]="row.event.location"
+          [latitude]="row.event.latitude"
+          [longitude]="row.event.longitude"
+          [compact]="true"
+        ></app-event-location-map>
+      </div>
+
+      <form *ngIf="row.editing && row.editForm" class="form-grid" [formGroup]="row.editForm" (ngSubmit)="saveEventChanges(row)" style="margin-top: 8px;">
+        <label>
+          Nombre
+          <input formControlName="name" />
+        </label>
+        <label>
+          Cupo máximo
+          <input type="number" formControlName="maxCapacity" min="1" />
+        </label>
+        <label>
+          Fecha
+          <input type="date" formControlName="eventDate" />
+        </label>
+        <label>
+          Hora
+          <input type="time" formControlName="eventTime" />
+        </label>
+        <div style="grid-column: 1 / -1;">
+          <app-place-location-picker
+            [address]="row.editForm.value.location || ''"
+            [latitude]="row.editForm.value.latitude"
+            [longitude]="row.editForm.value.longitude"
+            (placeChange)="onEditPlaceChange(row, $event)"
+          ></app-place-location-picker>
+        </div>
+        <div style="display: flex; gap: 8px; align-items: end;">
+          <button class="btn-primary" type="submit" [disabled]="row.saving">
+            {{ row.saving ? 'Guardando...' : 'Guardar cambios' }}
+          </button>
+          <button class="btn-secondary" type="button" (click)="cancelEdit(row)" [disabled]="row.saving">Cancelar</button>
+        </div>
+      </form>
+
+      <div *ngIf="row.showWaitlist" style="padding-left: 8px;">
+        <p *ngIf="row.waitlistLoading" class="empty-text">{{ 'EVENTS_PAGE.WAITLIST_LOADING' | translate }}</p>
+        <div class="list-item" *ngFor="let item of row.waitlist">
+          <div class="user-cell">
+            <img *ngIf="item.userProfilePicture" class="table-avatar" [src]="item.userProfilePicture" alt="" />
+            <span *ngIf="!item.userProfilePicture" class="avatar-fallback">{{ initials(item.userFullName || item.userEmail) }}</span>
+            <div>
+            <strong>{{ item.userFullName || item.userEmail || ('ROLES.USER_FALLBACK' | translate) }}</strong>
+            <div class="kpi-sub">Posición {{ item.waitlistPosition ?? '—' }}<ng-container *ngIf="item.userEmail"> · {{ item.userEmail }}</ng-container></div>
+            </div>
+          </div>
+        </div>
+        <p *ngIf="row.waitlistLoaded && !row.waitlist.length" class="empty-text">Sin personas en waitlist.</p>
+      </div>
+    </div>
+    <p *ngIf="!loading && !filteredManageRows.length" class="empty-text">
+      {{ catalogQuery.trim() || calendarFrom || calendarTo ? 'No hay eventos que coincidan con la búsqueda.' : 'No hay eventos.' }}
+    </p>
+    <div class="actions-row" *ngIf="eventsTotalPages > 1" style="margin-top: 12px; justify-content: space-between;">
+      <button class="btn-secondary" type="button" [disabled]="catalogPage <= 0" (click)="prevCatalogPage()">
+        {{ 'COMMON.PREV' | translate }}
+      </button>
+      <span class="kpi-sub">{{ 'EVENTS_PAGE.PAGE' | translate:{ page: catalogPage + 1, pages: eventsTotalPages } }}</span>
+      <button class="btn-secondary" type="button" [disabled]="catalogPage + 1 >= eventsTotalPages" (click)="nextCatalogPage()">
+        {{ 'COMMON.NEXT' | translate }}
+      </button>
+    </div>
   </div>
 
   <!-- Historial: estadísticas, asistencia y pases -->
@@ -435,133 +529,6 @@
       {{ catalogQuery.trim()
         ? ('EVENTS_PAGE.CATALOG_EMPTY_SEARCH' | translate)
         : ('EVENTS_PAGE.CATALOG_EMPTY' | translate) }}
-    </p>
-    <div class="actions-row" *ngIf="eventsTotalPages > 1" style="margin-top: 12px; justify-content: space-between;">
-      <button class="btn-secondary" type="button" [disabled]="catalogPage <= 0" (click)="prevCatalogPage()">
-        {{ 'COMMON.PREV' | translate }}
-      </button>
-      <span class="kpi-sub">{{ 'EVENTS_PAGE.PAGE' | translate:{ page: catalogPage + 1, pages: eventsTotalPages } }}</span>
-      <button class="btn-secondary" type="button" [disabled]="catalogPage + 1 >= eventsTotalPages" (click)="nextCatalogPage()">
-        {{ 'COMMON.NEXT' | translate }}
-      </button>
-    </div>
-  </div>
-
-  <!-- Vista gestión -->
-  <div class="card" *ngIf="mode === 'manage'">
-    <div *ngFor="let row of filteredManageRows" style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #F1F5F9;">
-      <div class="list-item event-list-item" style="border-bottom: none;">
-        <div class="event-thumb" [style.background-image]="'url(' + eventImage(row.event) + ')'"></div>
-        <div class="event-list-body">
-          <strong>{{ row.event.name }}</strong>
-          <div class="event-meta">
-            <span class="event-chip">{{ row.event.sportName || ('COMMON.SPORT' | translate) }}</span>
-            <ng-container *ngTemplateOutlet="eventWhenTpl; context: { date: row.event.eventDate, time: row.event.eventTime }"></ng-container>
-            <span class="event-chip event-chip--waitlist">
-              {{ row.waitlistLoaded
-                ? ('EVENTS_PAGE.WAITLIST_COUNT' | translate:{ count: row.waitlist.length })
-                : ('EVENTS_PAGE.WAITLIST_UNKNOWN' | translate) }}
-            </span>
-          </div>
-          <ng-container *ngTemplateOutlet="eventSpotsTpl; context: { event: row.event }"></ng-container>
-          <app-event-location-map
-            *ngIf="row.event.location || (row.event.latitude != null && row.event.longitude != null)"
-            style="margin-top: 8px; display: block;"
-            [location]="row.event.location"
-            [latitude]="row.event.latitude"
-            [longitude]="row.event.longitude"
-            [compact]="true"
-          ></app-event-location-map>
-        </div>
-        <div class="manage-actions">
-          <span
-            class="status-pill"
-            [class.status-pill--ok]="row.event.status === 'active' || row.event.status === 'draft'"
-            [class.status-pill--bad]="row.event.status === 'cancelled'"
-            [class.status-pill--warn]="row.event.status === 'finished'"
-          >{{ row.event.status || 'active' }}</span>
-          <button
-            class="btn-primary"
-            type="button"
-            (click)="openCheckIn(row.event)"
-            [disabled]="!canRecordAttendance(row.event)"
-            [title]="canRecordAttendance(row.event) ? '' : ('Se habilita a partir de ' + eventStartLabel(row.event))"
-          >
-            Check-in QR
-          </button>
-          <button class="btn-secondary" type="button" (click)="openAttendanceReport(row.event)">
-            Reporte asistencia
-          </button>
-          <button class="btn-secondary" type="button" (click)="startEdit(row)" *ngIf="!row.editing">
-            Editar datos
-          </button>
-          <button
-            class="btn-danger"
-            type="button"
-            [disabled]="cancellingId === row.event.id"
-            (click)="cancelManagedEvent(row.event)"
-          >
-            {{ cancellingId === row.event.id ? 'Cancelando...' : 'Cancelar evento' }}
-          </button>
-          <button class="btn-secondary" type="button" (click)="toggleWaitlist(row)">
-            {{ row.showWaitlist ? 'Ocultar waitlist' : 'Ver waitlist' }}
-          </button>
-          <a class="btn-secondary" [routerLink]="['/organizer/events', row.event.id, 'pago-config']">
-            Configurar pago
-          </a>
-        </div>
-      </div>
-
-      <form *ngIf="row.editing" class="form-grid" [formGroup]="row.editForm" (ngSubmit)="saveEventChanges(row)" style="margin-top: 8px;">
-        <label>
-          Nombre
-          <input formControlName="name" />
-        </label>
-        <label>
-          Cupo máximo
-          <input type="number" formControlName="maxCapacity" min="1" />
-        </label>
-        <label>
-          Fecha
-          <input type="date" formControlName="eventDate" />
-        </label>
-        <label>
-          Hora
-          <input type="time" formControlName="eventTime" />
-        </label>
-        <div style="grid-column: 1 / -1;">
-          <app-place-location-picker
-            [address]="row.editForm.value.location || ''"
-            [latitude]="row.editForm.value.latitude"
-            [longitude]="row.editForm.value.longitude"
-            (placeChange)="onEditPlaceChange(row, $event)"
-          ></app-place-location-picker>
-        </div>
-        <div style="display: flex; gap: 8px; align-items: end;">
-          <button class="btn-primary" type="submit" [disabled]="row.saving">
-            {{ row.saving ? 'Guardando...' : 'Guardar cambios' }}
-          </button>
-          <button class="btn-secondary" type="button" (click)="cancelEdit(row)" [disabled]="row.saving">Cancelar</button>
-        </div>
-      </form>
-
-      <div *ngIf="row.showWaitlist" style="padding-left: 8px;">
-        <p *ngIf="row.waitlistLoading" class="empty-text">{{ 'EVENTS_PAGE.WAITLIST_LOADING' | translate }}</p>
-        <div class="list-item" *ngFor="let item of row.waitlist">
-          <div class="user-cell">
-            <img *ngIf="item.userProfilePicture" class="table-avatar" [src]="item.userProfilePicture" alt="" />
-            <span *ngIf="!item.userProfilePicture" class="avatar-fallback">{{ initials(item.userFullName || item.userEmail) }}</span>
-            <div>
-            <strong>{{ item.userFullName || item.userEmail || ('ROLES.USER_FALLBACK' | translate) }}</strong>
-            <div class="kpi-sub">Posición {{ item.waitlistPosition ?? '—' }}<ng-container *ngIf="item.userEmail"> · {{ item.userEmail }}</ng-container></div>
-            </div>
-          </div>
-        </div>
-        <p *ngIf="row.waitlistLoaded && !row.waitlist.length" class="empty-text">Sin personas en waitlist.</p>
-      </div>
-    </div>
-    <p *ngIf="!loading && !filteredManageRows.length" class="empty-text">
-      {{ catalogQuery.trim() ? 'No hay eventos que coincidan con la búsqueda.' : 'No hay eventos.' }}
     </p>
     <div class="actions-row" *ngIf="eventsTotalPages > 1" style="margin-top: 12px; justify-content: space-between;">
       <button class="btn-secondary" type="button" [disabled]="catalogPage <= 0" (click)="prevCatalogPage()">

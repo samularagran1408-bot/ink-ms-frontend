@@ -76,7 +76,7 @@ export class TtsService {
     return typeof window !== 'undefined' && 'speechSynthesis' in window;
   }
 
-  /** Los navegadores suelen exigir un gesto del usuario antes de reproducir audio. */
+  /** Los navegadores exigen un gesto del usuario; llamar solo desde click/tecla. */
   unlock(): void {
     if (this.unlocked) {
       this.resumeAudio();
@@ -99,6 +99,9 @@ export class TtsService {
 
   /** Pitido corto para avisar aunque el texto a voz esté bloqueado. */
   playAlertChime(): void {
+    if (!this.unlocked) {
+      return;
+    }
     this.resumeAudio();
     const ctx = this.audioCtx;
     if (!ctx) {
@@ -143,7 +146,6 @@ export class TtsService {
       return;
     }
 
-    this.unlock();
     if (this.speakTimer) {
       clearTimeout(this.speakTimer);
     }
@@ -256,7 +258,7 @@ export class TtsService {
   }
 
   private resumeAudio(): void {
-    if (typeof window === 'undefined') {
+    if (!this.unlocked || typeof window === 'undefined') {
       return;
     }
     try {
@@ -268,7 +270,7 @@ export class TtsService {
         this.audioCtx = new AudioCtx();
       }
       if (this.audioCtx.state === 'suspended') {
-        void this.audioCtx.resume();
+        void this.audioCtx.resume().catch(() => undefined);
       }
     } catch {
       // Sin Web Audio.

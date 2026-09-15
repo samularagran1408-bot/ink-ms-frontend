@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -9,7 +9,6 @@ import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 
 import {
   AttendanceReport,
-  CalendarEvent,
   EventItem,
   Registration,
   Sport
@@ -39,8 +38,9 @@ interface EventManageRow {
   waitlistLoading: boolean;
   showWaitlist: boolean;
   editing: boolean;
-  editForm: FormGroup;
+  editForm: FormGroup | null;
   saving: boolean;
+  actionsOpen: boolean;
 }
 
 interface MyPassRow {
@@ -80,8 +80,6 @@ export class EventsPageComponent implements OnInit, OnDestroy {
   attendanceCheckInMethod: AttendanceCheckInMethod = 'qr';
   nowMs = Date.now();
 
-  lookupEventId = '';
-  lookupEvent: EventItem | null = null;
   catalogQuery = '';
   catalogPage = 0;
   catalogPageSize = 12;
@@ -90,8 +88,7 @@ export class EventsPageComponent implements OnInit, OnDestroy {
   eventsTotalPages = 0;
   calendarFrom = '';
   calendarTo = '';
-  calendarItems: CalendarEvent[] = [];
-  calendarLoaded = false;
+  creatingForm = false;
   cancellingId: string | null = null;
   cancellingRegistrationId: string | null = null;
 
@@ -120,6 +117,8 @@ export class EventsPageComponent implements OnInit, OnDestroy {
   };
 
   private clockTimer: ReturnType<typeof setInterval> | null = null;
+  private occupancyTimer: ReturnType<typeof setInterval> | null = null;
+  private occupancySub: Subscription | null = null;
   private reportPoll: ReturnType<typeof setInterval> | null = null;
   private html5Qr: Html5Qrcode | null = null;
   private querySub: Subscription | null = null;
@@ -178,13 +177,14 @@ export class EventsPageComponent implements OnInit, OnDestroy {
     }, 30_000);
     this.catalogPageSize = this.mode === 'manage' ? 15 : 12;
     this.catalogSearchSub = this.catalogSearch$.pipe(
-      debounceTime(400),
+      debounceTime(180),
       distinctUntilChanged()
     ).subscribe(() => {
       this.catalogPage = 0;
       this.reload();
     });
     this.reload();
+    this.startOccupancyWatch();
     this.liveSync.start();
     this.liveSub = this.liveSync.pulse$.subscribe((pulse) => {
       this.reload(true);
@@ -200,6 +200,7 @@ export class EventsPageComponent implements OnInit, OnDestroy {
     if (this.clockTimer) {
       clearInterval(this.clockTimer);
     }
+    this.stopOccupancyWatch();
     this.stopReportPoll();
     this.querySub?.unsubscribe();
     this.liveSub?.unsubscribe();
@@ -243,7 +244,19 @@ export class EventsPageComponent implements OnInit, OnDestroy {
   }
 
   get filteredManageRows(): EventManageRow[] {
-    return this.manageRows.filter((row) => isEventVisible(row.event, this.nowMs));
+    return this.manageRows.filter((row) => {
+      if (!isEventVisible(row.event, this.nowMs)) {
+        return false;
+      }
+      const date = row.event.eventDate || '';
+      if (this.calendarFrom && date < this.calendarFrom) {
+        return false;
+      }
+      if (this.calendarTo && date > this.calendarTo) {
+        return false;
+      }
+      return true;
+    });
   }
 
   private get visibleEvents(): EventItem[] {
@@ -277,8 +290,8 @@ export class EventsPageComponent implements OnInit, OnDestroy {
 
   clearCatalogQuery(): void {
     this.catalogQuery = '';
-    this.lookupEvent = null;
-    this.lookupEventId = '';
+    this.calendarFrom = '';
+    this.calendarTo = '';
     this.catalogPage = 0;
     this.reload();
   }
@@ -340,7 +353,6 @@ export class EventsPageComponent implements OnInit, OnDestroy {
             void this.refreshPassQrImages();
           }
         }
-        this.applyEventsToCalendar(this.visibleEvents);
         if (this.canManage && this.mode === 'manage') {
           this.applyWaitlists(events, panel.waitlists || {});
         } else {
@@ -417,6 +429,7 @@ export class EventsPageComponent implements OnInit, OnDestroy {
             longitude: null
           });
           this.catalogPage = 0;
+          this.creatingForm = false;
           this.reload();
           this.notifySuccess(
             'EVENTS_PAGE.SUCCESS_CREATE_TITLE',
@@ -446,7 +459,7 @@ export class EventsPageComponent implements OnInit, OnDestroy {
   }
 
   onEditPlaceChange(row: EventManageRow, place: EventPlaceLocation): void {
-    row.editForm.patchValue({
+    row.editForm?.patchValue({
       location: place.address,
       latitude: place.latitude,
       longitude: place.longitude
@@ -454,7 +467,11 @@ export class EventsPageComponent implements OnInit, OnDestroy {
   }
 
   startEdit(row: EventManageRow): void {
+    row.actionsOpen = true;
     row.editing = true;
+    if (!row.editForm) {
+      row.editForm = this.buildEditForm(row.event);
+    }
     row.editForm.patchValue({
       name: row.event.name,
       eventDate: row.event.eventDate,
@@ -471,8 +488,8 @@ export class EventsPageComponent implements OnInit, OnDestroy {
   }
 
   saveEventChanges(row: EventManageRow): void {
-    if (row.editForm.invalid) {
-      row.editForm.markAllAsTouched();
+    if (!row.editForm || row.editForm.invalid) {
+      row.editForm?.markAllAsTouched();
       return;
     }
     void this.confirmSaveEvent(row);
@@ -489,15 +506,20 @@ export class EventsPageComponent implements OnInit, OnDestroy {
       return;
     }
 
+    const form = row.editForm;
+    if (!form) {
+      return;
+    }
+
     row.saving = true;
     const payload = {
-      name: row.editForm.value.name,
-      eventDate: row.editForm.value.eventDate,
-      eventTime: row.editForm.value.eventTime,
-      location: row.editForm.value.location,
-      latitude: row.editForm.value.latitude,
-      longitude: row.editForm.value.longitude,
-      maxCapacity: Number(row.editForm.value.maxCapacity)
+      name: form.value.name,
+      eventDate: form.value.eventDate,
+      eventTime: form.value.eventTime,
+      location: form.value.location,
+      latitude: form.value.latitude,
+      longitude: form.value.longitude,
+      maxCapacity: Number(form.value.maxCapacity)
     };
 
     this.sportsService.updateEvent(row.event.id, payload).subscribe({
@@ -506,7 +528,7 @@ export class EventsPageComponent implements OnInit, OnDestroy {
         row.editing = false;
         this.successMessage = null;
         this.errorMessage = null;
-        this.reload();
+        this.reload(true);
         this.notifySuccess(
           'EVENTS_PAGE.SUCCESS_UPDATE_TITLE',
           this.translate.instant('EVENTS_PAGE.SUCCESS_UPDATE_MSG', { name: payload.name })
@@ -518,84 +540,6 @@ export class EventsPageComponent implements OnInit, OnDestroy {
         this.errorMessage = error?.error?.message || 'No se pudo actualizar el evento.';
       }
     });
-  }
-
-  searchEvent(): void {
-    const id = (this.lookupEventId || '').trim();
-    if (!id) {
-      this.errorMessage = 'Indica el nombre del evento.';
-      this.lookupEvent = null;
-      return;
-    }
-
-    const looksLikeUuid = /^[0-9a-f]{8}-[0-9a-f-]{4,}$/i.test(id);
-    if (!looksLikeUuid) {
-      this.sportsService.searchEvents(id).subscribe({
-        next: (events) => {
-          if (!events.length) {
-            this.lookupEvent = null;
-            this.successMessage = null;
-            this.errorMessage = `Evento no encontrado: ${id}`;
-            return;
-          }
-          this.lookupEvent = events[0];
-          if (!isEventVisible(this.lookupEvent)) {
-            this.lookupEvent = null;
-            this.successMessage = null;
-            this.errorMessage = `Evento no encontrado: ${id}`;
-            return;
-          }
-          this.catalogQuery = id;
-          this.errorMessage = null;
-          this.successMessage = `Evento encontrado: ${events[0].name}.`;
-        },
-        error: (error) => {
-          this.lookupEvent = null;
-          this.successMessage = null;
-          this.errorMessage = error?.error?.message || `Evento no encontrado: ${id}`;
-        }
-      });
-      return;
-    }
-
-    this.sportsService.getEvent(id).subscribe({
-      next: (event) => {
-        if (!isEventVisible(event)) {
-          this.lookupEvent = null;
-          this.successMessage = null;
-          this.errorMessage = `Evento no encontrado: ${id}`;
-          return;
-        }
-        this.lookupEvent = event;
-        this.errorMessage = null;
-        this.successMessage = `Evento encontrado: ${event.name}.`;
-      },
-      error: (error) => {
-        this.lookupEvent = null;
-        this.successMessage = null;
-        this.errorMessage = error?.error?.message || 'Evento no encontrado.';
-      }
-    });
-  }
-
-  loadCalendar(): void {
-    this.sportsService.getEventCalendar(this.calendarFrom || undefined, this.calendarTo || undefined).subscribe({
-      next: (items) => {
-        this.calendarItems = items;
-        this.calendarLoaded = true;
-      },
-      error: (error) => {
-        this.calendarItems = [];
-        this.calendarLoaded = true;
-        this.errorMessage = error?.error?.message || 'No se pudo cargar el calendario.';
-      }
-    });
-  }
-
-  clearCalendarFilter(): void {
-    this.calendarFrom = '';
-    this.calendarTo = '';
-    this.loadCalendar();
   }
 
   cancelManagedEvent(event: EventItem): void {
@@ -624,7 +568,6 @@ export class EventsPageComponent implements OnInit, OnDestroy {
         this.successMessage = null;
         this.errorMessage = null;
         this.reload();
-        this.loadCalendar();
         this.notifySuccess(
           'EVENTS_PAGE.SUCCESS_CANCEL_EVENT_TITLE',
           this.translate.instant('EVENTS_PAGE.SUCCESS_CANCEL_EVENT_MSG', { name: event.name })
@@ -671,48 +614,59 @@ export class EventsPageComponent implements OnInit, OnDestroy {
       }
 
       this.registeringId = event.id;
-      this.paymentsService.obtenerConfiguracionEvento(event.id).subscribe({
-        next: (config) => {
-          if (config?.esPago) {
+      this.sportsService.registerToEvent(userId, event.id).subscribe({
+        next: (registration) => {
+          this.registeringId = null;
+          this.successMessage = null;
+          this.errorMessage = null;
+          this.applyLocalRegistration(event, registration);
+          const onWaitlist = registration?.waitlistPosition != null;
+          this.notifySuccess(
+            onWaitlist ? 'EVENTS_PAGE.SUCCESS_WAITLIST_TITLE' : 'EVENTS_PAGE.SUCCESS_REGISTER_TITLE',
+            registration?.message || this.translate.instant(
+              onWaitlist ? 'EVENTS_PAGE.SUCCESS_WAITLIST_MSG' : 'EVENTS_PAGE.SUCCESS_REGISTER_MSG',
+              { name: event.name, position: registration?.waitlistPosition }
+            )
+          );
+        },
+        error: (error) => {
+          if (this.isPaidEventRequired(error)) {
             this.paymentsService.inscribirse(event.id).subscribe({
               next: (checkout) => {
                 this.registeringId = null;
                 this.checkoutRedirect.follow(checkout, { evento: event.name });
               },
-              error: (error) => {
+              error: (payError) => {
                 this.registeringId = null;
-                this.errorMessage = error?.error?.message || 'No se pudo iniciar el pago de la inscripción.';
+                this.errorMessage = payError?.error?.message || 'No se pudo iniciar el pago de la inscripción.';
               }
             });
             return;
           }
-          this.sportsService.registerToEvent(userId, event.id).subscribe({
-            next: (registration) => {
-              this.registeringId = null;
-              this.successMessage = null;
-              this.errorMessage = null;
-              this.reload();
-              const onWaitlist = registration?.waitlistPosition != null;
-              this.notifySuccess(
-                onWaitlist ? 'EVENTS_PAGE.SUCCESS_WAITLIST_TITLE' : 'EVENTS_PAGE.SUCCESS_REGISTER_TITLE',
-                registration?.message || this.translate.instant(
-                  onWaitlist ? 'EVENTS_PAGE.SUCCESS_WAITLIST_MSG' : 'EVENTS_PAGE.SUCCESS_REGISTER_MSG',
-                  { name: event.name, position: registration?.waitlistPosition }
-                )
-              );
-            },
-            error: (error) => {
-              this.registeringId = null;
-              this.errorMessage = error?.error?.message || 'No se pudo inscribir.';
-            }
-          });
-        },
-        error: () => {
           this.registeringId = null;
-          this.errorMessage = 'No se pudo verificar si el evento es de pago.';
+          this.errorMessage = error?.error?.message || 'No se pudo inscribir.';
         }
       });
     });
+  }
+
+  private isPaidEventRequired(error: { error?: { message?: string; detail?: string } } | null): boolean {
+    const msg = String(error?.error?.message || error?.error?.detail || '').toLowerCase();
+    return msg.includes('pago') || msg.includes('checkout');
+  }
+
+  private applyLocalRegistration(event: EventItem, registration: Registration | null | undefined): void {
+    if (!registration) {
+      return;
+    }
+    const already = this.registrations.some((reg) => reg.id === registration.id);
+    if (!already) {
+      this.registrations = [...this.registrations, registration];
+    }
+    const target = this.events.find((item) => item.id === event.id);
+    if (target && registration.waitlistPosition == null && target.availableCapacity != null) {
+      target.availableCapacity = Math.max(0, target.availableCapacity - 1);
+    }
   }
 
   isRegistered(eventId: string): boolean {
@@ -1064,7 +1018,99 @@ export class EventsPageComponent implements OnInit, OnDestroy {
     return userInitials(name);
   }
 
+  @HostListener('document:visibilitychange')
+  onVisibilityChange(): void {
+    if (!document.hidden && this.mode === 'manage') {
+      this.refreshOccupancy();
+    }
+  }
+
+  private startOccupancyWatch(): void {
+    this.stopOccupancyWatch();
+    if (this.mode !== 'manage') {
+      return;
+    }
+    this.occupancyTimer = setInterval(() => this.refreshOccupancy(), 3000);
+    this.refreshOccupancy();
+  }
+
+  private stopOccupancyWatch(): void {
+    if (this.occupancyTimer) {
+      clearInterval(this.occupancyTimer);
+      this.occupancyTimer = null;
+    }
+    this.occupancySub?.unsubscribe();
+    this.occupancySub = null;
+  }
+
+  private refreshOccupancy(): void {
+    if (this.mode !== 'manage' || document.hidden || this.occupancySub) {
+      return;
+    }
+    this.occupancySub = this.reportsService.getEventsPanel(
+      this.session.getProfile()?.id,
+      'manage',
+      this.catalogPage,
+      this.catalogPageSize,
+      this.catalogQuery.trim() || undefined
+    ).subscribe({
+      next: (panel) => {
+        this.occupancySub = null;
+        this.applyOccupancy(panel.events || []);
+      },
+      error: () => {
+        this.occupancySub = null;
+      }
+    });
+  }
+
+  private applyOccupancy(fresh: EventItem[]): void {
+    if (!fresh.length) {
+      return;
+    }
+    const byId = new Map(fresh.map((event) => [event.id, event]));
+    for (const event of this.events) {
+      const next = byId.get(event.id);
+      if (!next) {
+        continue;
+      }
+      event.availableCapacity = next.availableCapacity;
+      event.maxCapacity = next.maxCapacity;
+      event.status = next.status;
+    }
+    for (const row of this.manageRows) {
+      const next = byId.get(row.event.id);
+      if (!next) {
+        continue;
+      }
+      row.event.availableCapacity = next.availableCapacity;
+      row.event.maxCapacity = next.maxCapacity;
+      row.event.status = next.status;
+    }
+  }
+
+  toggleActions(row: EventManageRow, event?: Event): void {
+    event?.stopPropagation();
+    const open = !row.actionsOpen;
+    for (const item of this.manageRows) {
+      if (item !== row) {
+        item.actionsOpen = false;
+      }
+    }
+    row.actionsOpen = open;
+  }
+
+  @HostListener('document:click')
+  closeActionMenus(): void {
+    for (const row of this.manageRows) {
+      if (row.actionsOpen && !row.editing && !row.showWaitlist) {
+        row.actionsOpen = false;
+      }
+    }
+  }
+
   toggleWaitlist(row: EventManageRow): void {
+    row.actionsOpen = true;
     row.showWaitlist = !row.showWaitlist;
     if (!row.showWaitlist || row.waitlistLoaded || row.waitlistLoading) {
       return;
@@ -1491,23 +1537,6 @@ export class EventsPageComponent implements OnInit, OnDestroy {
     });
   }
 
-  private applyEventsToCalendar(events: EventItem[]): void {
-    if (this.calendarFrom || this.calendarTo) {
-      return;
-    }
-    this.calendarItems = events.map((event) => ({
-      id: event.id,
-      title: event.name,
-      startDate: event.eventDate,
-      startTime: event.eventTime,
-      location: event.location,
-      sportName: event.sportName,
-      availableCapacity: event.availableCapacity,
-      maxCapacity: event.maxCapacity
-    }));
-    this.calendarLoaded = true;
-  }
-
   private fetchAttendanceReport(eventId: string, silent: boolean): void {
     if (!silent) {
       this.reportLoading = true;
@@ -1554,8 +1583,9 @@ export class EventsPageComponent implements OnInit, OnDestroy {
         waitlistLoading: false,
         showWaitlist: existing?.showWaitlist || false,
         editing: existing?.editing || false,
-        editForm: existing?.editing ? existing.editForm : this.buildEditForm(event),
-        saving: existing?.saving || false
+        editForm: existing?.editForm || null,
+        saving: existing?.saving || false,
+        actionsOpen: existing?.actionsOpen || false
       };
     });
     this.loading = false;

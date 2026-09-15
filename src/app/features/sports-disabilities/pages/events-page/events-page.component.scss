@@ -1,5 +1,166 @@
 @import '../../../../shared/styles/panel-common.scss';
 
+.manage-desk {
+  margin-bottom: 16px;
+}
+
+.manage-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: end;
+  margin-bottom: 12px;
+}
+
+.manage-toolbar .search-bar {
+  flex: 1 1 220px;
+  min-width: 0;
+  margin: 0;
+}
+
+.manage-date {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748B;
+}
+
+.manage-date input {
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  font-weight: 600;
+  color: #0F172A;
+}
+
+.manage-create {
+  margin: 4px 0 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #F1F5F9;
+}
+
+.manage-event {
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #F1F5F9;
+}
+
+.manage-event .event-list-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.manage-event .event-list-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.manage-actions {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+  align-items: center;
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+.actions-toggle {
+  min-width: 132px;
+}
+
+.actions-chevron {
+  display: inline-block;
+  margin-left: 6px;
+  transition: transform 160ms ease;
+}
+
+.actions-chevron.is-open {
+  transform: rotate(180deg);
+}
+
+.actions-panel {
+  margin-top: 10px;
+  padding: 12px;
+  border-radius: 14px;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  animation: actions-in 180ms ease;
+}
+
+.actions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+}
+
+.action-tile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  background: #fff;
+  color: #0F172A;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease;
+}
+
+.action-tile:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: #A30D11;
+  box-shadow: 0 6px 16px rgba(163, 13, 17, 0.12);
+}
+
+.action-tile:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.action-tile--danger {
+  color: #A30D11;
+  border-color: #FECACA;
+  background: #FFF7F7;
+}
+
+@keyframes actions-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 720px) {
+  .manage-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .manage-event .event-list-item {
+    flex-wrap: wrap;
+  }
+
+  .manage-actions {
+    width: 100%;
+    margin-left: 0;
+    justify-content: flex-end;
+  }
+}
+
 .event-user-row {
   padding: 14px 0;
   border-bottom: 1px solid #F1F5F9;
@@ -213,14 +374,6 @@
   text-align: center;
 }
 
-.manage-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  justify-content: flex-end;
-  align-items: center;
-  max-width: 420px;
-}
 
 .detail-modal {
   position: fixed;
