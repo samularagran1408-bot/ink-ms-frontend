@@ -20,6 +20,17 @@ $font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sa
   padding: 0;
 }
 
+.checkout-status {
+  color: $text-muted;
+  text-align: center;
+  padding: 2rem 0;
+  width: 100%;
+
+  &--error {
+    color: $red-icon;
+  }
+}
+
 :host {
   display: flex;
   background-color: $bg-color;
