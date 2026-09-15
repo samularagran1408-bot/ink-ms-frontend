@@ -28,8 +28,6 @@ const loaders: Record<string, () => Promise<unknown>> = {
     import('@features/admin/pages/admin-roles/admin-roles.component'),
   '/admin/audit': () =>
     import('@features/admin/pages/admin-audit/admin-audit.component'),
-  '/admin/subscriptions': () =>
-    import('@features/subscriptions/pages/organizer-plans/organizer-plans.component'),
   '/admin/profile': () =>
     import('@features/users/pages/profile-page/profile-page.component'),
   '/admin/accessibility': () =>

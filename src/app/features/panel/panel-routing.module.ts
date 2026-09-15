@@ -169,13 +169,6 @@ const routes: Routes = [
           import('@features/admin/pages/admin-audit/admin-audit.component').then((m) => m.AdminAuditComponent)
       },
       {
-        path: 'subscriptions',
-        loadComponent: () =>
-          import('@features/subscriptions/pages/organizer-plans/organizer-plans.component').then(
-            (m) => m.OrganizerPlansComponent
-          )
-      },
-      {
         path: 'plans',
         loadComponent: () =>
           import('@features/subscriptions/pages/admin-plans/admin-plans.component').then(
