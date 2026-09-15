@@ -119,6 +119,10 @@ export interface PlanRequest {
   porcentajeComision: number;
   duracionDias: number;
   beneficios: string[];
+  /** Si el plan se activa con precio 0 sin pasar por checkout. */
+  esGratuito?: boolean;
+  /** El plan que se asigna automáticamente a todo organizador nuevo (solo debería haber uno activo). */
+  esPlanInicial?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -134,6 +138,13 @@ export interface HistorialSuscripcionResponse {
   planAnteriorNombre: string | null;
   planNuevoId: number;
   planNuevoNombre: string;
+  estadoAnterior: EstadoSuscripcion | null;
+  estadoNuevo: EstadoSuscripcion | null;
+  /** Motivo u observación opcional; solo presente en cambios aplicados por un admin. */
+  notas: string | null;
+  /** UUID del admin que aplicó el cambio, o null si fue el propio organizador o el sistema. */
+  realizadoPor: string | null;
+  realizadoPorEmail: string | null;
   fechaMovimiento: string;
 }
 
@@ -144,6 +155,7 @@ export interface HistorialSuscripcionResponse {
 /** Cuerpo de PATCH /api/suscripciones/admin/{id}/estado */
 export interface CambiarEstadoSuscripcionRequest {
   estado: EstadoSuscripcion;
+  motivo?: string | null;
 }
 
 // ---------------------------------------------------------------------------

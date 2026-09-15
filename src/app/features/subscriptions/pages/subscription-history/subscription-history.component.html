@@ -123,6 +123,7 @@
               </div>
               <span class="status-pill gray">Creación de eventos bloqueada</span>
             </div>
+            <p class="mov-nota" *ngIf="mov.notas">Motivo: "{{ mov.notas }}"</p>
           </div>
         </ng-container>
 
@@ -144,6 +145,7 @@
               </div>
               <span class="status-pill green">Acceso restaurado</span>
             </div>
+            <p class="mov-nota" *ngIf="mov.notas">Motivo: "{{ mov.notas }}"</p>
           </div>
         </ng-container>
 
@@ -207,6 +209,7 @@
               </div>
               <span class="status-pill gray">Cancelada</span>
             </div>
+            <p class="mov-nota" *ngIf="mov.notas">Motivo: "{{ mov.notas }}"</p>
           </div>
         </ng-container>
       </div>

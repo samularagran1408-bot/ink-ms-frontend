@@ -99,6 +99,8 @@
                   <b>{{ mov.planAnteriorNombre ? (mov.planAnteriorNombre + ' → ' + mov.planNuevoNombre) : mov.planNuevoNombre }}</b>
                 </div>
               </div>
+              <p class="mov-nota" *ngIf="mov.notas">"{{ mov.notas }}"</p>
+              <p class="mov-autor" *ngIf="mov.realizadoPorEmail">Aplicado por {{ mov.realizadoPorEmail }}</p>
             </div>
           </div>
         </div>
@@ -131,6 +133,8 @@
       <div class="confirm-box" *ngIf="accionSeleccionada as accion">
         <p>¿Confirmas cambiar el estado de esta suscripción a <b>{{ accion.estado }}</b>?</p>
         <p class="hint" *ngIf="accion.peligrosa">Esto restringe de inmediato el acceso del organizador a la creación de eventos.</p>
+        <div class="f-label">MOTIVO (OPCIONAL, QUEDA EN EL HISTORIAL)</div>
+        <textarea class="f-area" rows="2" placeholder="Ej: incumplimiento de política de uso" [(ngModel)]="motivo"></textarea>
         <div class="field-error" *ngIf="errorCambio">{{ errorCambio }}</div>
         <div class="form-actions">
           <button class="btn-cancel" type="button" [disabled]="aplicandoCambio" (click)="cancelarAccion()">Cancelar</button>
