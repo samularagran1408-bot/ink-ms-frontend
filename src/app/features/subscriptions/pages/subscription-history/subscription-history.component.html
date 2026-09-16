@@ -84,6 +84,92 @@
           </div>
         </ng-container>
 
+        <!-- ASIGNACION_INICIAL -->
+        <ng-container *ngIf="mov.tipoMovimiento === 'ASIGNACION_INICIAL'">
+          <div class="t-node dark">🎁</div>
+          <div class="t-card">
+            <div class="t-top">
+              <span class="t-badge gray">PLAN INICIAL ASIGNADO</span>
+              <span class="t-desc">Alta automática del organizador</span>
+              <span class="t-date">🗓 {{ mov.fechaMovimiento | date: 'dd \'de\' MMMM \'de\' yyyy' }}</span>
+            </div>
+            <div class="t-label">ACTIVACIÓN INICIAL DEL ORGANIZADOR</div>
+            <div class="plan-row">
+              <div class="plan-ic blue">🚀</div>
+              <div>
+                <small>PLAN GRATUITO INICIAL</small>
+                <b>{{ mov.planNuevoNombre }}</b>
+              </div>
+              <span class="status-pill gray">Inicio del historial</span>
+            </div>
+          </div>
+        </ng-container>
+
+        <!-- SUSPENSION -->
+        <ng-container *ngIf="mov.tipoMovimiento === 'SUSPENSION'">
+          <div class="t-node red">⏸</div>
+          <div class="t-card">
+            <div class="t-top">
+              <span class="t-badge pink">SUSPENSIÓN</span>
+              <span class="t-desc">Acceso restringido por un administrador</span>
+              <span class="t-date">🗓 {{ mov.fechaMovimiento | date: 'dd \'de\' MMMM \'de\' yyyy' }}</span>
+            </div>
+            <div class="t-label">SUSCRIPCIÓN SUSPENDIDA</div>
+            <div class="plan-row">
+              <div class="plan-ic red">⚠</div>
+              <div>
+                <small>PLAN AFECTADO</small>
+                <b>{{ mov.planNuevoNombre }}</b>
+              </div>
+              <span class="status-pill gray">Creación de eventos bloqueada</span>
+            </div>
+            <p class="mov-nota" *ngIf="mov.notas">Motivo: "{{ mov.notas }}"</p>
+          </div>
+        </ng-container>
+
+        <!-- REACTIVACION -->
+        <ng-container *ngIf="mov.tipoMovimiento === 'REACTIVACION'">
+          <div class="t-node red">▶</div>
+          <div class="t-card">
+            <div class="t-top">
+              <span class="t-badge gray">REACTIVACIÓN</span>
+              <span class="t-desc">Acceso restaurado por un administrador</span>
+              <span class="t-date">🗓 {{ mov.fechaMovimiento | date: 'dd \'de\' MMMM \'de\' yyyy' }}</span>
+            </div>
+            <div class="t-label">SUSCRIPCIÓN REACTIVADA</div>
+            <div class="plan-row">
+              <div class="plan-ic green">🛡</div>
+              <div>
+                <small>PLAN VIGENTE</small>
+                <b>{{ mov.planNuevoNombre }}</b>
+              </div>
+              <span class="status-pill green">Acceso restaurado</span>
+            </div>
+            <p class="mov-nota" *ngIf="mov.notas">Motivo: "{{ mov.notas }}"</p>
+          </div>
+        </ng-container>
+
+        <!-- VENCIMIENTO -->
+        <ng-container *ngIf="mov.tipoMovimiento === 'VENCIMIENTO'">
+          <div class="t-node dark">⏳</div>
+          <div class="t-card">
+            <div class="t-top">
+              <span class="t-badge gray">VENCIMIENTO</span>
+              <span class="t-desc">El período contratado terminó sin renovarse</span>
+              <span class="t-date">🗓 {{ mov.fechaMovimiento | date: 'dd \'de\' MMMM \'de\' yyyy' }}</span>
+            </div>
+            <div class="t-label">SUSCRIPCIÓN VENCIDA</div>
+            <div class="plan-row">
+              <div class="plan-ic red">⚠</div>
+              <div>
+                <small>ÚLTIMO PLAN</small>
+                <b>{{ mov.planNuevoNombre }}</b>
+              </div>
+              <span class="status-pill gray">Requiere renovación</span>
+            </div>
+          </div>
+        </ng-container>
+
         <!-- CREACION -->
         <ng-container *ngIf="mov.tipoMovimiento === 'CREACION'">
           <div class="t-node dark">🗓</div>
@@ -123,6 +209,7 @@
               </div>
               <span class="status-pill gray">Cancelada</span>
             </div>
+            <p class="mov-nota" *ngIf="mov.notas">Motivo: "{{ mov.notas }}"</p>
           </div>
         </ng-container>
       </div>

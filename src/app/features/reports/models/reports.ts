@@ -8,6 +8,10 @@ export interface DashboardResponse {
     active_events?: number;
     total_sports?: number;
     total_disabilities?: number;
+    total_events?: number;
+    inscriptions?: number;
+    occupancy_pct?: number;
+    free_spots?: number;
     [key: string]: number | undefined;
   };
   eventCounts: Record<string, number>;

@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
+import { Observable, of, timeout } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
 import { API_BASE_URL } from '@core/config/api.config';
@@ -17,6 +17,7 @@ export class PaymentsService {
 
   obtenerConfiguracionEvento(eventoId: string): Observable<EventoPagoConfig> {
     return this.http.get<EventoPagoConfig>(`${this.configUrl}/${eventoId}`).pipe(
+      timeout(2500),
       catchError(() => of({ esPago: false } as EventoPagoConfig))
     );
   }

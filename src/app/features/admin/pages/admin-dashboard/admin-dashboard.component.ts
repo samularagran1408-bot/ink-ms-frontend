@@ -11,6 +11,7 @@ import { ReportsService } from '@features/reports/services/reports.service';
 import { ConfirmDialogService } from '@shared/services/confirm-dialog.service';
 import { FlashMessageService } from '@shared/services/flash-message.service';
 import { SharedModule } from '@shared/shared.module';
+import { DashBar, buildCountBars, buildWeeklyBars, resolveWeeklyTrend } from '@shared/utils/dashboard-charts.util';
 
 @Component({
   standalone: true,
@@ -28,7 +29,13 @@ export class AdminDashboardComponent implements OnInit {
   recentUsers: UserProfile[] = [];
   events: EventItem[] = [];
   disabilitiesCount = 0;
+  totalEvents = 0;
+  inscriptions = 0;
+  occupancyPct = 0;
+  freeSpots = 0;
   weeklyTrend: { date: string; count: number }[] = [];
+  weeklyBars: DashBar[] = [];
+  sportBars: DashBar[] = [];
   eventCounts: { type: string; count: number }[] = [];
   exporting = false;
   errorMessage: string | null = null;
@@ -102,15 +109,30 @@ export class AdminDashboardComponent implements OnInit {
     this.activeEvents = dashboard.metrics?.active_events ?? 0;
     this.sportsCount = dashboard.metrics?.total_sports ?? 0;
     this.disabilitiesCount = dashboard.metrics?.total_disabilities ?? 0;
+    this.totalEvents = dashboard.metrics?.total_events ?? (dashboard.recentEvents || []).length;
+    this.inscriptions = dashboard.metrics?.inscriptions ?? 0;
+    this.occupancyPct = dashboard.metrics?.occupancy_pct ?? 0;
+    this.freeSpots = dashboard.metrics?.free_spots ?? 0;
     this.recentUsers = dashboard.recentUsers || [];
     this.events = dashboard.recentEvents || [];
     this.weeklyTrend = Object.entries(dashboard.weeklyTrend || {})
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([date, count]) => ({ date, count: Number(count) || 0 }));
+    this.weeklyBars = buildWeeklyBars(resolveWeeklyTrend(dashboard.weeklyTrend, dashboard.recentEvents || []));
+    this.sportBars = buildCountBars(dashboard.eventCounts);
     this.eventCounts = Object.entries(dashboard.eventCounts || {})
       .sort((a, b) => Number(b[1]) - Number(a[1]))
       .slice(0, 6)
       .map(([type, count]) => ({ type, count: Number(count) || 0 }));
+  }
+
+  get hasWeeklyData(): boolean {
+    return this.weeklyBars.some((bar) => bar.value > 0);
+  }
+
+  occupied(event: EventItem): number {
+    const max = event.maxCapacity || 0;
+    return Math.max(max - (event.availableCapacity ?? max), 0);
   }
 
   private notifyError(message: string): void {

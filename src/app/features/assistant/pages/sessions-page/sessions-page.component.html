@@ -167,9 +167,17 @@
                 <p *ngIf="!progressOf(row.userId)" class="kpi-sub">{{ 'SESSIONS_PAGE.PROGRESS_LOADING' | translate }}</p>
               </td>
               <td>
-                <button class="btn-secondary" type="button" (click)="markAttendance(summary, row)">
+                <button
+                  class="btn-secondary"
+                  type="button"
+                  [disabled]="!canMarkAttendance(row)"
+                  [attr.title]="canMarkAttendance(row) ? null : ('SESSIONS_PAGE.NEEDS_COMPETITION' | translate)"
+                  (click)="markAttendance(summary, row)">
                   {{ (row.attended ? 'SESSIONS_PAGE.UNMARK' : 'SESSIONS_PAGE.MARK') | translate }}
                 </button>
+                <p class="kpi-sub" *ngIf="!canMarkAttendance(row)">
+                  {{ 'SESSIONS_PAGE.NEEDS_COMPETITION' | translate }}
+                </p>
               </td>
             </tr>
           </tbody>

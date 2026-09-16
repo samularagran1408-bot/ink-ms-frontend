@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 import { API_BASE_URL } from '@core/config/api.config';
@@ -50,6 +50,15 @@ export class AiAssistantService {
 
   obtenerModo(): Observable<Record<string, unknown>> {
     return this.http.get<Record<string, unknown>>(`${this.base}/competencia/modo`);
+  }
+
+  /** Sólo dice quién tiene el modo competencia activo; no arma el plan. */
+  modoCompetenciaActivo(usuarioIds: string[]): Observable<{ usuarios?: Record<string, boolean> }> {
+    const params = new HttpParams().set('usuarios', usuarioIds.join(','));
+    return this.http.get<{ usuarios?: Record<string, boolean> }>(
+      `${this.base}/competencia/modo-activo`,
+      { params }
+    );
   }
 
   marcarChecklist(itemId: string, hecho: boolean): Observable<Record<string, unknown>> {

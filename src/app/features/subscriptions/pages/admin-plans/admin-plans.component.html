@@ -42,7 +42,11 @@
             <td>{{ plan.limiteEventosMes ?? 'Ilimitado' }}</td>
             <td>{{ plan.porcentajeComision ?? 0 }}%</td>
             <td>{{ plan.duracionDias }} días</td>
-            <td><span class="pill" [class.on]="plan.activo" [class.off]="!plan.activo">{{ plan.activo ? 'Activo' : 'Inactivo' }}</span></td>
+            <td>
+              <span class="pill" [class.on]="plan.activo" [class.off]="!plan.activo">{{ plan.activo ? 'Activo' : 'Inactivo' }}</span>
+              <span class="pill on" *ngIf="plan.esGratuito">Gratuito</span>
+              <span class="pill on" *ngIf="plan.esPlanInicial">Inicial</span>
+            </td>
             <td class="row-actions">
               <button class="btn-edit" type="button" (click)="editarPlan(plan)">Editar</button>
               <button class="btn-deactivate" type="button" *ngIf="plan.activo" (click)="desactivar(plan)">Desactivar</button>
@@ -87,6 +91,17 @@
           <div class="f-label">% COMISIÓN</div>
           <input class="f-input" type="number" min="0" step="0.1" [(ngModel)]="form.porcentajeComision">
         </div>
+      </div>
+
+      <div class="f-row">
+        <label class="f-checkbox">
+          <input type="checkbox" [(ngModel)]="form.esGratuito">
+          Es gratuito
+        </label>
+        <label class="f-checkbox">
+          <input type="checkbox" [(ngModel)]="form.esPlanInicial">
+          Plan inicial (se asigna solo a organizadores nuevos)
+        </label>
       </div>
 
       <div class="f-label">BENEFICIOS (UNO POR LÍNEA)</div>

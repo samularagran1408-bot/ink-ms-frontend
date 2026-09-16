@@ -57,6 +57,9 @@ export class EventPaymentHistoryComponent implements OnInit {
     if (estado === 'PENDIENTE') {
       return 'b-warn';
     }
+    if (estado === 'REEMBOLSADO') {
+      return 'b-ref';
+    }
     return 'b-err';
   }
 

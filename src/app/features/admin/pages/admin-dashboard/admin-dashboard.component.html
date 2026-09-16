@@ -1,5 +1,16 @@
-<h1 class="page-title">{{ 'ADMIN_DASHBOARD.TITLE' | translate }}</h1>
-  <p class="page-subtitle">{{ 'ADMIN_DASHBOARD.SUBTITLE' | translate }}</p>
+<div class="dash-hero">
+    <div>
+      <h1 class="page-title">{{ 'ADMIN_DASHBOARD.TITLE' | translate }}</h1>
+      <p class="page-subtitle">{{ 'ADMIN_DASHBOARD.SUBTITLE' | translate }}</p>
+    </div>
+    <div class="actions-row">
+      <button class="btn-primary" type="button" (click)="go('/admin/events')">{{ 'ADMIN_DASHBOARD.CREATE_EVENT' | translate }}</button>
+      <button class="btn-secondary" type="button" (click)="go('/admin/users')">{{ 'ADMIN_DASHBOARD.MANAGE_USERS' | translate }}</button>
+      <button class="btn-secondary" type="button" (click)="exportPdf()" [disabled]="exporting">
+        {{ exporting ? ('ADMIN_DASHBOARD.EXPORTING' | translate) : ('ADMIN_DASHBOARD.EXPORT_PDF' | translate) }}
+      </button>
+    </div>
+  </div>
 
   <div class="sys-msg sys-msg--error" *ngIf="errorMessage" role="alert">
     <strong>{{ 'COMMON.MSG_ERROR' | translate }}</strong>
@@ -7,14 +18,9 @@
   </div>
   <p *ngIf="loading" class="empty-text">{{ 'ADMIN_DASHBOARD.LOADING' | translate }}</p>
 
-  <div class="actions-row">
-    <button class="btn-primary" type="button" (click)="go('/admin/events')">{{ 'ADMIN_DASHBOARD.CREATE_EVENT' | translate }}</button>
+  <div class="actions-row" style="margin-top: 0;">
     <button class="btn-secondary" type="button" (click)="go('/admin/athletes')">{{ 'ADMIN_DASHBOARD.WAITLIST_ATHLETES' | translate }}</button>
-    <button class="btn-secondary" type="button" (click)="go('/admin/users')">{{ 'ADMIN_DASHBOARD.MANAGE_USERS' | translate }}</button>
     <button class="btn-secondary" type="button" (click)="go('/admin/audit')">{{ 'ADMIN_DASHBOARD.AUDIT_LOGS' | translate }}</button>
-    <button class="btn-primary" type="button" (click)="exportPdf()" [disabled]="exporting">
-      {{ exporting ? ('ADMIN_DASHBOARD.EXPORTING' | translate) : ('ADMIN_DASHBOARD.EXPORT_PDF' | translate) }}
-    </button>
   </div>
 
   <div class="kpi-grid">
@@ -24,9 +30,19 @@
       <div class="kpi-sub">{{ 'ADMIN_DASHBOARD.ACTIVE_USERS' | translate:{ count: activeUsers } }}</div>
     </div>
     <div class="kpi-card">
-      <div class="kpi-label">{{ 'ADMIN_DASHBOARD.ACTIVE_EVENTS' | translate }}</div>
-      <div class="kpi-value">{{ activeEvents }}</div>
-      <div class="kpi-sub">{{ 'ADMIN_DASHBOARD.ACTIVE_EVENTS_SUB' | translate }}</div>
+      <div class="kpi-label">{{ 'ADMIN_DASHBOARD.TOTAL_EVENTS' | translate }}</div>
+      <div class="kpi-value">{{ totalEvents }}</div>
+      <div class="kpi-sub">{{ 'ADMIN_DASHBOARD.ACTIVE_EVENTS_SUB' | translate }} · {{ activeEvents }}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">{{ 'ADMIN_DASHBOARD.INSCRIPTIONS' | translate }}</div>
+      <div class="kpi-value">{{ inscriptions }}</div>
+      <div class="kpi-sub">{{ 'ADMIN_DASHBOARD.INSCRIPTIONS_SUB' | translate }}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">{{ 'ADMIN_DASHBOARD.OCCUPANCY' | translate }}</div>
+      <div class="kpi-value">{{ occupancyPct }}%</div>
+      <div class="kpi-sub">{{ 'ADMIN_DASHBOARD.FREE_SPOTS' | translate:{ count: freeSpots } }}</div>
     </div>
     <div class="kpi-card">
       <div class="kpi-label">{{ 'ADMIN_DASHBOARD.SPORTS' | translate }}</div>
@@ -40,40 +56,30 @@
     </div>
   </div>
 
-  <div class="grid-2" *ngIf="weeklyTrend.length || eventCounts.length">
-    <div class="card" *ngIf="weeklyTrend.length">
+  <div class="analysis-grid">
+    <div class="card">
       <h3 class="section-title">{{ 'ADMIN_DASHBOARD.WEEKLY_TREND' | translate }}</h3>
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>{{ 'ADMIN_DASHBOARD.DATE' | translate }}</th>
-            <th>{{ 'ADMIN_DASHBOARD.EVENTS_COUNT' | translate }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let item of weeklyTrend">
-            <td>{{ item.date }}</td>
-            <td>{{ item.count }}</td>
-          </tr>
-        </tbody>
-      </table>
+      <p class="chart-sub">{{ 'ADMIN_DASHBOARD.WEEKLY_TREND_SUB' | translate }}</p>
+      <div class="bar-chart" *ngIf="hasWeeklyData; else noTrend">
+        <div class="bar-item" *ngFor="let bar of weeklyBars">
+          <div class="bar-tooltip">{{ bar.value }}</div>
+          <div class="bar" [class.bar--accent]="bar.highlight === 'accent'" [class.bar--peak]="bar.highlight === 'peak'" [style.height.%]="bar.height"></div>
+          <span class="bar-label">{{ bar.label }}</span>
+        </div>
+      </div>
+      <ng-template #noTrend><p class="empty-text">{{ 'ADMIN_DASHBOARD.NO_TREND' | translate }}</p></ng-template>
     </div>
-    <div class="card" *ngIf="eventCounts.length">
+    <div class="card">
       <h3 class="section-title">{{ 'ADMIN_DASHBOARD.EVENT_TYPES' | translate }}</h3>
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>{{ 'ADMIN_DASHBOARD.TYPE' | translate }}</th>
-            <th>{{ 'ADMIN_DASHBOARD.EVENTS_COUNT' | translate }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let item of eventCounts">
-            <td>{{ item.type }}</td>
-            <td>{{ item.count }}</td>
-          </tr>
-        </tbody>
-      </table>
+      <p class="chart-sub">{{ 'ADMIN_DASHBOARD.EVENT_TYPES_SUB' | translate }}</p>
+      <div class="bar-chart" *ngIf="sportBars.length; else noSports">
+        <div class="bar-item" *ngFor="let bar of sportBars">
+          <div class="bar-tooltip">{{ bar.value }}</div>
+          <div class="bar" [class.bar--peak]="bar.highlight === 'peak'" [class.bar--accent]="bar.highlight === 'accent'" [style.height.%]="bar.height"></div>
+          <span class="bar-label" [title]="bar.label">{{ bar.label }}</span>
+        </div>
+      </div>
+      <ng-template #noSports><p class="empty-text">{{ 'ADMIN_DASHBOARD.NO_EVENTS' | translate }}</p></ng-template>
     </div>
   </div>
 
@@ -110,7 +116,7 @@
       <div class="list-item" *ngFor="let event of events">
         <div>
           <strong>{{ event.name }}</strong>
-          <div class="kpi-sub">{{ event.sportName || ('COMMON.SPORT' | translate) }} · {{ event.eventDate }}</div>
+          <div class="kpi-sub">{{ event.sportName || ('COMMON.SPORT' | translate) }} · {{ event.eventDate }} · {{ occupied(event) }}/{{ event.maxCapacity || 0 }}</div>
         </div>
         <button class="btn-secondary" type="button" (click)="go('/admin/events')">{{ 'COMMON.MANAGE' | translate }}</button>
       </div>

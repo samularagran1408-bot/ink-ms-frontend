@@ -5,6 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { MERCADOPAGO_PUBLIC_KEY } from '@core/config/api.config';
 import { SubscriptionService } from '../../services/subscription.service';
 import { Plan } from '../../models/subscription-models';
+import { loadMercadoPagoSdk } from '../../utils/mercadopago-sdk';
 
 declare const MercadoPago: any;
 
@@ -94,6 +95,14 @@ export class PaymentGatewayComponent implements OnInit, AfterViewInit {
   }
 
   private initCardForm(): void {
+    void loadMercadoPagoSdk()
+      .then(() => this.mountCardForm())
+      .catch(() => {
+        this.zone.run(() => (this.error = 'No se pudo cargar Mercado Pago. Revisa tu conexión e intenta de nuevo.'));
+      });
+  }
+
+  private mountCardForm(): void {
     if (typeof MercadoPago === 'undefined') {
       this.zone.run(() => (this.error = 'No se pudo cargar Mercado Pago. Revisa tu conexión e intenta de nuevo.'));
       return;

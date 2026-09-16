@@ -1,5 +1,21 @@
-<h1 class="page-title">{{ 'ORGANIZER.TITLE' | translate }}</h1>
-  <p class="page-subtitle">{{ 'ORGANIZER.SUBTITLE' | translate }}</p>
+<div class="dash-hero">
+    <div>
+      <h1 class="page-title">{{ 'ORGANIZER.TITLE' | translate }}</h1>
+      <p class="page-subtitle">{{ 'ORGANIZER.SUBTITLE' | translate }}</p>
+    </div>
+    <div class="actions-row">
+      <button class="btn-primary" type="button" (click)="goAttendanceReports()" [disabled]="!quizPassed">
+        {{ 'ORGANIZER.MANAGE_ALL' | translate }}
+      </button>
+      <button class="btn-secondary" type="button" (click)="goAthletes()" [disabled]="!quizPassed">
+        {{ 'ORGANIZER.SEE_ATHLETES' | translate }}
+      </button>
+      <button class="btn-secondary" type="button" (click)="goQuiz()" *ngIf="!quizPassed">
+        {{ 'ORGANIZER.GO_QUIZ' | translate }}
+      </button>
+    </div>
+  </div>
+
   <p *ngIf="loading" class="empty-text">{{ 'COMMON.LOADING' | translate }}</p>
   <p *ngIf="successMessage" class="empty-text">{{ successMessage }}</p>
   <p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
@@ -7,18 +23,6 @@
     {{ 'ORGANIZER.QUIZ_BLOCK' | translate }}
     <button class="btn-primary" type="button" (click)="goQuiz()" style="margin-left: 8px;">{{ 'ORGANIZER.GO_QUIZ' | translate }}</button>
   </p>
-
-  <div class="actions-row">
-    <button class="btn-primary" type="button" (click)="goAttendanceReports()" [disabled]="!quizPassed">
-      {{ 'ORGANIZER.MANAGE_ALL' | translate }}
-    </button>
-    <button class="btn-secondary" type="button" (click)="goAthletes()" [disabled]="!quizPassed">
-      {{ 'ORGANIZER.SEE_ATHLETES' | translate }}
-    </button>
-    <button class="btn-secondary" type="button" (click)="goQuiz()" *ngIf="!quizPassed">
-      {{ 'ORGANIZER.GO_QUIZ' | translate }}
-    </button>
-  </div>
 
   <div class="kpi-grid">
     <div class="kpi-card">
@@ -42,6 +46,11 @@
       <div class="kpi-sub">{{ athleteCount }}/{{ totalCapacity || 0 }} {{ 'ORGANIZER.SPOTS_WORD' | translate }}</div>
     </div>
     <div class="kpi-card">
+      <div class="kpi-label">{{ 'ORGANIZER.FREE_SPOTS' | translate }}</div>
+      <div class="kpi-value">{{ freeSpots }}</div>
+      <div class="kpi-sub">{{ 'ORGANIZER.FREE_SPOTS_SUB' | translate }}</div>
+    </div>
+    <div class="kpi-card">
       <div class="kpi-label">{{ 'ORGANIZER.ATTENDANCE' | translate }}</div>
       <div class="kpi-value">{{ attendanceRatePercent == null ? '—' : (attendanceRatePercent + '%') }}</div>
       <div class="kpi-sub">
@@ -49,9 +58,41 @@
       </div>
     </div>
     <div class="kpi-card">
+      <div class="kpi-label">{{ 'ORGANIZER.SPORTS' | translate }}</div>
+      <div class="kpi-value">{{ sports.length }}</div>
+      <div class="kpi-sub">{{ 'ORGANIZER.SPORTS_SUB' | translate }}</div>
+    </div>
+    <div class="kpi-card">
       <div class="kpi-label">{{ 'ORGANIZER.WAITLIST_COUNT' | translate }}</div>
       <div class="kpi-value">{{ nextWaitlist.length }}</div>
       <div class="kpi-sub">{{ 'ORGANIZER.WAITLIST_NEXT' | translate }}</div>
+    </div>
+  </div>
+
+  <div class="analysis-grid">
+    <div class="card">
+      <h3 class="section-title">{{ 'ORGANIZER.WEEKLY_TREND' | translate }}</h3>
+      <p class="chart-sub">{{ 'ORGANIZER.WEEKLY_TREND_SUB' | translate }}</p>
+      <div class="bar-chart" *ngIf="hasWeeklyData; else noOrgTrend">
+        <div class="bar-item" *ngFor="let bar of weeklyBars">
+          <div class="bar-tooltip">{{ bar.value }}</div>
+          <div class="bar" [class.bar--accent]="bar.highlight === 'accent'" [class.bar--peak]="bar.highlight === 'peak'" [style.height.%]="bar.height"></div>
+          <span class="bar-label">{{ bar.label }}</span>
+        </div>
+      </div>
+      <ng-template #noOrgTrend><p class="empty-text">{{ 'ORGANIZER.NO_TREND' | translate }}</p></ng-template>
+    </div>
+    <div class="card">
+      <h3 class="section-title">{{ 'ORGANIZER.BY_SPORT' | translate }}</h3>
+      <p class="chart-sub">{{ 'ORGANIZER.BY_SPORT_SUB' | translate }}</p>
+      <div class="bar-chart" *ngIf="sportBars.length; else noOrgSports">
+        <div class="bar-item" *ngFor="let bar of sportBars">
+          <div class="bar-tooltip">{{ bar.value }}</div>
+          <div class="bar" [class.bar--peak]="bar.highlight === 'peak'" [class.bar--accent]="bar.highlight === 'accent'" [style.height.%]="bar.height"></div>
+          <span class="bar-label" [title]="bar.label">{{ bar.label }}</span>
+        </div>
+      </div>
+      <ng-template #noOrgSports><p class="empty-text">{{ 'ORGANIZER.NO_EVENTS' | translate }}</p></ng-template>
     </div>
   </div>
 

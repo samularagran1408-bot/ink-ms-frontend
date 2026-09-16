@@ -12,6 +12,8 @@ interface PlanForm {
   limiteEventosMes: number;
   porcentajeComision: number;
   duracionDias: number;
+  esGratuito: boolean;
+  esPlanInicial: boolean;
 }
 
 const FORM_VACIO: PlanForm = {
@@ -21,6 +23,8 @@ const FORM_VACIO: PlanForm = {
   limiteEventosMes: 0,
   porcentajeComision: 0,
   duracionDias: 30,
+  esGratuito: false,
+  esPlanInicial: false,
 };
 
 /** M09 - Administración de planes (RF65, solo ADMIN). */
@@ -78,6 +82,8 @@ export class AdminPlansComponent implements OnInit {
       limiteEventosMes: plan.limiteEventosMes ?? 0,
       porcentajeComision: plan.porcentajeComision ?? 0,
       duracionDias: plan.duracionDias,
+      esGratuito: plan.esGratuito,
+      esPlanInicial: plan.esPlanInicial,
     };
     this.beneficiosTexto = (plan.beneficios ?? []).join('\n');
     this.formError = null;
@@ -98,6 +104,8 @@ export class AdminPlansComponent implements OnInit {
       limiteEventosMes: Number(this.form.limiteEventosMes) || 0,
       porcentajeComision: Number(this.form.porcentajeComision) || 0,
       duracionDias: Number(this.form.duracionDias) || 1,
+      esGratuito: this.form.esGratuito,
+      esPlanInicial: this.form.esPlanInicial,
       beneficios: this.beneficiosTexto
         .split('\n')
         .map((linea) => linea.trim())

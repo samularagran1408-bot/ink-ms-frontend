@@ -48,6 +48,7 @@ export class AdminSubscriptionsComponent {
   cargandoDetalle = false;
 
   accionSeleccionada: AccionEstado | null = null;
+  motivo = '';
   aplicandoCambio = false;
   errorCambio: string | null = null;
 
@@ -102,11 +103,13 @@ export class AdminSubscriptionsComponent {
       return;
     }
     this.accionSeleccionada = accion;
+    this.motivo = '';
     this.errorCambio = null;
   }
 
   cancelarAccion(): void {
     this.accionSeleccionada = null;
+    this.motivo = '';
     this.errorCambio = null;
   }
 
@@ -118,11 +121,15 @@ export class AdminSubscriptionsComponent {
     this.aplicandoCambio = true;
     this.errorCambio = null;
 
-    this.subscriptions.cambiarEstadoSuscripcion(this.suscripcion.id, { estado: this.accionSeleccionada.estado }).subscribe({
+    this.subscriptions.cambiarEstadoSuscripcion(this.suscripcion.id, {
+      estado: this.accionSeleccionada.estado,
+      motivo: this.motivo.trim() || null,
+    }).subscribe({
       next: (actualizada) => {
         this.suscripcion = actualizada;
         this.aplicandoCambio = false;
         this.accionSeleccionada = null;
+        this.motivo = '';
         this.subscriptions.getHistorialPorOrganizador(organizadorId).subscribe((historial) => (this.historial = historial));
       },
       error: (err) => {

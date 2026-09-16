@@ -68,6 +68,8 @@ export class SessionsPageComponent implements OnInit, OnDestroy {
   successMessage: string | null = null;
   loading = true;
   progressByUser: Record<string, AthleteProgress> = {};
+  /** Modo competencia por atleta; undefined mientras no se sepa. */
+  competitionByUser: Record<string, boolean | undefined> = {};
   private pendingSessionId: string | null = null;
   private liveSub: Subscription | null = null;
   private querySub: Subscription | null = null;
@@ -166,6 +168,17 @@ export class SessionsPageComponent implements OnInit, OnDestroy {
     return this.progressByUser[userId] || null;
   }
 
+  /**
+   * La asistencia sólo se puede registrar con modo competencia activo; quitarla
+   * siempre se permite. Si aún no sabemos el estado, dejamos que responda el backend.
+   */
+  canMarkAttendance(row: SessionAthleteRow): boolean {
+    if (row.attended) {
+      return true;
+    }
+    return this.competitionByUser[row.userId] !== false;
+  }
+
   reload(silent = false): void {
     if (!silent) {
       this.loading = true;
@@ -192,6 +205,7 @@ export class SessionsPageComponent implements OnInit, OnDestroy {
           }
           this.applyView();
           this.applyPendingExpand();
+          this.refreshCompetitionMode();
           this.loading = false;
         },
         error: (error) => {
@@ -280,6 +294,11 @@ export class SessionsPageComponent implements OnInit, OnDestroy {
   private async confirmAttendance(summary: SessionSummaryView, row: SessionAthleteRow): Promise<void> {
     const next = !row.attended;
     const name = row.userFullName || row.userEmail || 'este atleta';
+    if (next && !this.canMarkAttendance(row)) {
+      this.successMessage = null;
+      this.errorMessage = `${name} debe tener el modo competencia activo para registrarle asistencia.`;
+      return;
+    }
     const ok = await this.confirm.ask({
       title: next ? 'Registrar asistencia' : 'Quitar asistencia',
       message: next
@@ -346,6 +365,7 @@ export class SessionsPageComponent implements OnInit, OnDestroy {
         .filter((row) => !row.cancelled && row.userId)
         .map((row) => row.userId)
     )];
+    this.loadCompetitionMode(ids);
     const missing = ids.filter((id) => {
       const current = this.progressByUser[id];
       return !current || (!current.loading && current.error);
@@ -369,6 +389,32 @@ export class SessionsPageComponent implements OnInit, OnDestroy {
         }
         this.progressByUser[userId] = this.toProgress(raw || {});
       });
+    });
+  }
+
+  /** Mantiene al día el modo competencia de las sesiones abiertas tras cada refresco. */
+  private refreshCompetitionMode(): void {
+    const ids = [...new Set(
+      this.summaries
+        .filter((summary) => summary.expanded)
+        .flatMap((summary) => summary.registrations
+          .filter((row) => !row.cancelled && row.userId)
+          .map((row) => row.userId))
+    )];
+    this.loadCompetitionMode(ids);
+  }
+
+  /** Una sola consulta para toda la sesión: quién tiene el modo competencia activo. */
+  private loadCompetitionMode(userIds: string[]): void {
+    if (!userIds.length) {
+      return;
+    }
+    this.ai.modoCompetenciaActivo(userIds).subscribe({
+      next: (respuesta) => {
+        const estado = respuesta?.usuarios || {};
+        userIds.forEach((id) => this.competitionByUser[id] = !!estado[id]);
+      },
+      error: () => userIds.forEach((id) => this.competitionByUser[id] = undefined)
     });
   }
 

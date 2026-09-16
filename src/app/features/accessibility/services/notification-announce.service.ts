@@ -82,7 +82,6 @@ export class NotificationAnnounceService implements OnDestroy {
 
   /** Anuncia una lista (p. ej. al abrir el panel). Requiere gesto previo del usuario. */
   announceList(notes: AppNotification[], onlyUnread = true): void {
-    this.tts.unlock();
     this.refreshPreferences().subscribe(() => {
       this.showVisual(notes.find((note) => !onlyUnread || !note.read) || null);
       this.tts.announceNotifications(notes, { onlyUnread, force: false });
@@ -90,7 +89,6 @@ export class NotificationAnnounceService implements OnDestroy {
   }
 
   announceOne(note: AppNotification, force = false): void {
-    this.tts.unlock();
     this.refreshPreferences().subscribe(() => {
       this.showVisual(note);
       this.tts.speakNotification(note, { force, skipIfSpoken: !force });
@@ -131,7 +129,6 @@ export class NotificationAnnounceService implements OnDestroy {
 
   /** Muestra el aviso y lo lee en voz alta, sin entrar al panel. */
   private presentIncoming(note: AppNotification): void {
-    this.tts.unlock();
     this.tts.playAlertChime();
     this.showVisual(note);
     this.pushOsNotification(note);
