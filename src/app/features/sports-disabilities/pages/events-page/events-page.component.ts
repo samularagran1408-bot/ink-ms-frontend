@@ -614,39 +614,60 @@ export class EventsPageComponent implements OnInit, OnDestroy {
       }
 
       this.registeringId = event.id;
-      this.sportsService.registerToEvent(userId, event.id).subscribe({
-        next: (registration) => {
-          this.registeringId = null;
-          this.successMessage = null;
-          this.errorMessage = null;
-          this.applyLocalRegistration(event, registration);
-          const onWaitlist = registration?.waitlistPosition != null;
-          this.notifySuccess(
-            onWaitlist ? 'EVENTS_PAGE.SUCCESS_WAITLIST_TITLE' : 'EVENTS_PAGE.SUCCESS_REGISTER_TITLE',
-            registration?.message || this.translate.instant(
-              onWaitlist ? 'EVENTS_PAGE.SUCCESS_WAITLIST_MSG' : 'EVENTS_PAGE.SUCCESS_REGISTER_MSG',
-              { name: event.name, position: registration?.waitlistPosition }
-            )
-          );
-        },
-        error: (error) => {
-          if (this.isPaidEventRequired(error)) {
-            this.paymentsService.inscribirse(event.id).subscribe({
-              next: (checkout) => {
-                this.registeringId = null;
-                this.checkoutRedirect.follow(checkout, { evento: event.name });
-              },
-              error: (payError) => {
-                this.registeringId = null;
-                this.errorMessage = payError?.error?.message || 'No se pudo iniciar el pago de la inscripción.';
-              }
-            });
-            return;
-          }
-          this.registeringId = null;
-          this.errorMessage = error?.error?.message || 'No se pudo inscribir.';
+
+      // ink-ms-sports no sabe si el evento es de pago (esa config vive en
+      // ink-ms-subscriptions), así que hay que preguntar ANTES de inscribir: de lo
+      // contrario registerToEvent() inscribe directo y gratis, sin cobrar nunca.
+      this.paymentsService.obtenerConfiguracionEvento(event.id).subscribe((config) => {
+        if (config.esPago) {
+          this.iniciarPagoInscripcion(event);
+          return;
         }
+        this.registrarSinCosto(event, userId);
       });
+    });
+  }
+
+  private registrarSinCosto(event: EventItem, userId: string): void {
+    this.sportsService.registerToEvent(userId, event.id).subscribe({
+      next: (registration) => {
+        this.registeringId = null;
+        this.successMessage = null;
+        this.errorMessage = null;
+        this.applyLocalRegistration(event, registration);
+        const onWaitlist = registration?.waitlistPosition != null;
+        this.notifySuccess(
+          onWaitlist ? 'EVENTS_PAGE.SUCCESS_WAITLIST_TITLE' : 'EVENTS_PAGE.SUCCESS_REGISTER_TITLE',
+          registration?.message || this.translate.instant(
+            onWaitlist ? 'EVENTS_PAGE.SUCCESS_WAITLIST_MSG' : 'EVENTS_PAGE.SUCCESS_REGISTER_MSG',
+            { name: event.name, position: registration?.waitlistPosition }
+          )
+        );
+      },
+      error: (error) => {
+        // Defensa adicional: si el backend llega a rechazar la inscripción gratuita
+        // (p. ej. la config de pago se creó justo después de consultarla arriba),
+        // se cae igual al flujo de pago en vez de mostrar solo un error.
+        if (this.isPaidEventRequired(error)) {
+          this.iniciarPagoInscripcion(event);
+          return;
+        }
+        this.registeringId = null;
+        this.errorMessage = error?.error?.message || 'No se pudo inscribir.';
+      }
+    });
+  }
+
+  private iniciarPagoInscripcion(event: EventItem): void {
+    this.paymentsService.inscribirse(event.id).subscribe({
+      next: (checkout) => {
+        this.registeringId = null;
+        this.checkoutRedirect.follow(checkout, { evento: event.name });
+      },
+      error: (payError) => {
+        this.registeringId = null;
+        this.errorMessage = payError?.error?.message || 'No se pudo iniciar el pago de la inscripción.';
+      }
     });
   }
 
