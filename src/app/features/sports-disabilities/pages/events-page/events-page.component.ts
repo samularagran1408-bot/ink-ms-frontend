@@ -619,12 +619,23 @@ export class EventsPageComponent implements OnInit, OnDestroy {
       // para la comisión), el atleta debe pagar desde la primera inscripción.
       // ink-ms-sports no conoce esPago (vive en ink-ms-subscriptions): hay que
       // preguntar ANTES de inscribir; si no, registerToEvent() deja al atleta gratis.
-      this.paymentsService.obtenerConfiguracionEvento(event.id).subscribe((config) => {
-        if (config.esPago) {
-          this.iniciarPagoInscripcion(event);
-          return;
-        }
-        this.registrarSinCosto(event, userId);
+      this.paymentsService.obtenerConfiguracionEvento(event.id).subscribe({
+        next: (config) => {
+          if (config.esPago) {
+            this.iniciarPagoInscripcion(event);
+            return;
+          }
+          this.registrarSinCosto(event, userId);
+        },
+        error: (err) => {
+          this.registeringId = null;
+          const msg =
+            err?.error?.message ||
+            err?.error?.detail ||
+            'No se pudo verificar si el evento requiere pago. Intenta de nuevo.';
+          this.errorMessage = msg;
+          void this.confirm.error({ title: 'No se pudo inscribir', message: msg });
+        },
       });
     });
   }
