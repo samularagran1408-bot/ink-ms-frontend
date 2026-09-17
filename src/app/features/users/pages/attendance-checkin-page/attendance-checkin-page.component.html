@@ -11,7 +11,7 @@
   <p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
   <p *ngIf="successMessage" class="empty-text">{{ successMessage }}</p>
 
-  <div class="card" *ngIf="!loading && (info || registration)">
+  <div class="card" *ngIf="!loading && !accessDenied && (info || registration)">
     <h3 class="section-title">{{ eventTitle }}</h3>
     <p class="kpi-sub" *ngIf="eventWhen">{{ eventWhen }}</p>
     <p class="kpi-sub" *ngIf="!eventHasStarted && !alreadyAttended && !successMessage">

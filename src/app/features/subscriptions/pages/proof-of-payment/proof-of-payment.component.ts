@@ -2,11 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 
-import { PaymentsService } from '../../services/payments.service';
-import { SubscriptionsService } from '../../services/subscriptions.service';
-
 import { SubscriptionService } from '../../services/subscription.service';
-import { PagoEstadoResponse, PagoSuscripcionResponse, Plan } from '../../models/subscription-models';
 
 /** M09 - Comprobante de pago (RF67, RF68): resumen del cobro tras pagar con Mercado Pago. */
 @Component({
@@ -27,8 +23,7 @@ export class ProofOfPaymentComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private payments: PaymentsService,
-    private subscriptions: SubscriptionsService
+    private subscriptions: SubscriptionService
   ) {}
 
   ngOnInit(): void {
@@ -47,7 +42,7 @@ export class ProofOfPaymentComponent implements OnInit {
     this.descargando = true;
     const request$ = this.tipo === 'suscripcion'
       ? this.subscriptions.descargarComprobanteSuscripcion(this.pagoId)
-      : this.payments.descargarComprobanteEvento(this.pagoId);
+      : this.subscriptions.descargarComprobanteEvento(this.pagoId);
     request$.subscribe({
       next: (blob) => {
         this.descargando = false;

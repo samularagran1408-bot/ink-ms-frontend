@@ -47,7 +47,10 @@ export interface PagoCheckout {
 export interface PagoSuscripcion {
   id: number;
   suscripcionId: number;
+  organizadorId?: string | null;
+  tipo?: 'NUEVA' | 'RENOVACION' | 'CAMBIO_PLAN' | null;
   monto: number;
+  moneda?: string | null;
   metodoPago?: string | null;
   referenciaTransaccion?: string | null;
   estado: EstadoPago;
@@ -60,7 +63,10 @@ export interface PagoEvento {
   id: number;
   usuarioId: string;
   eventoId: string;
+  organizadorId?: string | null;
+  nombreEvento?: string | null;
   monto: number;
+  moneda?: string | null;
   metodoPago?: string | null;
   referenciaTransaccion?: string | null;
   estado: EstadoPago;

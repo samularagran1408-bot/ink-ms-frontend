@@ -78,6 +78,14 @@ const routes: Routes = [
           )
       },
       {
+        path: 'eventos/checkout/:referencia',
+        loadComponent: () =>
+          import('@features/subscriptions/pages/payment-gateway/payment-gateway.component').then(
+            (m) => m.PaymentGatewayComponent
+          ),
+        data: { mode: 'evento' }
+      },
+      {
         path: 'pagos-eventos',
         loadComponent: () =>
           import('@features/subscriptions/pages/event-payment-history/event-payment-history.component').then(

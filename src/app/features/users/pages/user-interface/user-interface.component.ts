@@ -9,6 +9,7 @@ import { TranslateService } from '@ngx-translate/core';
 import { EventItem, Registration, Routine, RoutineRegistration, Sport, Disability, SportDisability, CalendarEvent } from '@features/sports-disabilities/models/sports';
 import { SessionService } from '@core/services/session.service';
 import { SportsService } from '@features/sports-disabilities/services/sports.service';
+import { PaymentsService } from '@features/subscriptions/services/payments.service';
 import { ReportsService } from '@features/reports/services/reports.service';
 import { LanguageService } from '@features/accessibility/services/language.service';
 import { UnreadNotificationsService } from '@features/accessibility/services/unread-notifications.service';
@@ -75,6 +76,7 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
   constructor(
     private session: SessionService,
     private sportsService: SportsService,
+    private paymentsService: PaymentsService,
     private reportsService: ReportsService,
     private router: Router,
     private translate: TranslateService,
@@ -405,29 +407,70 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
       }
 
       this.registeringId = event.id;
-      this.sportsService.registerToEvent(userId, event.id).subscribe({
-        next: (registration) => {
-          this.registeringId = null;
-          this.errorMessage = null;
-          this.loadHomeData();
-          const onWaitlist = registration?.waitlistPosition != null;
-          void this.confirm.ack({
-            title: this.translate.instant(
-              onWaitlist ? 'EVENTS_PAGE.SUCCESS_WAITLIST_TITLE' : 'EVENTS_PAGE.SUCCESS_REGISTER_TITLE'
-            ),
-            message: registration?.message || this.translate.instant(
-              onWaitlist ? 'EVENTS_PAGE.SUCCESS_WAITLIST_MSG' : 'EVENTS_PAGE.SUCCESS_REGISTER_MSG',
-              { name: event.name, position: registration?.waitlistPosition }
-            ),
-            confirmLabel: this.translate.instant('COMMON.GOT_IT')
-          });
-        },
-        error: (error) => {
-          this.registeringId = null;
-          this.errorMessage = error?.error?.message || this.translate.instant('HOME.REGISTER_ERROR');
+      this.errorMessage = null;
+
+      // Misma regla que events-page (RF57): si es de pago, ir al panel de checkout
+      // antes de llamar a sports (que ahora rechaza inscripción gratis en eventos pago).
+      this.paymentsService.obtenerConfiguracionEvento(event.id).subscribe((config) => {
+        if (config.esPago) {
+          this.irAPagoInscripcion(event);
+          return;
         }
+        this.registrarEventoSinCosto(event, userId);
       });
     });
+  }
+
+  private registrarEventoSinCosto(event: EventItem, userId: string): void {
+    this.sportsService.registerToEvent(userId, event.id).subscribe({
+      next: (registration) => {
+        this.registeringId = null;
+        this.errorMessage = null;
+        this.loadHomeData();
+        this.unreadNotifications.refreshAfterAction();
+        const onWaitlist = registration?.waitlistPosition != null;
+        void this.confirm.ack({
+          title: this.translate.instant(
+            onWaitlist ? 'EVENTS_PAGE.SUCCESS_WAITLIST_TITLE' : 'EVENTS_PAGE.SUCCESS_REGISTER_TITLE'
+          ),
+          message: registration?.message || this.translate.instant(
+            onWaitlist ? 'EVENTS_PAGE.SUCCESS_WAITLIST_MSG' : 'EVENTS_PAGE.SUCCESS_REGISTER_MSG',
+            { name: event.name, position: registration?.waitlistPosition }
+          ),
+          confirmLabel: this.translate.instant('COMMON.GOT_IT')
+        });
+      },
+      error: (error) => {
+        const msg = String(error?.error?.message || error?.error?.detail || '').toLowerCase();
+        if (msg.includes('pago') || msg.includes('checkout')) {
+          this.irAPagoInscripcion(event);
+          return;
+        }
+        this.registeringId = null;
+        const friendly = error?.error?.message || this.translate.instant('HOME.REGISTER_ERROR');
+        this.errorMessage = friendly;
+        void this.confirm.error({
+          title: 'No se pudo inscribir',
+          message: friendly,
+        });
+      }
+    });
+  }
+
+  private irAPagoInscripcion(event: EventItem): void {
+    this.registeringId = null;
+    void this.confirm
+      .info({
+        title: this.translate.instant('HOME.REGISTER'),
+        message:
+          `“${event.name}” requiere pago de inscripción. ` +
+          'Te llevamos al panel para revisar el monto y pagar con Mercado Pago.',
+        confirmLabel: 'Continuar al pago',
+        kindLabel: 'Pago requerido',
+      })
+      .then(() => {
+        void this.router.navigate(['/home/eventos', event.id, 'pago']);
+      });
   }
 
   isRegistered(eventId: string): boolean {

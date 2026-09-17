@@ -499,8 +499,10 @@
           class="btn-primary"
           type="button"
           [disabled]="registeringId === event.id"
+          [attr.aria-busy]="registeringId === event.id"
           (click)="register(event)"
         >
+          <span class="btn-spinner" *ngIf="registeringId === event.id" aria-hidden="true"></span>
           {{ catalogJoinLabel(event) }}
         </button>
         <button

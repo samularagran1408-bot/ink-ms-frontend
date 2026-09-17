@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { forkJoin, of } from 'rxjs';
@@ -19,9 +19,8 @@ interface AccionEstado {
 }
 
 /**
- * M09 - Gestión admin de suscripciones de organizadores ajenos (RF58). No existe un
- * listado global de suscripciones en el backend, así que el flujo es buscar por correo
- * (reusa `UsersService.getUserByEmail` de ink-ms-users) y operar sobre lo encontrado.
+ * M09 - Gestión admin de suscripciones (RF58). El listado sale de Mongo
+ * (`GET /api/suscripciones/admin`); el detalle y el historial se cargan por organizador.
  */
 @Component({
   standalone: true,
@@ -30,13 +29,17 @@ interface AccionEstado {
   templateUrl: './admin-subscriptions.component.html',
   styleUrl: './admin-subscriptions.component.scss',
 })
-export class AdminSubscriptionsComponent {
+export class AdminSubscriptionsComponent implements OnInit {
   readonly acciones: AccionEstado[] = [
     { estado: 'ACTIVA', titulo: 'Activar / reactivar', descripcion: 'Restaura el acceso pleno a la creación de eventos.', peligrosa: false },
     { estado: 'SUSPENDIDA', titulo: 'Suspender temporalmente', descripcion: 'Bloquea la publicación de nuevos eventos.', peligrosa: true },
     { estado: 'VENCIDA', titulo: 'Marcar como vencida', descripcion: 'Invita al organizador a renovar su membresía.', peligrosa: false },
     { estado: 'CANCELADA', titulo: 'Cancelar suscripción', descripcion: 'Termina el contrato de forma definitiva.', peligrosa: true },
   ];
+
+  listado: SuscripcionResponse[] = [];
+  cargandoListado = true;
+  errorListado: string | null = null;
 
   emailBusqueda = '';
   buscando = false;
@@ -56,6 +59,48 @@ export class AdminSubscriptionsComponent {
     private readonly users: UsersService,
     private readonly subscriptions: SubscriptionService,
   ) {}
+
+  ngOnInit(): void {
+    this.cargarListado();
+  }
+
+  cargarListado(): void {
+    this.cargandoListado = true;
+    this.errorListado = null;
+    this.subscriptions.getSuscripcionesAdmin().subscribe({
+      next: (listado) => {
+        this.listado = listado;
+        this.cargandoListado = false;
+      },
+      error: () => {
+        this.errorListado = 'No se pudieron cargar las suscripciones.';
+        this.cargandoListado = false;
+      },
+    });
+  }
+
+  seleccionarDelListado(item: SuscripcionResponse): void {
+    this.emailBusqueda = item.organizadorEmail ?? '';
+    this.errorBusqueda = null;
+    this.accionSeleccionada = null;
+    this.suscripcion = item;
+    this.cargandoDetalle = true;
+    this.organizador = null;
+    this.historial = [];
+
+    forkJoin({
+      usuario: this.users.getUserById(item.organizadorId).pipe(catchError(() => of(null))),
+      historial: this.subscriptions.getHistorialPorOrganizador(item.organizadorId).pipe(catchError(() => of([]))),
+    }).subscribe(({ usuario, historial }) => {
+      this.organizador = usuario ?? {
+        id: item.organizadorId,
+        email: item.organizadorEmail ?? item.organizadorId,
+        fullName: item.organizadorEmail ?? 'Organizador',
+      };
+      this.historial = historial;
+      this.cargandoDetalle = false;
+    });
+  }
 
   buscar(): void {
     const email = this.emailBusqueda.trim();
@@ -131,6 +176,7 @@ export class AdminSubscriptionsComponent {
         this.accionSeleccionada = null;
         this.motivo = '';
         this.subscriptions.getHistorialPorOrganizador(organizadorId).subscribe((historial) => (this.historial = historial));
+        this.cargarListado();
       },
       error: (err) => {
         this.aplicandoCambio = false;

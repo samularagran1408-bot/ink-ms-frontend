@@ -1,7 +1,8 @@
 <!-- M09 · Checkout propio de Mercado Pago (RF70) -->
 <div class="payment-gateway-page">
 
-  <div class="breadcrumb">SUSCRIPCIONES<span class="sep">›</span>PLANES<span class="sep">›</span><span class="cur">PAGO</span></div>
+  <div class="breadcrumb" *ngIf="modo === 'suscripcion'">SUSCRIPCIONES<span class="sep">›</span>PLANES<span class="sep">›</span><span class="cur">PAGO</span></div>
+  <div class="breadcrumb" *ngIf="modo === 'evento'">EVENTOS<span class="sep">›</span>INSCRIPCIÓN<span class="sep">›</span><span class="cur">PAGO</span></div>
 
   <div *ngIf="cargando" class="state-box">Cargando datos del pago…</div>
 
@@ -85,7 +86,9 @@
 
           <div *ngIf="procesando" class="state-box">Procesando el pago con Mercado Pago…</div>
 
-          <button type="button" class="btn-back" (click)="volver()">←&nbsp; VOLVER A SELECCIÓN DE PLANES</button>
+          <button type="button" class="btn-back" (click)="volver()">
+            ←&nbsp; {{ modo === 'evento' ? 'VOLVER AL RESUMEN' : 'VOLVER A SELECCIÓN DE PLANES' }}
+          </button>
         </div>
       </div>
 
@@ -105,17 +108,21 @@
 
     <!-- RIGHT: resumen -->
     <aside class="summary">
-      <div class="sum-kicker">RESUMEN DE SUSCRIPCIÓN</div>
+      <div class="sum-kicker">{{ modo === 'evento' ? 'RESUMEN DE INSCRIPCIÓN' : 'RESUMEN DE SUSCRIPCIÓN' }}</div>
       <div class="sum-head">
-        <h2>{{ plan?.nombre ?? 'Tu plan' }}</h2>
-        <div class="sum-ic">🏅</div>
+        <h2>{{ tituloConcepto }}</h2>
+        <div class="sum-ic">{{ modo === 'evento' ? '🎫' : '🏅' }}</div>
       </div>
-      <div class="cycle" *ngIf="plan?.duracionDias as dias">
+      <div class="cycle" *ngIf="modo === 'suscripcion' && plan?.duracionDias as dias">
         <span class="pill">CICLO</span>
         <span>{{ dias }} DÍAS DE ACCESO</span>
       </div>
+      <div class="cycle" *ngIf="modo === 'evento'">
+        <span class="pill">EVENTO</span>
+        <span>PAGO DE INSCRIPCIÓN</span>
+      </div>
 
-      <ng-container *ngIf="plan?.beneficios as beneficios">
+      <ng-container *ngIf="modo === 'suscripcion' && plan?.beneficios as beneficios">
         <div class="bene-label" *ngIf="beneficios.length">BENEFICIOS INCLUIDOS:</div>
         <ul class="bene" *ngIf="beneficios.length">
           <li *ngFor="let beneficio of beneficios">{{ beneficio }}</li>

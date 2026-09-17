@@ -1,3 +1,196 @@
-<div class="event-payment-setup-page">
-  <p>Pendiente de diseño — RF55, configurar si un evento es de pago.</p>
+<div class="page-container">
+  <div class="header-card">
+    <div class="header-left">
+      <div class="breadcrumb">
+        <span class="badge-code">RF55</span>
+        <span>Organizador</span>
+        <span class="badge-role">Configuración de pago</span>
+      </div>
+      <h1>Configurar pago del evento</h1>
+      <p class="subtitle">
+        Define si los atletas deben pagar para inscribirse (también la primera vez).
+        La comisión la fija tu plan vigente.
+      </p>
+    </div>
+  </div>
+
+  <p *ngIf="cargando" class="loading-box">Cargando configuración…</p>
+  <p *ngIf="error && !cargando" class="loading-box" style="color: #8b0000;">{{ error }}</p>
+  <p *ngIf="exito" class="loading-box" style="color: #059669;">Configuración guardada correctamente.</p>
+
+  <ng-container *ngIf="!cargando">
+    <div class="event-banner" *ngIf="evento as ev">
+      <div class="event-info">
+        <div class="event-tags">
+          <span class="badge-status">{{ ev.status || 'Activo' }}</span>
+          <span class="event-date" *ngIf="ev.eventDate">{{ ev.eventDate | date:'mediumDate' }}<span *ngIf="ev.eventTime"> · {{ ev.eventTime }}</span></span>
+        </div>
+        <div class="event-title">{{ ev.name }}</div>
+        <div class="event-location" *ngIf="ev.location">{{ ev.location }}</div>
+      </div>
+      <div class="event-meta">
+        <div class="meta-item" *ngIf="ev.maxCapacity != null">
+          <span class="meta-label">Cupo</span>
+          <span class="meta-value">{{ ev.maxCapacity }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Plan</span>
+          <span class="badge-plan">{{ plan?.nombre || suscripcion?.planNombre || '—' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <form class="form-card" (ngSubmit)="guardar()">
+      <div class="toggle-box">
+        <div class="toggle-info">
+          <div class="toggle-title">
+            <h3>Evento de pago</h3>
+            <span class="badge-paid" *ngIf="esPago">PAGO</span>
+          </div>
+          <p>
+            Si está activo, el atleta debe completar el checkout antes de quedar inscrito.
+            Sin inscripción gratuita de prueba.
+          </p>
+        </div>
+        <div class="toggle-control">
+          <span class="toggle-status">{{ esPago ? 'De pago' : 'Gratuito' }}</span>
+          <label class="switch">
+            <input type="checkbox" name="esPago" [(ngModel)]="esPago" />
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="pricing-row" *ngIf="esPago">
+        <div class="form-group flex-1">
+          <div class="label-row">
+            <label for="valorInscripcion">Valor de inscripción</label>
+            <span class="info-tag">COP</span>
+          </div>
+          <div class="input-with-addon">
+            <span class="currency-symbol">$</span>
+            <input
+              id="valorInscripcion"
+              name="valorInscripcion"
+              type="number"
+              min="1"
+              step="100"
+              [(ngModel)]="valorInscripcion"
+              required
+            />
+            <span class="addon">COP</span>
+          </div>
+          <div class="input-hint">
+            <span>Lo que paga cada atleta</span>
+            <span class="formatted-price" *ngIf="valorInscripcion">{{ valorInscripcion | number:'1.0-0' }} COP</span>
+          </div>
+        </div>
+
+        <div class="commission-box flex-1">
+          <div class="commission-header">
+            <strong>Comisión de plataforma</strong>
+            <span class="badge-readonly">Solo lectura</span>
+          </div>
+          <div class="commission-value">
+            {{ comisionPct }}%<small> · {{ comisionPorAtleta | number:'1.0-0' }} COP / atleta</small>
+          </div>
+          <p class="commission-desc">
+            Definida por tu plan{{ plan?.nombre ? ' (' + plan?.nombre + ')' : '' }}.
+            Neto estimado por atleta: {{ netoPorAtleta | number:'1.0-0' }} COP.
+          </p>
+        </div>
+      </div>
+
+      <div class="simulator-card" *ngIf="esPago">
+        <div class="simulator-header">
+          <div class="sim-title">
+            <h4>PROYECCIÓN</h4>
+          </div>
+          <div class="base-estimate">
+            Estimado
+            <input
+              class="sim-input"
+              type="number"
+              name="estimadoInscripciones"
+              min="1"
+              [(ngModel)]="estimadoInscripciones"
+            />
+            inscripciones
+          </div>
+        </div>
+        <div class="simulator-grid">
+          <div class="sim-column">
+            <span class="sim-label">Bruto</span>
+            <div class="sim-amount">{{ proyeccionBruto | number:'1.0-0' }}</div>
+            <div class="sim-sub">COP</div>
+          </div>
+          <div class="sim-column">
+            <span class="sim-label">Comisión</span>
+            <div class="sim-amount text-red">{{ proyeccionComision | number:'1.0-0' }}</div>
+            <div class="sim-sub">COP</div>
+          </div>
+          <div class="sim-column highlight-box">
+            <span class="sim-label">Neto organizador</span>
+            <div class="sim-amount bold text-red">{{ proyeccionNeto | number:'1.0-0' }}</div>
+            <div class="sim-sub">COP</div>
+          </div>
+        </div>
+        <div class="projection-bar">
+          <div class="proj-title">Resumen</div>
+          <div class="proj-details">
+            <span>{{ estimadoInscripciones }} × {{ valorInscripcion | number:'1.0-0' }}</span>
+            <span class="sep">·</span>
+            <span class="text-red">−{{ comisionPct }}%</span>
+            <span class="sep">·</span>
+            <span class="net-total">{{ proyeccionNeto | number:'1.0-0' }} COP</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="features-row">
+        <div class="feature-card">
+          <div class="feature-icon text-green">✓</div>
+          <div class="feature-text">
+            <strong>Checkout Mercado Pago</strong>
+            <p>El atleta paga antes de quedar inscrito en el evento.</p>
+          </div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">ℹ</div>
+          <div class="feature-text">
+            <strong>Primera inscripción</strong>
+            <p>No hay cupo gratis de prueba: el cobro aplica desde la primera vez.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="warning-box" *ngIf="esPago && (!valorInscripcion || valorInscripcion <= 0)">
+        <span>⚠</span>
+        <p>Indica un valor de inscripción mayor a 0 para poder guardar un evento de pago.</p>
+      </div>
+
+      <div class="warning-box" *ngIf="!esPago">
+        <span>ℹ</span>
+        <p>Con el evento gratuito, los atletas se inscriben sin pasar por la pasarela.</p>
+      </div>
+
+      <div class="form-footer">
+        <div class="security-info">
+          {{ configExistente ? 'Actualizando configuración existente' : 'Primera configuración de este evento' }}
+        </div>
+        <div class="button-group">
+          <button type="button" class="btn-cancel" (click)="cancelar()" [disabled]="guardando">Cancelar</button>
+          <button
+            type="submit"
+            class="btn-save"
+            [disabled]="guardando || (esPago && (!valorInscripcion || valorInscripcion <= 0))"
+          >
+            {{ guardando ? 'Guardando…' : 'Guardar' }}
+          </button>
+        </div>
+      </div>
+    </form>
+  </ng-container>
+
+  <p class="page-footer">RF55 · RF63 · Comisión según plan del organizador</p>
 </div>

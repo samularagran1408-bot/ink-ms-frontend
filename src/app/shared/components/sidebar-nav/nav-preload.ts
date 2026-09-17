@@ -30,6 +30,12 @@ const loaders: Record<string, () => Promise<unknown>> = {
     import('@features/admin/pages/admin-role-requests/admin-role-requests.component'),
   '/admin/audit': () =>
     import('@features/admin/pages/admin-audit/admin-audit.component'),
+  '/admin/plans': () =>
+    import('@features/subscriptions/pages/admin-plans/admin-plans.component'),
+  '/admin/organizer-subscriptions': () =>
+    import('@features/subscriptions/pages/admin-subscriptions/admin-subscriptions.component'),
+  '/admin/reports': () =>
+    import('@features/subscriptions/pages/financial-reports/financial-reports.component'),
   '/admin/profile': () =>
     import('@features/users/pages/profile-page/profile-page.component'),
   '/admin/accessibility': () =>
@@ -70,6 +76,10 @@ const loaders: Record<string, () => Promise<unknown>> = {
     import('@features/subscriptions/pages/payment-history/payment-history.component'),
   '/organizer/payments/receipt': () =>
     import('@features/subscriptions/pages/proof-of-payment/proof-of-payment.component'),
+  '/organizer/reports': () =>
+    import('@features/subscriptions/pages/financial-reports/financial-reports.component'),
+  '/home/pagos-eventos': () =>
+    import('@features/subscriptions/pages/event-payment-history/event-payment-history.component'),
   '/organizer/profile': () =>
     import('@features/users/pages/profile-page/profile-page.component'),
   '/organizer/accessibility': () =>

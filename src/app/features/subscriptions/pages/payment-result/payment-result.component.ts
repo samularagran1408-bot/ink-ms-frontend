@@ -4,6 +4,7 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 
 import { SharedModule } from '@shared/shared.module';
 import { SubscriptionService } from '../../services/subscription.service';
+import { ConfirmDialogService } from '@shared/services/confirm-dialog.service';
 
 @Component({
   standalone: true,
@@ -16,11 +17,13 @@ export class PaymentResultComponent implements OnInit {
   status: 'exito' | 'pendiente' | 'error' = 'exito';
   referencia: string | null = null;
   verificando = false;
+  private dialogShown = false;
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private subscriptions: SubscriptionService,
+    private confirm: ConfirmDialogService,
   ) {}
 
   ngOnInit(): void {
@@ -36,6 +39,7 @@ export class PaymentResultComponent implements OnInit {
     const paymentId = qp.get('payment_id') || qp.get('collection_id') || qp.get('pagoId');
 
     if (!this.referencia) {
+      this.mostrarDialogoResultado();
       return;
     }
 
@@ -50,12 +54,39 @@ export class PaymentResultComponent implements OnInit {
         } else {
           this.status = 'pendiente';
         }
+        this.mostrarDialogoResultado();
       },
       error: () => {
         // Sin conexión con el backend: se deja el estado que sugería la URL de
         // Mercado Pago en lugar de bloquear la página.
         this.verificando = false;
+        this.mostrarDialogoResultado();
       },
+    });
+  }
+
+  private mostrarDialogoResultado(): void {
+    if (this.dialogShown) {
+      return;
+    }
+    this.dialogShown = true;
+    if (this.status === 'exito') {
+      void this.confirm.ack({
+        title: this.titulo,
+        message: this.mensaje,
+      });
+      return;
+    }
+    if (this.status === 'pendiente') {
+      void this.confirm.info({
+        title: this.titulo,
+        message: this.mensaje,
+      });
+      return;
+    }
+    void this.confirm.error({
+      title: this.titulo,
+      message: this.mensaje,
     });
   }
 
@@ -80,10 +111,10 @@ export class PaymentResultComponent implements OnInit {
   }
 
   irHistorial(): void {
-    void this.router.navigate(['/organizer/payments']);
+    void this.router.navigate(['/home/pagos-eventos']);
   }
 
   irPanel(): void {
-    void this.router.navigate(['/organizer']);
+    void this.router.navigate(['/home/events']);
   }
 }

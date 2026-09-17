@@ -23,6 +23,8 @@ import { SharedModule } from '@shared/shared.module';
 export class AttendanceCheckinPageComponent implements OnInit, OnDestroy {
   loading = true;
   submitting = false;
+  /** El QR es de otra persona y esta cuenta no puede usarlo. */
+  accessDenied = false;
   errorMessage: string | null = null;
   successMessage: string | null = null;
   nowMs = Date.now();
@@ -101,6 +103,7 @@ export class AttendanceCheckinPageComponent implements OnInit, OnDestroy {
   reload(): void {
     this.loading = true;
     this.errorMessage = null;
+    this.accessDenied = false;
 
     const profile$ = this.session.getProfile()
       ? of(this.session.getProfile())
@@ -110,7 +113,18 @@ export class AttendanceCheckinPageComponent implements OnInit, OnDestroy {
       switchMap((profile) => {
         const userId = profile?.id;
         return forkJoin({
-          info: this.sportsService.getAttendanceQrInfo(this.qrCode).pipe(catchError(() => of(null))),
+          info: this.sportsService.getAttendanceQrInfo(this.qrCode).pipe(
+            catchError((error) => {
+              // Un 403 significa que el QR es de otra cuenta: hay que decirlo,
+              // no tratarlo como un código inexistente.
+              if (error?.status === 403) {
+                this.accessDenied = true;
+                this.errorMessage = error?.error?.message
+                  || 'Este código QR pertenece a otra persona.';
+              }
+              return of(null);
+            })
+          ),
           events: this.sportsService.getEvents().pipe(catchError(() => of([] as EventItem[]))),
           registrations: userId
             ? this.sportsService.getRegistrationsByUser(userId).pipe(catchError(() => of([] as Registration[])))
@@ -130,6 +144,9 @@ export class AttendanceCheckinPageComponent implements OnInit, OnDestroy {
           return code && code === this.qrCode;
         }) || registrations.find((reg) => eventId && reg.eventId === eventId && reg.waitlistPosition == null) || null;
         this.loading = false;
+        if (this.accessDenied) {
+          return;
+        }
         if (!this.info && !this.registration) {
           this.errorMessage = 'No encontramos una inscripción válida para este código QR.';
           return;

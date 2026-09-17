@@ -5,6 +5,7 @@ import { SharedModule } from '@shared/shared.module';
 
 import { SubscriptionService } from '../../services/subscription.service';
 import { Plan, SuscripcionResponse } from '../../models/subscription-models';
+import { ConfirmDialogService } from '@shared/services/confirm-dialog.service';
 
 /**
  * M09 - Catálogo de planes y contratación (RF54, RF56). El cobro de un plan pago se
@@ -30,6 +31,7 @@ export class OrganizerPlansComponent implements OnInit {
   constructor(
     private readonly subscriptions: SubscriptionService,
     private readonly router: Router,
+    private readonly confirm: ConfirmDialogService,
   ) {}
 
   ngOnInit(): void {
@@ -44,6 +46,10 @@ export class OrganizerPlansComponent implements OnInit {
             ? 'El catálogo de planes no está disponible. Reconstruye gateway y subscriptions.'
             : 'No se pudieron cargar los planes.');
         this.loading = false;
+        void this.confirm.error({
+          title: 'No se pudieron cargar los planes',
+          message: this.errorMessage!,
+        });
       }
     });
     this.subscriptions.getSuscripcionActual().subscribe({
@@ -65,8 +71,19 @@ export class OrganizerPlansComponent implements OnInit {
       .format(plan.precio ?? 0);
   }
 
-  elegir(plan: Plan): void {
+  async elegir(plan: Plan): Promise<void> {
     if (this.esPlanActual(plan) || this.contratandoId) {
+      return;
+    }
+    const ok = await this.confirm.ask({
+      title: this.esGratuito(plan) ? 'Activar plan gratuito' : 'Contratar plan',
+      message: this.esGratuito(plan)
+        ? `¿Activar el plan “${plan.nombre}”?`
+        : `¿Contratar “${plan.nombre}” por ${this.precio(plan)}? Continuarás al checkout.`,
+      confirmLabel: this.esGratuito(plan) ? 'Activar' : 'Continuar al pago',
+      cancelLabel: 'Cancelar',
+    });
+    if (!ok) {
       return;
     }
     this.contratandoId = plan.id;
@@ -78,8 +95,10 @@ export class OrganizerPlansComponent implements OnInit {
       next: (checkout) => {
         this.contratandoId = null;
         if (!checkout.referenciaTransaccion || checkout.estado === 'APROBADO') {
-          // Plan gratuito: la suscripción ya quedó activa, no hay nada que cobrar.
-          void this.router.navigate(['/organizer/subscription']);
+          void this.confirm.ack({
+            title: 'Plan activado',
+            message: `El plan “${plan.nombre}” quedó activo.`,
+          }).then(() => this.router.navigate(['/organizer/subscription']));
           return;
         }
         void this.router.navigate(['/organizer/plans/pago', checkout.referenciaTransaccion], {
@@ -89,6 +108,10 @@ export class OrganizerPlansComponent implements OnInit {
       error: (error) => {
         this.contratandoId = null;
         this.errorMessage = error?.error?.message || 'No se pudo iniciar el pago del plan.';
+        void this.confirm.error({
+          title: 'No se pudo contratar',
+          message: this.errorMessage!,
+        });
       }
     });
   }

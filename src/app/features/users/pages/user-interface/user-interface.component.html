@@ -149,8 +149,10 @@
                 class="register-event-btn"
                 type="button"
                 [disabled]="registeringId === event.id"
+                [attr.aria-busy]="registeringId === event.id"
                 (click)="onRegisterEvent(event)"
               >
+                <span class="btn-spinner" *ngIf="registeringId === event.id" aria-hidden="true"></span>
                 {{ joinLabel(event) }}
               </button>
               <button
@@ -447,8 +449,10 @@
                   class="register-event-btn"
                   type="button"
                   [disabled]="registeringId === event.id"
+                  [attr.aria-busy]="registeringId === event.id"
                   (click)="onRegisterEvent(event)"
                 >
+                  <span class="btn-spinner" *ngIf="registeringId === event.id" aria-hidden="true"></span>
                   {{ joinLabel(event) }}
                 </button>
                 <button

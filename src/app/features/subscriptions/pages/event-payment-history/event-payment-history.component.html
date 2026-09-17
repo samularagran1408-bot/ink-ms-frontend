@@ -44,7 +44,7 @@
         <span class="txn-id">#{{ pago.id }}</span>
         <span class="badge" [ngClass]="badge(pago.estado)">{{ pago.estado }}</span>
       </header>
-      <p class="concept"><b>Inscripción a evento {{ pago.eventoId }}</b></p>
+      <p class="concept"><b>{{ nombreEvento(pago) }}</b></p>
       <dl>
         <div>
           <dt>Fecha</dt>
@@ -74,7 +74,7 @@
       <tbody>
         <tr *ngFor="let pago of filtrados">
           <td><span class="txn-id">#{{ pago.id }}</span></td>
-          <td class="concept"><b>{{ pago.eventoId }}</b></td>
+          <td class="concept"><b>{{ nombreEvento(pago) }}</b></td>
           <td class="date">{{ pago.fechaPago | date:'medium' }}</td>
           <td class="method">{{ pago.metodoPago || 'Mercado Pago' }}</td>
           <td class="amount">{{ pago.monto | number:'1.0-0' }}<small>COP</small></td>

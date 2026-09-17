@@ -611,6 +611,30 @@ a.register-event-btn:hover {
   50% { transform: scaleY(1); }
 }
 
+.btn-spinner {
+  display: inline-block;
+  width: 0.9em;
+  height: 0.9em;
+  margin-right: 0.5em;
+  vertical-align: -0.1em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: btn-spin 700ms linear infinite;
+}
+
+@keyframes btn-spin {
+  to { transform: rotate(360deg); }
+}
+
+// Con "reducir movimiento" activo se queda quieto: el botón deshabilitado y el
+// texto "Inscribiendo…" ya indican que está en curso.
+@media (prefers-reduced-motion: reduce) {
+  .btn-spinner {
+    animation: none;
+  }
+}
+
 .voice-meta {
   display: flex;
   flex-direction: column;
