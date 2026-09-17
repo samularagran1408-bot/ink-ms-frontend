@@ -95,6 +95,7 @@
     "DISABILITIES": "Discapacidades",
     "ASSOCIATIONS": "Asociaciones",
     "ROLES": "Roles",
+    "ROLE_REQUESTS": "Solicitudes de rol",
     "AUDIT_LOGS": "Audit Logs",
     "SUBSCRIPTIONS": "Suscripciones",
     "PROFILE": "Perfil",
@@ -682,6 +683,23 @@
     "ASSIGN_BTN": "Asignar",
     "SYSTEM": "Roles del sistema",
     "NO_DESC": "Sin descripción"
+  },
+  "ADMIN_ROLE_REQUESTS": {
+    "TITLE": "Solicitudes de rol",
+    "SUBTITLE": "Revisa y aprueba o rechaza las solicitudes de Entrenador/Organizador.",
+    "STATUS_PENDING": "Pendientes",
+    "STATUS_APPROVED": "Aprobadas",
+    "STATUS_REJECTED": "Rechazadas",
+    "REQUESTED_ROLE": "Rol solicitado",
+    "APPROVE_BTN": "Aprobar",
+    "REJECT_BTN": "Rechazar",
+    "REJECT_CONFIRM_TITLE": "Rechazar solicitud",
+    "REJECT_CONFIRM": "¿Seguro que quieres rechazar la solicitud de {{email}}? Conservará solo el rol Usuario.",
+    "APPROVED_MSG": "Solicitud de {{email}} aprobada.",
+    "REJECTED_MSG": "Solicitud de {{email}} rechazada.",
+    "ACTION_ERROR": "No se pudo procesar la solicitud.",
+    "LOAD_ERROR": "No se pudieron cargar las solicitudes.",
+    "EMPTY": "No hay solicitudes en este estado."
   },
   "ORGANIZER": {
     "TITLE": "Panel organizador",

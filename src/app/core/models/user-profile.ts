@@ -1,5 +1,18 @@
 /** Contratos del microservicio `ink-ms-users`. */
 
+/** Espeja RoleRequestResponse.java (ink-ms-users). */
+export interface PendingRoleRequest {
+  id: string;
+  userEmail: string;
+  userFullName: string;
+  requestedRole: string;
+  status: string;
+  requestedAt?: string | null;
+  reviewedBy?: string | null;
+  reviewedAt?: string | null;
+  reviewNotes?: string | null;
+}
+
 export interface UserProfile {
   id: string;
   email: string;
@@ -46,6 +59,7 @@ export interface UserProfile {
   identityDocument?: string | null;
   trainerVerificationStatus?: string | null;
   verifiedRoles?: string | null;
+  pendingRoleRequest?: PendingRoleRequest | null;
 }
 
 export interface UpdateProfileRequest {
@@ -60,6 +74,8 @@ export interface UpdateProfileRequest {
   companionEmail?: string | null;
   supportPreference?: string | null;
   supportPreferenceNotes?: string | null;
+  /** Rol solicitado al crear el perfil: USUARIO, ENTRENADOR u ORGANIZADOR. */
+  requestedRole?: string | null;
 }
 
 export interface RoleInfo {

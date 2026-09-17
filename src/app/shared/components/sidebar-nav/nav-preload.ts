@@ -26,6 +26,8 @@ const loaders: Record<string, () => Promise<unknown>> = {
     import('@features/sports-disabilities/pages/associations-page/associations-page.component'),
   '/admin/roles': () =>
     import('@features/admin/pages/admin-roles/admin-roles.component'),
+  '/admin/role-requests': () =>
+    import('@features/admin/pages/admin-role-requests/admin-role-requests.component'),
   '/admin/audit': () =>
     import('@features/admin/pages/admin-audit/admin-audit.component'),
   '/admin/profile': () =>

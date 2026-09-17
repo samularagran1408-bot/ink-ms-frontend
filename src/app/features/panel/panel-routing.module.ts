@@ -164,6 +164,13 @@ const routes: Routes = [
           import('@features/admin/pages/admin-roles/admin-roles.component').then((m) => m.AdminRolesComponent)
       },
       {
+        path: 'role-requests',
+        loadComponent: () =>
+          import('@features/admin/pages/admin-role-requests/admin-role-requests.component').then(
+            (m) => m.AdminRoleRequestsComponent
+          )
+      },
+      {
         path: 'audit',
         loadComponent: () =>
           import('@features/admin/pages/admin-audit/admin-audit.component').then((m) => m.AdminAuditComponent)

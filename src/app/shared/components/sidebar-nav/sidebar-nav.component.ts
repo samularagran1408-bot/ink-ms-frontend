@@ -240,6 +240,7 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
           { labelKey: 'NAV.DISABILITIES', route: '/admin/disabilities', icon: 'heart' },
           { labelKey: 'NAV.ASSOCIATIONS', route: '/admin/associations', icon: 'link' },
           { labelKey: 'NAV.ROLES', route: '/admin/roles', icon: 'shield-check' },
+          { labelKey: 'NAV.ROLE_REQUESTS', route: '/admin/role-requests', icon: 'clock' },
           { labelKey: 'NAV.AUDIT_LOGS', route: '/admin/audit', icon: 'clipboard-document-list' },
           { labelKey: 'NAV.PLAN_MANAGEMENT', route: '/admin/plans', icon: 'sparkles' },
           { labelKey: 'NAV.ORGANIZER_SUBSCRIPTIONS', route: '/admin/organizer-subscriptions', icon: 'identification' },

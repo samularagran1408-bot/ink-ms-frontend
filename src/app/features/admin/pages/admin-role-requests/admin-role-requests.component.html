@@ -1,0 +1,56 @@
+<h1 class="page-title">{{ 'ADMIN_ROLE_REQUESTS.TITLE' | translate }}</h1>
+<p class="page-subtitle">{{ 'ADMIN_ROLE_REQUESTS.SUBTITLE' | translate }}</p>
+<p *ngIf="message" class="empty-text">{{ message }}</p>
+<p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
+
+<div class="card">
+  <div class="status-filter">
+    <button
+      type="button"
+      *ngFor="let status of statusOptions"
+      class="btn-secondary"
+      [class.btn-primary]="statusFilter === status"
+      (click)="onFilterChange(status)"
+    >
+      {{ 'ADMIN_ROLE_REQUESTS.STATUS_' + status | translate }}
+    </button>
+  </div>
+
+  <p *ngIf="loading" class="empty-text">{{ 'COMMON.LOADING' | translate }}</p>
+
+  <ng-container *ngIf="!loading">
+    <p *ngIf="!requests.length" class="empty-text">{{ 'ADMIN_ROLE_REQUESTS.EMPTY' | translate }}</p>
+
+    <div class="list-item" *ngFor="let request of requests">
+      <div>
+        <strong>{{ request.userFullName }}</strong>
+        <div class="kpi-sub">{{ request.userEmail }}</div>
+        <div class="kpi-sub">
+          {{ 'ADMIN_ROLE_REQUESTS.REQUESTED_ROLE' | translate }}: {{ [request.requestedRole] | rolesLabel }}
+          · {{ formatDate(request.requestedAt) }}
+        </div>
+      </div>
+      <div class="role-request-actions">
+        <span [class]="statusPillClass(request.status)">{{ 'ADMIN_ROLE_REQUESTS.STATUS_' + request.status | translate }}</span>
+        <ng-container *ngIf="request.status === 'PENDING'">
+          <button
+            type="button"
+            class="btn-primary"
+            [disabled]="processingId === request.id"
+            (click)="approve(request)"
+          >
+            {{ 'ADMIN_ROLE_REQUESTS.APPROVE_BTN' | translate }}
+          </button>
+          <button
+            type="button"
+            class="btn-danger"
+            [disabled]="processingId === request.id"
+            (click)="reject(request)"
+          >
+            {{ 'ADMIN_ROLE_REQUESTS.REJECT_BTN' | translate }}
+          </button>
+        </ng-container>
+      </div>
+    </div>
+  </ng-container>
+</div>

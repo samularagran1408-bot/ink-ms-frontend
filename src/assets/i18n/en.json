@@ -95,6 +95,7 @@
     "DISABILITIES": "Disabilities",
     "ASSOCIATIONS": "Associations",
     "ROLES": "Roles",
+    "ROLE_REQUESTS": "Role requests",
     "AUDIT_LOGS": "Audit Logs",
     "SUBSCRIPTIONS": "Subscriptions",
     "PROFILE": "Profile",
@@ -680,6 +681,23 @@
     "ASSIGN_BTN": "Assign",
     "SYSTEM": "System roles",
     "NO_DESC": "No description"
+  },
+  "ADMIN_ROLE_REQUESTS": {
+    "TITLE": "Role requests",
+    "SUBTITLE": "Review and approve or reject Trainer/Organizer role requests.",
+    "STATUS_PENDING": "Pending",
+    "STATUS_APPROVED": "Approved",
+    "STATUS_REJECTED": "Rejected",
+    "REQUESTED_ROLE": "Requested role",
+    "APPROVE_BTN": "Approve",
+    "REJECT_BTN": "Reject",
+    "REJECT_CONFIRM_TITLE": "Reject request",
+    "REJECT_CONFIRM": "Are you sure you want to reject {{email}}'s request? They will keep only the Usuario role.",
+    "APPROVED_MSG": "{{email}}'s request was approved.",
+    "REJECTED_MSG": "{{email}}'s request was rejected.",
+    "ACTION_ERROR": "The request could not be processed.",
+    "LOAD_ERROR": "The requests could not be loaded.",
+    "EMPTY": "No requests in this status."
   },
   "ORGANIZER": {
     "TITLE": "Organizer panel",
