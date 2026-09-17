@@ -221,7 +221,13 @@
     "ATTENDANCE_METHOD": "How to check in",
     "ATTENDANCE_METHOD_HINT": "Choose whether you confirm attendance with a form or by scanning a QR code.",
     "ATTENDANCE_QR": "By QR: scanning saves attendance instantly, no survey",
-    "ATTENDANCE_FORM": "By form: you complete an attendance survey"
+    "ATTENDANCE_FORM": "By form: you complete an attendance survey",
+    "WEEKLY_REPORT": "Weekly report email",
+    "WEEKLY_REPORT_HINT": "When enabled, you will receive a weekly PDF dashboard summary by email. You can cancel it anytime.",
+    "WEEKLY_REPORT_ENABLED": "Schedule weekly email delivery",
+    "WEEKLY_REPORT_ACTIVE": "Schedule active: the next send will be automatic.",
+    "WEEKLY_REPORT_INACTIVE": "No active schedule.",
+    "WEEKLY_REPORT_SYNC_ERROR": "Preferences saved, but the report schedule could not be updated."
   },
   "NOTIFICATIONS": {
     "TITLE": "Notifications",
@@ -669,6 +675,7 @@
     "SELECTED": "selected",
     "SEARCH_PH": "Search by sport, disability or adaptations",
     "ALL_SPORTS": "All sports",
+    "ALL_DISABILITIES": "All disabilities",
     "FILTER_SPORT": "Filter by sport",
     "EMPTY_SEARCH": "No associations match your search."
   },

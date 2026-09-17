@@ -10,7 +10,9 @@ import { LanguageService } from '@features/accessibility/services/language.servi
 import { AccessibilityService } from '@features/accessibility/services/accessibility.service';
 import { TtsService } from '@features/accessibility/services/tts.service';
 import { NotificationAnnounceService } from '@features/accessibility/services/notification-announce.service';
+import { ReportsService } from '@features/reports/services/reports.service';
 import { SharedModule } from '@shared/shared.module';
+import { catchError, of, switchMap } from 'rxjs';
 
 @Component({
   standalone: true,
@@ -23,6 +25,7 @@ export class AccessibilityPageComponent implements OnInit {
   form: FormGroup;
   message: string | null = null;
   errorMessage: string | null = null;
+  scheduleActive = false;
   private hydrating = true;
 
   constructor(
@@ -33,7 +36,8 @@ export class AccessibilityPageComponent implements OnInit {
     private accessibility: AccessibilityService,
     private translate: TranslateService,
     private tts: TtsService,
-    private notificationAnnounce: NotificationAnnounceService
+    private notificationAnnounce: NotificationAnnounceService,
+    private reportsService: ReportsService
   ) {
     this.form = this.fb.group({
       language: [this.languageService.currentLang],
@@ -49,7 +53,8 @@ export class AccessibilityPageComponent implements OnInit {
       ttsEnabled: [false],
       voiceLanguage: [this.languageService.voiceLanguageFor(this.languageService.currentLang)],
       disabilityType: [''],
-      attendanceCheckInMethod: ['qr']
+      attendanceCheckInMethod: ['qr'],
+      weeklyReportEmailEnabled: [false]
     });
   }
 
@@ -103,16 +108,35 @@ export class AccessibilityPageComponent implements OnInit {
           ttsEnabled: prefs.ttsEnabled !== false,
           voiceLanguage: prefs.voiceLanguage || this.languageService.voiceLanguageFor(language),
           disabilityType: prefs.disabilityType || '',
-          attendanceCheckInMethod: prefs.attendanceCheckInMethod === 'form' ? 'form' : 'qr'
+          attendanceCheckInMethod: prefs.attendanceCheckInMethod === 'form' ? 'form' : 'qr',
+          weeklyReportEmailEnabled: !!prefs.weeklyReportEmailEnabled
         }, { emitEvent: false });
         this.accessibility.applyPreferences(prefs);
         this.tts.applyPreferences(this.form.value);
         this.notificationAnnounce.start();
         this.hydrating = false;
+        this.syncScheduleStatus();
       },
       error: () => {
         this.hydrating = false;
         this.errorMessage = this.translate.instant('ACCESSIBILITY.LOAD_ERROR');
+      }
+    });
+  }
+
+  private syncScheduleStatus(): void {
+    this.reportsService.getWeeklySchedule().subscribe({
+      next: (schedule) => {
+        this.scheduleActive = !!schedule.enabled;
+        if (schedule.enabled !== !!this.form.value.weeklyReportEmailEnabled) {
+          this.form.patchValue(
+            { weeklyReportEmailEnabled: !!schedule.enabled },
+            { emitEvent: false }
+          );
+        }
+      },
+      error: () => {
+        this.scheduleActive = !!this.form.value.weeklyReportEmailEnabled;
       }
     });
   }
@@ -128,6 +152,7 @@ export class AccessibilityPageComponent implements OnInit {
   }
 
   save(): void {
+    const enableWeekly = !!this.form.value.weeklyReportEmailEnabled;
     const payload = {
       ...this.form.value,
       language: this.form.value.followSystemLanguage
@@ -135,16 +160,37 @@ export class AccessibilityPageComponent implements OnInit {
         : this.languageService.normalize(this.form.value.language),
       followSystemLanguage: !!this.form.value.followSystemLanguage,
       voiceLanguage: this.form.value.voiceLanguage
-        || this.languageService.voiceLanguageFor(this.form.value.language)
+        || this.languageService.voiceLanguageFor(this.form.value.language),
+      weeklyReportEmailEnabled: enableWeekly
     };
 
-    this.preferencesApi.updatePreferences(payload).subscribe({
-      next: (saved) => {
+    this.preferencesApi.updatePreferences(payload).pipe(
+      switchMap((saved) => {
         this.accessibility.applyPreferences(saved);
         this.tts.applyPreferences(payload);
         this.notificationAnnounce.start();
-        this.message = this.translate.instant('ACCESSIBILITY.SAVED');
-        this.errorMessage = null;
+        const schedule$ = enableWeekly
+          ? this.reportsService.scheduleWeeklyReport()
+          : this.reportsService.cancelWeeklyReport();
+        return schedule$.pipe(
+          catchError(() => {
+            this.message = this.translate.instant('ACCESSIBILITY.WEEKLY_REPORT_SYNC_ERROR');
+            this.errorMessage = null;
+            return of(null);
+          }),
+          switchMap((schedule) => of({ saved, schedule }))
+        );
+      })
+    ).subscribe({
+      next: ({ schedule }) => {
+        if (schedule) {
+          this.scheduleActive = !!schedule.enabled;
+          this.message = this.translate.instant('ACCESSIBILITY.SAVED');
+          this.errorMessage = null;
+        } else if (!this.message) {
+          this.message = this.translate.instant('ACCESSIBILITY.SAVED');
+          this.errorMessage = null;
+        }
       },
       error: () => {
         this.message = null;

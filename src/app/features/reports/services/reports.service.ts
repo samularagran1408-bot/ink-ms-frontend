@@ -7,7 +7,8 @@ import {
   AuditExportRequest,
   DashboardFilters,
   DashboardResponse,
-  PanelDashboardResponse
+  PanelDashboardResponse,
+  WeeklyScheduleResponse
 } from '../models/reports';
 
 @Injectable({
@@ -15,6 +16,7 @@ import {
 })
 export class ReportsService {
   private readonly dashboardUrl = `${API_BASE_URL}/api/dashboard`;
+  private readonly reportsUrl = `${API_BASE_URL}/api/reports`;
 
   constructor(private http: HttpClient) {}
 
@@ -139,6 +141,18 @@ export class ReportsService {
     anchor.download = filename;
     anchor.click();
     URL.revokeObjectURL(url);
+  }
+
+  getWeeklySchedule(): Observable<WeeklyScheduleResponse> {
+    return this.http.get<WeeklyScheduleResponse>(`${this.reportsUrl}/schedule/weekly`);
+  }
+
+  scheduleWeeklyReport(): Observable<WeeklyScheduleResponse> {
+    return this.http.post<WeeklyScheduleResponse>(`${this.reportsUrl}/schedule/weekly`, {});
+  }
+
+  cancelWeeklyReport(): Observable<WeeklyScheduleResponse> {
+    return this.http.delete<WeeklyScheduleResponse>(`${this.reportsUrl}/schedule/weekly`);
   }
 
   private toParams(filters?: DashboardFilters): HttpParams {
