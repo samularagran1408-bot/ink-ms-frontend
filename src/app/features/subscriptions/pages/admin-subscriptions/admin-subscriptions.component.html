@@ -6,11 +6,51 @@
   <div class="page-head">
     <div>
       <h1>SUSCRIPCIONES DE ORGANIZADORES</h1>
-      <p class="subtitle">Busca a un organizador por correo para auditar su historial y controlar el estado de su suscripción.</p>
+      <p class="subtitle">Lista las suscripciones persistidas en MongoDB y audita el estado de cada organizador.</p>
     </div>
   </div>
 
   <hr class="divider">
+
+  <section class="card list-card">
+    <div class="table-head">
+      <h2>SUSCRIPCIONES REGISTRADAS</h2>
+      <span>{{ listado.length }} registro(s)</span>
+    </div>
+    <div *ngIf="errorListado" class="banner-error">{{ errorListado }}</div>
+    <div *ngIf="cargandoListado" class="state-box">Cargando suscripciones…</div>
+    <table *ngIf="!cargandoListado">
+      <thead>
+        <tr>
+          <th>ORGANIZADOR</th>
+          <th>PLAN (SNAPSHOT)</th>
+          <th>ESTADO</th>
+          <th>VIGENCIA</th>
+          <th>EVENTOS / MES</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of listado" [class.selected]="suscripcion?.id === item.id">
+          <td>
+            <b>{{ item.organizadorEmail || item.organizadorId }}</b>
+          </td>
+          <td>{{ item.planNombre }}</td>
+          <td>
+            <span class="pill" [class.on]="item.estado === 'ACTIVA'" [class.off]="item.estado !== 'ACTIVA'">{{ item.estado }}</span>
+          </td>
+          <td>{{ item.fechaInicio | date:'dd/MM/yy' }} – {{ item.fechaFin | date:'dd/MM/yy' }}</td>
+          <td>{{ item.eventosCreadosMes }} / {{ item.limiteEventosMes ?? '∞' }}</td>
+          <td>
+            <button class="btn-edit" type="button" (click)="seleccionarDelListado(item)">Ver</button>
+          </td>
+        </tr>
+        <tr *ngIf="!listado.length">
+          <td colspan="6" class="state-box">Todavía no hay suscripciones en MongoDB.</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
 
   <section class="card search-card">
     <div class="search-row">
@@ -53,6 +93,14 @@
             <div class="metric-box">
               <small>EVENTOS DEL MES</small>
               <strong>{{ s.eventosCreadosMes }} / {{ s.limiteEventosMes ?? '∞' }}</strong>
+            </div>
+            <div class="metric-box">
+              <small>PRECIO APLICADO</small>
+              <strong>{{ s.precioAplicado | number:'1.0-0' }} COP</strong>
+            </div>
+            <div class="metric-box">
+              <small>COMISIÓN APLICADA</small>
+              <strong>{{ s.porcentajeComisionAplicado ?? 0 }}%</strong>
             </div>
             <div class="metric-box">
               <small>RENOVACIÓN AUTOMÁTICA</small>

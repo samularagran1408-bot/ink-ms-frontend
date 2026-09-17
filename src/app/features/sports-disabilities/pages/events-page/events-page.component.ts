@@ -16,11 +16,11 @@ import {
 import { SessionService } from '@core/services/session.service';
 import { SportsService } from '@features/sports-disabilities/services/sports.service';
 import { PaymentsService } from '@features/subscriptions/services/payments.service';
-import { CheckoutRedirectService } from '@features/subscriptions/services/checkout-redirect.service';
 import { ReportsService } from '@features/reports/services/reports.service';
 import { PreferencesApiService } from '@features/accessibility/services/preferences-api.service';
 import { LanguageService } from '@features/accessibility/services/language.service';
 import { LiveSyncService } from '@features/accessibility/services/live-sync.service';
+import { UnreadNotificationsService } from '@features/accessibility/services/unread-notifications.service';
 import { ConfirmDialogService } from '@shared/services/confirm-dialog.service';
 import { AttendanceCheckInMethod, normalizeAttendanceCheckInMethod } from '@features/accessibility/models/accessibility-api';
 import { resolveEventImage } from '@features/sports-disabilities/utils/event-image.util';
@@ -133,7 +133,6 @@ export class EventsPageComponent implements OnInit, OnDestroy {
     private router: Router,
     private sportsService: SportsService,
     private paymentsService: PaymentsService,
-    private checkoutRedirect: CheckoutRedirectService,
     private session: SessionService,
     private reportsService: ReportsService,
     private preferencesApi: PreferencesApiService,
@@ -141,7 +140,8 @@ export class EventsPageComponent implements OnInit, OnDestroy {
     private fb: FormBuilder,
     private confirm: ConfirmDialogService,
     private translate: TranslateService,
-    private language: LanguageService
+    private language: LanguageService,
+    private unreadNotifications: UnreadNotificationsService
   ) {
     this.form = this.fb.group({
       sportId: [null, Validators.required],
@@ -615,9 +615,10 @@ export class EventsPageComponent implements OnInit, OnDestroy {
 
       this.registeringId = event.id;
 
-      // ink-ms-sports no sabe si el evento es de pago (esa config vive en
-      // ink-ms-subscriptions), así que hay que preguntar ANTES de inscribir: de lo
-      // contrario registerToEvent() inscribe directo y gratis, sin cobrar nunca.
+      // RF55 / RF57: si el organizador configuró el evento como pago (según su plan
+      // para la comisión), el atleta debe pagar desde la primera inscripción.
+      // ink-ms-sports no conoce esPago (vive en ink-ms-subscriptions): hay que
+      // preguntar ANTES de inscribir; si no, registerToEvent() deja al atleta gratis.
       this.paymentsService.obtenerConfiguracionEvento(event.id).subscribe((config) => {
         if (config.esPago) {
           this.iniciarPagoInscripcion(event);
@@ -635,6 +636,7 @@ export class EventsPageComponent implements OnInit, OnDestroy {
         this.successMessage = null;
         this.errorMessage = null;
         this.applyLocalRegistration(event, registration);
+        this.unreadNotifications.refreshAfterAction();
         const onWaitlist = registration?.waitlistPosition != null;
         this.notifySuccess(
           onWaitlist ? 'EVENTS_PAGE.SUCCESS_WAITLIST_TITLE' : 'EVENTS_PAGE.SUCCESS_REGISTER_TITLE',
@@ -653,22 +655,30 @@ export class EventsPageComponent implements OnInit, OnDestroy {
           return;
         }
         this.registeringId = null;
-        this.errorMessage = error?.error?.message || 'No se pudo inscribir.';
+        const msg = error?.error?.message || 'No se pudo inscribir.';
+        this.errorMessage = msg;
+        void this.confirm.error({
+          title: 'No se pudo inscribir',
+          message: msg,
+        });
       }
     });
   }
 
   private iniciarPagoInscripcion(event: EventItem): void {
-    this.paymentsService.inscribirse(event.id).subscribe({
-      next: (checkout) => {
-        this.registeringId = null;
-        this.checkoutRedirect.follow(checkout, { evento: event.name });
-      },
-      error: (payError) => {
-        this.registeringId = null;
-        this.errorMessage = payError?.error?.message || 'No se pudo iniciar el pago de la inscripción.';
-      }
-    });
+    this.registeringId = null;
+    void this.confirm
+      .info({
+        title: this.translate.instant('EVENTS_PAGE.CONFIRM_REGISTER_TITLE'),
+        message:
+          `“${event.name}” requiere pago de inscripción. ` +
+          'Te llevamos al panel para revisar el monto y pagar con Mercado Pago.',
+        confirmLabel: 'Continuar al pago',
+        kindLabel: 'Pago requerido',
+      })
+      .then(() => {
+        void this.router.navigate(['/home/eventos', event.id, 'pago']);
+      });
   }
 
   private isPaidEventRequired(error: { error?: { message?: string; detail?: string } } | null): boolean {
@@ -921,6 +931,7 @@ export class EventsPageComponent implements OnInit, OnDestroy {
         this.successMessage = null;
         this.errorMessage = null;
         this.reload();
+        this.unreadNotifications.refreshAfterAction();
         this.notifySuccess(
           onWaitlist ? 'EVENTS_PAGE.SUCCESS_LEAVE_WAITLIST_TITLE' : 'EVENTS_PAGE.SUCCESS_CANCEL_REG_TITLE',
           this.translate.instant(

@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 
 import { SubscriptionService } from '../../services/subscription.service';
 import { PagoEventoResponse } from '../../models/subscription-models';
+import { ConfirmDialogService } from '@shared/services/confirm-dialog.service';
 
 /** M09 - Historial de pagos de inscripción a eventos del usuario (RF57, RF68). */
 @Component({
@@ -20,7 +21,10 @@ export class EventPaymentHistoryComponent implements OnInit {
   filtro = '';
   descargandoId: number | null = null;
 
-  constructor(private readonly subscriptions: SubscriptionService) {}
+  constructor(
+    private readonly subscriptions: SubscriptionService,
+    private readonly confirm: ConfirmDialogService,
+  ) {}
 
   ngOnInit(): void {
     this.subscriptions.getHistorialPagosEventos().subscribe({
@@ -31,6 +35,10 @@ export class EventPaymentHistoryComponent implements OnInit {
       error: () => {
         this.errorMessage = 'No se pudo cargar tu historial de pagos de eventos.';
         this.loading = false;
+        void this.confirm.error({
+          title: 'Error al cargar',
+          message: this.errorMessage!,
+        });
       }
     });
   }
@@ -42,6 +50,7 @@ export class EventPaymentHistoryComponent implements OnInit {
     }
     return this.pagos.filter((p) =>
       String(p.id).includes(q) ||
+      (p.nombreEvento ?? '').toLowerCase().includes(q) ||
       p.eventoId.toLowerCase().includes(q) ||
       p.estado.toLowerCase().includes(q));
   }
@@ -63,6 +72,10 @@ export class EventPaymentHistoryComponent implements OnInit {
     return 'b-err';
   }
 
+  nombreEvento(pago: PagoEventoResponse): string {
+    return pago.nombreEvento?.trim() || `Evento ${pago.eventoId}`;
+  }
+
   descargar(pago: PagoEventoResponse): void {
     if (!pago.comprobanteId || this.descargandoId) {
       return;
@@ -77,10 +90,19 @@ export class EventPaymentHistoryComponent implements OnInit {
         a.download = `comprobante-evento-${pago.id}.pdf`;
         a.click();
         URL.revokeObjectURL(url);
+        void this.confirm.ack({
+          title: 'Comprobante descargado',
+          message: `Se descargó el comprobante del pago #${pago.id}.`,
+        });
       },
       error: () => {
         this.descargandoId = null;
         this.errorMessage = 'El comprobante aún no está disponible. Intenta de nuevo en unos segundos.';
+        void this.confirm.warning({
+          title: 'Comprobante no disponible',
+          message: this.errorMessage!,
+          variant: 'ack',
+        });
       }
     });
   }

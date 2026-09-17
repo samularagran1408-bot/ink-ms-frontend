@@ -1,0 +1,15 @@
+@import '../../../../shared/styles/panel-common.scss';
+
+.status-filter {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.role-request-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}

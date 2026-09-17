@@ -78,6 +78,14 @@ const routes: Routes = [
           )
       },
       {
+        path: 'eventos/checkout/:referencia',
+        loadComponent: () =>
+          import('@features/subscriptions/pages/payment-gateway/payment-gateway.component').then(
+            (m) => m.PaymentGatewayComponent
+          ),
+        data: { mode: 'evento' }
+      },
+      {
         path: 'pagos-eventos',
         loadComponent: () =>
           import('@features/subscriptions/pages/event-payment-history/event-payment-history.component').then(
@@ -162,6 +170,13 @@ const routes: Routes = [
         path: 'roles',
         loadComponent: () =>
           import('@features/admin/pages/admin-roles/admin-roles.component').then((m) => m.AdminRolesComponent)
+      },
+      {
+        path: 'role-requests',
+        loadComponent: () =>
+          import('@features/admin/pages/admin-role-requests/admin-role-requests.component').then(
+            (m) => m.AdminRoleRequestsComponent
+          )
       },
       {
         path: 'audit',

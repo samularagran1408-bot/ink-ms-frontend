@@ -3,6 +3,7 @@
 export type EstadoPago = 'PENDIENTE' | 'APROBADO' | 'RECHAZADO' | 'REEMBOLSADO' | 'CANCELADO';
 export type EstadoSuscripcion = 'ACTIVA' | 'VENCIDA' | 'CANCELADA' | 'SUSPENDIDA';
 export type TipoPago = 'SUSCRIPCION' | 'EVENTO';
+export type TipoPagoSuscripcion = 'NUEVA' | 'RENOVACION' | 'CAMBIO_PLAN';
 export type TipoMovimiento =
   | 'ASIGNACION_INICIAL'
   | 'CREACION'
@@ -51,6 +52,7 @@ export interface PagoCheckoutResponse {
 export interface SuscripcionResponse {
   id: number;
   organizadorId: string;
+  organizadorEmail?: string | null;
   planId: number;
   planNombre: string;
   /** Precio, límite y comisión vigentes al momento de contratar; distintos de los del plan si este cambió después. */
@@ -70,7 +72,10 @@ export interface SuscripcionResponse {
 export interface PagoSuscripcionResponse {
   id: number;
   suscripcionId: number;
+  organizadorId?: string | null;
+  tipo?: TipoPagoSuscripcion | null;
   monto: number;
+  moneda?: string | null;
   metodoPago: string | null;
   referenciaTransaccion: string | null;
   estado: EstadoPago;
@@ -160,6 +165,9 @@ export interface CambiarEstadoSuscripcionRequest {
 
 // ---------------------------------------------------------------------------
 // RF55, RF63 - Configuración de un evento como pago
+// Organizador/admin con plan vigente marca el evento como de pago y fija el
+// valor; la comisión la define el plan. Si esPago, el atleta paga desde la
+// primera inscripción (RF57) — no hay registro gratis previo al checkout.
 // ---------------------------------------------------------------------------
 
 /** Cuerpo de POST/PUT /api/eventos-pago/configuracion */
@@ -182,6 +190,8 @@ export interface ConfiguracionEventoPagoResponse {
 
 // ---------------------------------------------------------------------------
 // RF57 - Inscripción y pago a eventos (checkout Pro, distinto del de suscripciones)
+// Criterio: evento con esPago → checkout obligatorio antes de quedar inscrito,
+// incluida la primera inscripción del atleta a ese evento.
 // ---------------------------------------------------------------------------
 
 /** GET /api/pagos/eventos/historial (PagoEventoResponse) */
@@ -189,7 +199,10 @@ export interface PagoEventoResponse {
   id: number;
   usuarioId: string;
   eventoId: string;
+  organizadorId?: string | null;
+  nombreEvento?: string | null;
   monto: number;
+  moneda?: string | null;
   metodoPago: string | null;
   referenciaTransaccion: string | null;
   estado: EstadoPago;
@@ -212,6 +225,7 @@ export interface PuedeCrearEventoResponse {
 
 export interface ReporteEventoItem {
   eventoId: string;
+  nombreEvento?: string | null;
   numeroInscritos: number;
   montoTotal: number;
   comisionEstimada: number;

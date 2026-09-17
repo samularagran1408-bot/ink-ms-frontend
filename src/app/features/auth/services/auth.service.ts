@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { RegisterRequest } from '../models/register-request';
 import { AuthResponse } from '../models/auth-response';
+import { RegisterResult } from '../models/register-result';
 import { LoginRequest } from '../models/login-request';
 import { LoginResponse } from '../models/login-response';
 import { ForgotPasswordRequest } from '../models/forgot-password-request';
@@ -31,7 +32,7 @@ export class AuthService {
    * Auth materializa el perfil (discapacidad + acompañante) en users-ms.
    * Luego se actualizan campos extra del perfil (teléfono).
    */
-  register(data: RegisterRequest): Observable<AuthResponse> {
+  register(data: RegisterRequest): Observable<RegisterResult> {
     const disabilityType = this.toCanonicalDisability(data.disabilityType);
 
     const authPayload: Record<string, unknown> = {
@@ -57,19 +58,23 @@ export class AuthService {
       switchMap((authResponse) => {
         this.session.setSession(authResponse.token);
 
-        const profileUpdate: UpdateProfileRequest = {
+        const profileCreate: UpdateProfileRequest = {
           fullName: data.fullName,
           phone: data.phone,
           disability: disabilityType || undefined,
           companionFullName: data.companion?.fullName?.trim() || undefined,
           companionPhone: data.companion?.phone?.trim() || undefined,
           companionRelationship: data.companion?.relationship?.trim() || undefined,
-          companionEmail: data.companion?.email?.trim() || undefined
+          companionEmail: data.companion?.email?.trim() || undefined,
+          requestedRole: data.requestedRole
         };
 
-        return this.usersService.updateProfile(profileUpdate).pipe(
-          catchError(() => of(null)),
-          map(() => authResponse)
+        return this.usersService.createProfile(profileCreate).pipe(
+          map((profile): RegisterResult => ({
+            ...authResponse,
+            pendingRoleRequest: profile.pendingRoleRequest ?? null
+          })),
+          catchError(() => of<RegisterResult>({ ...authResponse, pendingRoleRequest: null }))
         );
       })
     );

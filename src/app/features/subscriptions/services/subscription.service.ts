@@ -132,6 +132,11 @@ export class SubscriptionService {
     );
   }
 
+  /** RF58 - listado global para el panel admin (Mongo no tiene JOIN; el correo viene resuelto). */
+  getSuscripcionesAdmin(): Observable<SuscripcionResponse[]> {
+    return this.http.get<SuscripcionResponse[]>(`${this.base}/api/suscripciones/admin`);
+  }
+
   // -------------------------------------------------------------------------
   // RF55, RF63 - Configuración de eventos de pago (organizador)
   // -------------------------------------------------------------------------
@@ -170,6 +175,20 @@ export class SubscriptionService {
 
   getHistorialPagosEventos(): Observable<PagoEventoResponse[]> {
     return this.http.get<PagoEventoResponse[]>(`${this.base}/api/pagos/eventos/historial`);
+  }
+
+  /** RF66 - ingresos por inscripción de los eventos del organizador autenticado. */
+  getHistorialPagosEventosRecibidos(): Observable<PagoEventoResponse[]> {
+    return this.http.get<PagoEventoResponse[]>(`${this.base}/api/pagos/eventos/recibidos`);
+  }
+
+  /** RF61 - pagos de planes del organizador autenticado (todas sus suscripciones). */
+  getHistorialPagosSuscripcion(): Observable<PagoSuscripcionResponse[]> {
+    return this.http.get<PagoSuscripcionResponse[]>(`${this.base}/api/pagos/suscripciones/historial`);
+  }
+
+  descargarComprobanteSuscripcion(pagoId: number): Observable<Blob> {
+    return this.http.get(`${this.base}/api/pagos/suscripciones/${pagoId}/comprobante`, { responseType: 'blob' });
   }
 
   descargarComprobanteEvento(pagoId: number): Observable<Blob> {

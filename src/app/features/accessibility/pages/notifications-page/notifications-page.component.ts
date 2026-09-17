@@ -49,7 +49,8 @@ export class NotificationsPageComponent implements OnInit, OnDestroy {
       this.playingId = id;
     });
     this.reload();
-    this.pollTimer = setInterval(() => this.reload(false), 20_000);
+    // Con la lista abierta el usuario espera verlas llegar, no al recargar.
+    this.pollTimer = setInterval(() => this.reload(false), 10_000);
   }
 
   ngOnDestroy(): void {

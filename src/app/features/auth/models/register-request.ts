@@ -7,12 +7,16 @@ export interface CompanionRequest {
   email?: string;
 }
 
+/** Roles que un usuario puede solicitar al registrarse. ADMIN nunca se autoconcede. */
+export type SelfRequestableRole = 'USUARIO' | 'ENTRENADOR' | 'ORGANIZADOR';
+
 export interface RegisterRequest {
   fullName: string;
   email: string;
   phone: string;
   disabilityType: DisabilityType | '';
   companion?: CompanionRequest;
+  requestedRole: SelfRequestableRole;
   password: string;
   confirmPassword: string;
   acceptTerms: boolean;

@@ -11,9 +11,11 @@
       <div class="kicker">✰ PLAN ACTUAL</div>
       <div class="plan-name">{{ actual.planNombre }}</div>
       <p class="plan-meta">Estado {{ actual.estado }} · vigente hasta {{ actual.fechaFin | date:'mediumDate' }}</p>
+      <p class="plan-meta" *ngIf="actual.precioAplicado != null">Precio del ciclo: {{ actual.precioAplicado | number:'1.0-0' }} COP · comisión {{ actual.porcentajeComisionAplicado ?? 0 }}%</p>
       <div class="plan-actions">
         <button class="btn btn-solid" [disabled]="renovando" (click)="renovar()">{{ renovando ? 'PROCESANDO…' : 'RENOVAR' }}</button>
         <button class="btn btn-outline" (click)="irAPlanes()">CAMBIAR PLAN</button>
+        <button class="btn btn-outline" (click)="irAHistorial()">HISTORIAL</button>
       </div>
     </section>
 

@@ -3,11 +3,14 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
-import { catchError, switchMap } from 'rxjs/operators';
+import { catchError } from 'rxjs/operators';
 
-import { PagoEvento, PagoSuscripcion } from '../../models/subscriptions';
-import { PaymentsService } from '../../services/payments.service';
-import { SubscriptionsService } from '../../services/subscriptions.service';
+import { SubscriptionService } from '../../services/subscription.service';
+import {
+  PagoEventoResponse,
+  PagoSuscripcionResponse,
+  TipoPagoSuscripcion,
+} from '../../models/subscription-models';
 
 interface LedgerRow {
   id: number;
@@ -20,10 +23,7 @@ interface LedgerRow {
   comprobanteId?: number | null;
 }
 
-import { SubscriptionService } from '../../services/subscription.service';
-import { PagoSuscripcionResponse, SuscripcionResponse } from '../../models/subscription-models';
-
-/** M09 - Historial de pagos de la suscripción del organizador (RF61, RF66). */
+/** M09 - Historial de pagos del organizador (RF61, RF66): planes propios + inscripciones recibidas. */
 @Component({
   standalone: true,
   imports: [CommonModule, FormsModule],
@@ -38,31 +38,24 @@ export class PaymentHistoryComponent implements OnInit {
   filtro = '';
 
   constructor(
-    private subscriptions: SubscriptionsService,
-    private payments: PaymentsService,
+    private subscriptions: SubscriptionService,
     private router: Router
   ) {}
 
   ngOnInit(): void {
-    this.subscriptions.obtenerActual().pipe(
-      switchMap((actual) =>
-        forkJoin({
-          suscripcion: this.subscriptions.listarPagos(actual.id).pipe(catchError(() => of([] as PagoSuscripcion[]))),
-          eventos: this.payments.historialEventos().pipe(catchError(() => of([] as PagoEvento[])))
-        })
+    forkJoin({
+      suscripcion: this.subscriptions.getHistorialPagosSuscripcion().pipe(
+        catchError(() => of([] as PagoSuscripcionResponse[]))
       ),
-      catchError(() =>
-        forkJoin({
-          suscripcion: of([] as PagoSuscripcion[]),
-          eventos: this.payments.historialEventos().pipe(catchError(() => of([] as PagoEvento[])))
-        })
+      eventos: this.subscriptions.getHistorialPagosEventosRecibidos().pipe(
+        catchError(() => of([] as PagoEventoResponse[]))
       )
-    ).subscribe({
+    }).subscribe({
       next: ({ suscripcion, eventos }) => {
         const subRows: LedgerRow[] = suscripcion.map((p) => ({
           id: p.id,
           tipo: 'suscripcion',
-          concepto: 'Suscripción de organizador',
+          concepto: this.conceptoSuscripcion(p.tipo),
           fecha: p.fechaPago,
           metodo: p.metodoPago,
           monto: p.monto,
@@ -72,7 +65,9 @@ export class PaymentHistoryComponent implements OnInit {
         const eventRows: LedgerRow[] = eventos.map((p) => ({
           id: p.id,
           tipo: 'evento',
-          concepto: 'Inscripción a evento ' + p.eventoId,
+          concepto: p.nombreEvento
+            ? `Inscripción: ${p.nombreEvento}`
+            : `Inscripción a evento ${p.eventoId}`,
           fecha: p.fechaPago,
           metodo: p.metodoPago,
           monto: p.monto,
@@ -120,5 +115,16 @@ export class PaymentHistoryComponent implements OnInit {
       return 'b-ref';
     }
     return 'b-err';
+  }
+
+  private conceptoSuscripcion(tipo?: TipoPagoSuscripcion | null): string {
+    switch (tipo) {
+      case 'RENOVACION':
+        return 'Renovación de plan';
+      case 'CAMBIO_PLAN':
+        return 'Cambio de plan';
+      default:
+        return 'Suscripción de organizador';
+    }
   }
 }

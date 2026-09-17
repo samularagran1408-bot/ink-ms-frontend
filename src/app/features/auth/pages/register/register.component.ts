@@ -8,9 +8,11 @@ import { AuthService } from '../../services/auth.service';
 import {
   companionRequirement,
   hasCompanionData,
-  RegisterRequest
+  RegisterRequest,
+  SelfRequestableRole
 } from '../../models/register-request';
 import { DisabilityType } from '../../models/disability-type';
+import { PendingRoleRequest } from '@core/models/user-profile';
 import { AccessibilityService } from '@features/accessibility/services/accessibility.service';
 import { SessionService } from '@core/services/session.service';
 
@@ -30,6 +32,13 @@ export class RegisterComponent implements OnDestroy {
   registeredEmail = '';
   showCompanionFields = false;
   companionRequired = false;
+  pendingRoleRequest: PendingRoleRequest | null = null;
+
+  readonly roleOptions: { value: SelfRequestableRole; label: string; hint: string }[] = [
+    { value: 'USUARIO', label: 'Usuario', hint: 'Participa y se inscribe en eventos.' },
+    { value: 'ENTRENADOR', label: 'Entrenador', hint: 'Requiere aprobación de un administrador.' },
+    { value: 'ORGANIZADOR', label: 'Organizador', hint: 'Requiere aprobación de un administrador.' },
+  ];
 
   readonly disabilityOptions: { value: DisabilityType; label: string }[] = [
     { value: 'visual', label: 'Discapacidad Visual' },
@@ -56,6 +65,7 @@ export class RegisterComponent implements OnDestroy {
       email: ['', [Validators.required, Validators.email]],
       phone: ['', [Validators.required, Validators.minLength(7), Validators.maxLength(20)]],
       disabilityType: ['', Validators.required],
+      requestedRole: ['USUARIO' as SelfRequestableRole, Validators.required],
       companion: this.fb.group({
         fullName: [''],
         phone: [''],
@@ -122,6 +132,15 @@ export class RegisterComponent implements OnDestroy {
     return !!control && control.invalid && (control.touched || control.dirty);
   }
 
+  selectRole(role: SelfRequestableRole): void {
+    this.registerForm.get('requestedRole')?.setValue(role);
+    this.registerForm.get('requestedRole')?.markAsTouched();
+  }
+
+  roleLabel(value: string): string {
+    return this.roleOptions.find((opt) => opt.value === value)?.label ?? value;
+  }
+
   companionFieldInvalid(fieldName: string): boolean {
     const control = this.companionGroup.get(fieldName);
     return !!control && control.invalid && (control.touched || control.dirty);
@@ -156,6 +175,7 @@ export class RegisterComponent implements OnDestroy {
       email: raw.email,
       phone: raw.phone,
       disabilityType: raw.disabilityType,
+      requestedRole: raw.requestedRole,
       password: raw.password,
       confirmPassword: raw.confirmPassword,
       acceptTerms: raw.acceptTerms,
@@ -178,6 +198,7 @@ export class RegisterComponent implements OnDestroy {
 
     this.authService.register(payload).subscribe({
       next: (response) => {
+        this.pendingRoleRequest = response.pendingRoleRequest;
         this.session.bootstrapAfterLogin(response.token).subscribe({
           next: () => {
             this.isSubmitting = false;

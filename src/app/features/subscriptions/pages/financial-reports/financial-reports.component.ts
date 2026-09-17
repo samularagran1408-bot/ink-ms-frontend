@@ -116,14 +116,14 @@ export class FinancialReportsComponent implements OnInit {
       this.sports.getEvent(item.eventoId).pipe(
         map((evento): DetalleEventoVista => ({
           ...item,
-          nombreEvento: evento.name,
+          nombreEvento: item.nombreEvento || evento.name,
           sportName: evento.sportName ?? '—',
           location: evento.location ?? 'Ubicación por definir',
           maxCapacity: evento.maxCapacity ?? null,
         })),
         catchError(() => of<DetalleEventoVista>({
           ...item,
-          nombreEvento: `Evento ${item.eventoId.slice(0, 8)}`,
+          nombreEvento: item.nombreEvento || `Evento ${item.eventoId.slice(0, 8)}`,
           sportName: '—',
           location: '—',
           maxCapacity: null,

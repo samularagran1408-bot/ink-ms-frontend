@@ -8,10 +8,14 @@ import {
   AdminUserActivityResponse,
   AssignRoleRequest,
   BlockUserRequest,
+  PendingRoleRequest,
   RoleInfo,
   UpdateProfileRequest,
   UserProfile
 } from '@core/models/user-profile';
+import { PageResponse } from '@features/sports-disabilities/models/sports';
+
+export type RoleRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 
 @Injectable({
   providedIn: 'root'
@@ -155,5 +159,19 @@ export class UsersService {
 
   getUserActivities(email: string): Observable<AdminUserActivityResponse> {
     return this.http.get<AdminUserActivityResponse>(`${this.adminUrl}/${encodeURIComponent(email)}/activities`);
+  }
+
+  getRoleRequests(status: RoleRequestStatus = 'PENDING', page = 0, size = 20): Observable<PageResponse<PendingRoleRequest>> {
+    return this.http.get<PageResponse<PendingRoleRequest>>(`${this.adminUrl}/role-requests`, {
+      params: { status, page: String(page), size: String(size) }
+    });
+  }
+
+  approveRoleRequest(id: string, notes?: string): Observable<PendingRoleRequest> {
+    return this.http.post<PendingRoleRequest>(`${this.adminUrl}/role-requests/${id}/approve`, { notes });
+  }
+
+  rejectRoleRequest(id: string, notes?: string): Observable<PendingRoleRequest> {
+    return this.http.post<PendingRoleRequest>(`${this.adminUrl}/role-requests/${id}/reject`, { notes });
   }
 }
