@@ -40,16 +40,20 @@
         <option value="">{{ 'ASSOCIATIONS_PAGE.ALL_SPORTS' | translate }}</option>
         <option *ngFor="let sport of sports" [value]="sport.id">{{ sport.name }}</option>
       </select>
+      <select name="associationDisability" [(ngModel)]="listDisabilityId">
+        <option value="">{{ 'ASSOCIATIONS_PAGE.ALL_DISABILITIES' | translate }}</option>
+        <option *ngFor="let disability of disabilities" [value]="disability.id">{{ disability.name }}</option>
+      </select>
       <button
         class="btn-secondary"
         type="button"
-        *ngIf="searchQuery.trim() || listSportId"
+        *ngIf="hasActiveFilters"
         (click)="clearSearch()"
       >
         {{ 'COMMON.CLEAR' | translate }}
       </button>
     </div>
-    <p class="search-count" *ngIf="searchQuery.trim() || listSportId">
+    <p class="search-count" *ngIf="hasActiveFilters">
       {{ 'COMMON.RESULTS' | translate:{ count: filteredAssociations.length } }}
     </p>
     <div class="list-item" *ngFor="let item of filteredAssociations">
@@ -62,7 +66,7 @@
       <button class="btn-danger" type="button" (click)="remove(item)">Eliminar</button>
     </div>
     <p *ngIf="!loading && !filteredAssociations.length" class="empty-text">
-      {{ (searchQuery.trim() || listSportId)
+      {{ hasActiveFilters
         ? ('ASSOCIATIONS_PAGE.EMPTY_SEARCH' | translate)
         : 'Aún no hay asociaciones registradas.' }}
     </p>

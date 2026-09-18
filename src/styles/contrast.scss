@@ -1,8 +1,8 @@
-/* =============================================================================
+/* 
    Contraste de Inklusport
-   - Normal (bajo): paleta de marca con texto ≥ 4.5:1 (WCAG AA) sobre cada fondo.
-   - Alto: negro + amarillo / blanco / cian / rojo / lima / naranja (WCAG AAA).
-   ============================================================================= */
+   - Normal (bajo): paleta de marca clara con texto ≥ 4.5:1 (WCAG AA).
+   - Alto: oscuro carbón + blanco + rojo marca (legible y alineado al panel).
+    */
 
 /* --- Bajo contraste (tema por defecto): jerarquía visible y AA --------------------------- */
 html[data-contrast='normal'],
@@ -20,75 +20,91 @@ body.low-contrast-mode ::placeholder {
 html[data-contrast='high'],
 body.high-contrast-mode {
   color-scheme: dark;
-  --ink-red: #00FFFF;
-  --ink-red-hover: #7FFFFF;
-  --ink-red-soft: #000000;
-  --ink-navy: #000000;
-  --ink-ink: #FFFF00;
-  --ink-muted: #FFFFFF;
-  --ink-subtle: #FFFFFF;
-  --ink-line: #FFFFFF;
-  --ink-surface: #000000;
-  --ink-surface-alt: #000000;
-  --ink-canvas: #000000;
-  --ink-on-accent: #000000;
-  --ink-on-dark: #FFFF00;
-  --ink-on-dark-muted: #FFFFFF;
-  --ink-link: #00FFFF;
-  --ink-focus: #00FFFF;
-  --ink-danger: #FF0000;
-  --ink-danger-text: #FF0000;
-  --ink-danger-bg: #000000;
-  --ink-success: #00FF00;
-  --ink-success-bg: #000000;
-  --ink-warn: #FFA500;
-  --ink-warn-bg: #000000;
+  --ink-red: #E53935;
+  --ink-red-hover: #EF5350;
+  --ink-red-soft: #121212;
+  --ink-navy: #121212;
+  --ink-ink: #FFFFFF;
+  --ink-muted: #9CA3AF;
+  --ink-subtle: #9CA3AF;
+  --ink-line: #2A2A2A;
+  --ink-surface: #121212;
+  --ink-surface-alt: #121212;
+  --ink-canvas: #121212;
+  --ink-on-accent: #FFFFFF;
+  --ink-on-dark: #FFFFFF;
+  --ink-on-dark-muted: #9CA3AF;
+  --ink-link: #EF5350;
+  --ink-focus: #E53935;
+  --ink-danger: #EF5350;
+  --ink-danger-text: #EF5350;
+  --ink-danger-bg: #121212;
+  --ink-success: #4ADE80;
+  --ink-success-bg: #14532D;
+  --ink-warn: #FBBF24;
+  --ink-warn-bg: #121212;
   --ink-shadow-sm: none;
   --ink-shadow: none;
   --ink-shadow-lg: none;
-  --hc-bg: #000000;
-  --hc-fg: #FFFF00;
-  --hc-muted: #FFFFFF;
-  --hc-accent: #00FFFF;
-  --hc-on-accent: #000000;
-  --hc-danger: #FF0000;
-  --hc-success: #00FF00;
-  --hc-warn: #FFA500;
-  background: #000000 !important;
-  color: #FFFF00 !important;
-  scrollbar-color: #FFFF00 #000000;
+  /* Un solo fondo plano: sin capas #1E1E1E / #0A0A0A que descuadran. */
+  --hc-bg: #121212;
+  --hc-surface: #121212;
+  --hc-fg: #FFFFFF;
+  --hc-muted: #9CA3AF;
+  --hc-line: #2A2A2A;
+  --hc-accent: #E53935;
+  --hc-on-accent: #FFFFFF;
+  --hc-danger: #EF5350;
+  --hc-success: #4ADE80;
+  --hc-success-bg: #14532D;
+  --hc-warn: #FBBF24;
+  background: #121212 !important;
+  color: #FFFFFF !important;
+  scrollbar-color: #E53935 #121212;
 }
 
 html[data-contrast='high'] body,
 body.high-contrast-mode {
-  background: #000000 !important;
-  color: #FFFF00 !important;
+  background: #121212 !important;
+  color: #FFFFFF !important;
 }
 
-/* Superficies y texto: fondo negro + letra amarilla. */
-html[data-contrast='high'] *,
-body.high-contrast-mode * {
-  background-color: var(--hc-bg, #000) !important;
+/* Superficies y texto: fondo carbón + letra blanca.
+   No anula fotos de eventos (ni otras) que llevan background-image inline. */
+html[data-contrast='high'] *:not([style*='background-image']),
+body.high-contrast-mode *:not([style*='background-image']) {
+  background-color: var(--hc-bg, #121212) !important;
   background-image: none !important;
-  color: var(--hc-fg, #FFFF00) !important;
-  border-color: var(--hc-fg, #FFFF00) !important;
-  outline-color: var(--hc-accent, #00FFFF) !important;
+  color: var(--hc-fg, #FFFFFF) !important;
+  border-color: var(--hc-line, #2A2A2A) !important;
+  outline-color: var(--hc-accent, #E53935) !important;
   box-shadow: none !important;
   text-shadow: none !important;
   filter: none !important;
-  caret-color: var(--hc-accent, #00FFFF) !important;
+  caret-color: var(--hc-accent, #E53935) !important;
 }
 
-html[data-contrast='high'] *:focus,
-html[data-contrast='high'] *:focus-visible,
-html[data-contrast='high'] *:active,
-body.high-contrast-mode *:focus,
-body.high-contrast-mode *:focus-visible,
-body.high-contrast-mode *:active {
-  background-color: var(--hc-bg, #000) !important;
+html[data-contrast='high'] *:not([style*='background-image']):focus,
+html[data-contrast='high'] *:not([style*='background-image']):focus-visible,
+html[data-contrast='high'] *:not([style*='background-image']):active,
+body.high-contrast-mode *:not([style*='background-image']):focus,
+body.high-contrast-mode *:not([style*='background-image']):focus-visible,
+body.high-contrast-mode *:not([style*='background-image']):active {
+  background-color: var(--hc-bg, #121212) !important;
   background-image: none !important;
-  color: var(--hc-fg, #FFFF00) !important;
-  border-color: var(--hc-fg, #FFFF00) !important;
+  color: var(--hc-fg, #FFFFFF) !important;
+  border-color: var(--hc-line, #2A2A2A) !important;
+}
+
+/* Thumbs con foto inline: solo color de respaldo, nunca background-image. */
+html[data-contrast='high'] [style*='background-image'],
+body.high-contrast-mode [style*='background-image'] {
+  background-color: #2A2A2A !important;
+  color: inherit !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  filter: none !important;
+  /* background-image: no tocar — viene del style inline */
 }
 
 html[data-contrast='high'] *::before,
@@ -123,13 +139,32 @@ body.high-contrast-mode svg * {
   box-shadow: none !important;
 }
 
-html[data-contrast='high'] .event-thumb,
-html[data-contrast='high'] .next-event-cover,
+/* Fotos de eventos (todas las clases / roles): no declarar background-image. */
+html[data-contrast='high'] :is(
+    .event-thumb,
+    .next-event-cover,
+    .catalog-event-thumb,
+    .activity-next-thumb,
+    .activity-thumb,
+    .event-image
+  ),
+body.high-contrast-mode :is(
+    .event-thumb,
+    .next-event-cover,
+    .catalog-event-thumb,
+    .activity-next-thumb,
+    .activity-thumb,
+    .event-image
+  ) {
+  background-color: #2A2A2A !important;
+  color: inherit !important;
+  filter: none !important;
+  box-shadow: none !important;
+}
+
 html[data-contrast='high'] .avatar-img,
-body.high-contrast-mode .event-thumb,
-body.high-contrast-mode .next-event-cover,
 body.high-contrast-mode .avatar-img {
-  background-color: unset !important;
+  background-color: transparent !important;
   background-image: unset !important;
   color: inherit !important;
 }
@@ -140,24 +175,24 @@ html[data-contrast='high'] .error-title-line,
 body.high-contrast-mode .kpi-card::before,
 body.high-contrast-mode .title-line,
 body.high-contrast-mode .error-title-line {
-  background: var(--hc-accent, #00FFFF) !important;
+  background: var(--hc-accent, #E53935) !important;
 }
 
 html[data-contrast='high'] ::placeholder,
 body.high-contrast-mode ::placeholder {
-  color: var(--hc-muted, #FFFFFF) !important;
+  color: var(--hc-muted, #9CA3AF) !important;
   opacity: 1 !important;
 }
 
 html[data-contrast='high'] ::selection,
 body.high-contrast-mode ::selection {
-  background: var(--hc-accent, #00FFFF) !important;
-  color: var(--hc-on-accent, #000) !important;
+  background: var(--hc-accent, #E53935) !important;
+  color: var(--hc-on-accent, #FFFFFF) !important;
 }
 
 html[data-contrast='high'] :focus-visible,
 body.high-contrast-mode :focus-visible {
-  outline: 3px solid var(--hc-accent, #00FFFF) !important;
+  outline: 3px solid var(--hc-accent, #E53935) !important;
   outline-offset: 3px !important;
 }
 
@@ -169,17 +204,17 @@ body.high-contrast-mode a,
 body.high-contrast-mode .brand-logo,
 body.high-contrast-mode .forgot-link,
 body.high-contrast-mode .error-recover-link {
-  color: var(--hc-accent, #00FFFF) !important;
+  color: var(--hc-accent, #E53935) !important;
   text-decoration-thickness: 2px;
   text-underline-offset: 2px;
 }
 
 html[data-contrast='high'] a:visited,
 body.high-contrast-mode a:visited {
-  color: var(--hc-accent, #00FFFF) !important;
+  color: var(--hc-accent, #E53935) !important;
 }
 
-/* Controles rellenos: ámbar + negro (nunca blanco sobre blanco). */
+/* Controles rellenos: rojo + blanco. */
 html[data-contrast='high'] :is(
     .btn-primary,
     .submit-btn,
@@ -224,10 +259,10 @@ body.high-contrast-mode :is(
     .ai-send,
     .chat-bubble--user
   ) {
-  background: var(--hc-accent, #00FFFF) !important;
+  background: var(--hc-accent, #E53935) !important;
   background-image: none !important;
-  color: var(--hc-on-accent, #000) !important;
-  border: 2px solid var(--hc-accent, #00FFFF) !important;
+  color: var(--hc-on-accent, #FFFFFF) !important;
+  border: 2px solid var(--hc-accent, #E53935) !important;
   box-shadow: none !important;
 }
 
@@ -271,7 +306,7 @@ body.high-contrast-mode :is(
   * {
   background: transparent !important;
   background-image: none !important;
-  color: var(--hc-on-accent, #000) !important;
+  color: var(--hc-on-accent, #FFFFFF) !important;
   border-color: transparent !important;
   box-shadow: none !important;
 }
@@ -292,11 +327,11 @@ body.high-contrast-mode a:is(
     .retry-btn,
     .notifications-btn
   ) {
-  color: var(--hc-on-accent, #000) !important;
+  color: var(--hc-on-accent, #FFFFFF) !important;
   text-decoration: none !important;
 }
 
-/* Controles huecos: negro + borde blanco + texto blanco. */
+/* Controles huecos: superficie oscura + borde rojo + texto blanco. */
 html[data-contrast='high'] :is(
     .btn-secondary,
     .btn-danger,
@@ -343,16 +378,16 @@ body.high-contrast-mode :is(
     .chat-bubble--bot,
     .chip
   ) {
-  background: var(--hc-bg, #000) !important;
+  background: var(--hc-bg, #121212) !important;
   background-image: none !important;
-  color: var(--hc-fg, #FFFF00) !important;
-  border: 2px solid var(--hc-fg, #FFFF00) !important;
+  color: var(--hc-fg, #FFFFFF) !important;
+  border: 2px solid var(--hc-accent, #E53935) !important;
   box-shadow: none !important;
 }
 
 html[data-contrast='high'] a:is(.btn-secondary, .btn-danger, .register-event-btn--cancel),
 body.high-contrast-mode a:is(.btn-secondary, .btn-danger, .register-event-btn--cancel) {
-  color: var(--hc-fg, #FFFF00) !important;
+  color: var(--hc-fg, #FFFFFF) !important;
   text-decoration: none !important;
 }
 
@@ -364,50 +399,50 @@ body.high-contrast-mode .btn-danger,
 body.high-contrast-mode .register-event-btn--cancel,
 body.high-contrast-mode .field-error,
 body.high-contrast-mode .error-text {
-  color: var(--hc-danger, #FF0000) !important;
-  border-color: var(--hc-danger, #FF0000) !important;
+  color: var(--hc-danger, #EF5350) !important;
+  border-color: var(--hc-danger, #EF5350) !important;
 }
 
 html[data-contrast='high'] .btn-danger,
 html[data-contrast='high'] .register-event-btn--cancel,
 body.high-contrast-mode .btn-danger,
 body.high-contrast-mode .register-event-btn--cancel {
-  background: var(--hc-bg, #000) !important;
+  background: var(--hc-bg, #121212) !important;
 }
 
 html[data-contrast='high'] :is(.status-pill--ok, .form-success-banner),
 body.high-contrast-mode :is(.status-pill--ok, .form-success-banner) {
-  background: var(--hc-bg, #000) !important;
-  color: var(--hc-success, #00FF00) !important;
-  border: 2px solid var(--hc-success, #00FF00) !important;
+  background: var(--hc-success-bg, #14532D) !important;
+  color: var(--hc-success, #4ADE80) !important;
+  border: 2px solid var(--hc-success, #4ADE80) !important;
 }
 
 html[data-contrast='high'] :is(.status-pill--bad, .form-error-banner),
 body.high-contrast-mode :is(.status-pill--bad, .form-error-banner) {
-  background: var(--hc-bg, #000) !important;
-  color: var(--hc-danger, #FF0000) !important;
-  border: 2px solid var(--hc-danger, #FF0000) !important;
+  background: var(--hc-bg, #121212) !important;
+  color: var(--hc-danger, #EF5350) !important;
+  border: 2px solid var(--hc-danger, #EF5350) !important;
 }
 
 html[data-contrast='high'] :is(.status-pill--warn),
 body.high-contrast-mode :is(.status-pill--warn) {
-  background: var(--hc-bg, #000) !important;
-  color: var(--hc-warn, #FFA500) !important;
-  border: 2px solid var(--hc-warn, #FFA500) !important;
+  background: var(--hc-bg, #121212) !important;
+  color: var(--hc-warn, #FBBF24) !important;
+  border: 2px solid var(--hc-warn, #FBBF24) !important;
 }
 
 html[data-contrast='high'] :is(input, select, textarea, .input-box, .input-field),
 body.high-contrast-mode :is(input, select, textarea, .input-box, .input-field) {
-  background: var(--hc-bg, #000) !important;
-  color: var(--hc-fg, #FFFF00) !important;
-  border: 2px solid var(--hc-fg, #FFFF00) !important;
-  accent-color: var(--hc-accent, #00FFFF);
+  background: var(--hc-bg, #121212) !important;
+  color: var(--hc-fg, #FFFFFF) !important;
+  border: 2px solid var(--hc-line, #2A2A2A) !important;
+  accent-color: var(--hc-accent, #E53935);
 }
 
 html[data-contrast='high'] option,
 body.high-contrast-mode option {
-  background: var(--hc-bg, #000) !important;
-  color: var(--hc-fg, #FFFF00) !important;
+  background: var(--hc-bg, #121212) !important;
+  color: var(--hc-fg, #FFFFFF) !important;
 }
 
 html[data-contrast='high'] input:-webkit-autofill,
@@ -416,9 +451,9 @@ html[data-contrast='high'] select:-webkit-autofill,
 body.high-contrast-mode input:-webkit-autofill,
 body.high-contrast-mode textarea:-webkit-autofill,
 body.high-contrast-mode select:-webkit-autofill {
-  -webkit-text-fill-color: #FFFF00 !important;
-  caret-color: #00FFFF;
-  box-shadow: 0 0 0 1000px #000 inset !important;
+  -webkit-text-fill-color: #FFFFFF !important;
+  caret-color: #E53935;
+  box-shadow: 0 0 0 1000px #121212 inset !important;
   transition: background-color 9999s ease-out;
 }
 
@@ -427,15 +462,15 @@ html[data-contrast='high'] [aria-disabled='true'],
 body.high-contrast-mode :disabled,
 body.high-contrast-mode [aria-disabled='true'] {
   opacity: 1 !important;
-  color: #c8c8c8 !important;
-  border-color: #c8c8c8 !important;
-  background: #000 !important;
+  color: #9CA3AF !important;
+  border-color: #4B5563 !important;
+  background: #121212 !important;
 }
 
 html[data-contrast='high'] hr,
 body.high-contrast-mode hr {
-  border-color: #fff !important;
-  background: #fff !important;
+  border-color: #2A2A2A !important;
+  background: #2A2A2A !important;
 }
 
 html[data-contrast='high'] svg,
@@ -508,10 +543,10 @@ body.high-contrast-mode :is(
     .action-card,
     .sidebar-panel
   ) {
-  background: var(--hc-bg, #000) !important;
+  background: var(--hc-bg, #121212) !important;
   background-image: none !important;
-  color: var(--hc-fg, #FFFF00) !important;
-  border-color: var(--hc-fg, #FFFF00) !important;
+  color: var(--hc-fg, #FFFFFF) !important;
+  border-color: var(--hc-line, #2A2A2A) !important;
 }
 
 html[data-contrast='high'] :is(
@@ -546,7 +581,7 @@ body.high-contrast-mode :is(
     .chat-hilo,
     .action-card strong
   ) {
-  color: var(--hc-fg, #FFFF00) !important;
+  color: var(--hc-fg, #FFFFFF) !important;
   background: transparent !important;
 }
 
@@ -574,7 +609,7 @@ body.high-contrast-mode :is(
     .empty-text,
     .page-subtitle
   ) {
-  color: var(--hc-muted, #FFFFFF) !important;
+  color: var(--hc-muted, #9CA3AF) !important;
   background: transparent !important;
 }
 
@@ -596,57 +631,57 @@ body.high-contrast-mode :is(
     .chat-history-clear,
     .action-card-type
   ) {
-  color: var(--hc-accent, #00FFFF) !important;
+  color: var(--hc-accent, #E53935) !important;
   background: transparent !important;
 }
 
 html[data-contrast='high'] :is(.ai-bubble--user, .chat-bubble--user),
 body.high-contrast-mode :is(.ai-bubble--user, .chat-bubble--user) {
-  background: var(--hc-accent, #00FFFF) !important;
-  color: var(--hc-on-accent, #000) !important;
-  border: 2px solid var(--hc-accent, #00FFFF) !important;
+  background: var(--hc-accent, #E53935) !important;
+  color: var(--hc-on-accent, #FFFFFF) !important;
+  border: 2px solid var(--hc-accent, #E53935) !important;
 }
 
 html[data-contrast='high'] :is(.ai-bubble--user, .chat-bubble--user) :is(p, span, strong, small, .chat-text),
 body.high-contrast-mode :is(.ai-bubble--user, .chat-bubble--user) :is(p, span, strong, small, .chat-text) {
-  color: var(--hc-on-accent, #000) !important;
+  color: var(--hc-on-accent, #FFFFFF) !important;
   background: transparent !important;
 }
 
 html[data-contrast='high'] :is(.ai-bubble--bot, .chat-bubble--bot, .ai-thinking),
 body.high-contrast-mode :is(.ai-bubble--bot, .chat-bubble--bot, .ai-thinking) {
-  background: var(--hc-bg, #000) !important;
-  color: var(--hc-fg, #FFFF00) !important;
-  border: 2px solid var(--hc-fg, #FFFF00) !important;
+  background: var(--hc-bg, #121212) !important;
+  color: var(--hc-fg, #FFFFFF) !important;
+  border: 2px solid var(--hc-line, #2A2A2A) !important;
 }
 
 html[data-contrast='high'] :is(.ai-error),
 body.high-contrast-mode :is(.ai-error) {
-  color: var(--hc-danger, #FF0000) !important;
+  color: var(--hc-danger, #EF5350) !important;
 }
 
 html[data-contrast='high'] :is(.chat-activity--run),
 body.high-contrast-mode :is(.chat-activity--run) {
-  color: var(--hc-warn, #FFA500) !important;
+  color: var(--hc-warn, #FBBF24) !important;
 }
 
 html[data-contrast='high'] :is(.ai-activity--done, .chat-activity--done, .ai-check-item--done),
 body.high-contrast-mode :is(.ai-activity--done, .chat-activity--done, .ai-check-item--done) {
-  color: var(--hc-success, #00FF00) !important;
+  color: var(--hc-success, #4ADE80) !important;
 }
 
 html[data-contrast='high'] :is(.ai-composer textarea, .ai-section input, .chat-composer input, .chat-composer textarea, .ai-limit input),
 body.high-contrast-mode :is(.ai-composer textarea, .ai-section input, .chat-composer input, .chat-composer textarea, .ai-limit input) {
-  background: var(--hc-bg, #000) !important;
-  color: var(--hc-fg, #FFFF00) !important;
-  border: 2px solid var(--hc-fg, #FFFF00) !important;
+  background: var(--hc-bg, #121212) !important;
+  color: var(--hc-fg, #FFFFFF) !important;
+  border: 2px solid var(--hc-line, #2A2A2A) !important;
 }
 
 html[data-contrast='high'] .ai-json,
 body.high-contrast-mode .ai-json {
-  background: var(--hc-bg, #000) !important;
-  color: var(--hc-accent, #00FFFF) !important;
-  border: 2px solid var(--hc-fg, #FFFF00) !important;
+  background: var(--hc-bg, #121212) !important;
+  color: var(--hc-accent, #E53935) !important;
+  border: 2px solid var(--hc-line, #2A2A2A) !important;
 }
 
 /* Fotos, mapas y canvas: no aplanar. */
@@ -675,9 +710,29 @@ body.high-contrast-mode :is(
   filter: none !important;
 }
 
-html[data-contrast='high'] :is(.event-thumb, .next-event-cover, .avatar-img, img, video),
-body.high-contrast-mode :is(.event-thumb, .next-event-cover, .avatar-img, img, video) {
-  border: 1px solid #fff !important;
+html[data-contrast='high'] :is(
+    .event-thumb,
+    .next-event-cover,
+    .catalog-event-thumb,
+    .activity-next-thumb,
+    .activity-thumb,
+    .event-image,
+    .avatar-img,
+    img,
+    video
+  ),
+body.high-contrast-mode :is(
+    .event-thumb,
+    .next-event-cover,
+    .catalog-event-thumb,
+    .activity-next-thumb,
+    .activity-thumb,
+    .event-image,
+    .avatar-img,
+    img,
+    video
+  ) {
+  border: 1px solid #2A2A2A !important;
 }
 
 html[data-contrast='high'] :is(.gridOverlay, app-space-background, .ai-fab-pulse, .ai-fab-ring),
@@ -689,51 +744,115 @@ body.high-contrast-mode :is(.gridOverlay, app-space-background, .ai-fab-pulse, .
 html[data-contrast='high'] .top-nav,
 body.high-contrast-mode .top-nav {
   backdrop-filter: none !important;
-  background: #000 !important;
+  background: #121212 !important;
 }
 
-/* Última palabra: paneles, chat y hovers no pueden volver a blanco. */
+/* Paneles, cards, sidebar y TODOS sus hijos: mismo fondo plano. */
 html[data-contrast='high'] :is(
     .ai-panel,
-    .ai-panel *:not(img):not(svg):not(path):not(canvas):not(iframe),
     .chat-history,
-    .chat-history *:not(img):not(svg),
     .chat-main,
     .chat-timeline,
     .chat-bubble,
     .detail-panel,
-    .detail-panel *,
     .card,
     .kpi-card,
     .log-card,
     .chart-card,
     .sidebar-panel,
-    .role-sidebar
+    .role-sidebar,
+    .next-event-card,
+    .form-card,
+    .brand-block,
+    .sidebar-header,
+    .sidebar-nav,
+    .sidebar-footer,
+    .page-shell,
+    .panel-main,
+    .chart-wrap,
+    .chart-body,
+    .kpi-value,
+    .kpi-label,
+    .kpi-sub
+  ),
+html[data-contrast='high'] :is(
+    .ai-panel,
+    .chat-history,
+    .chat-main,
+    .detail-panel,
+    .card,
+    .kpi-card,
+    .log-card,
+    .chart-card,
+    .sidebar-panel,
+    .role-sidebar,
+    .next-event-card,
+    .form-card,
+    .brand-block,
+    .sidebar-header,
+    .sidebar-nav,
+    .sidebar-footer,
+    .page-shell,
+    .panel-main,
+    .chart-wrap,
+    .chart-body
+  ) *:not(img):not(svg):not(path):not(canvas):not(iframe):not([style*='background-image']):not(.event-thumb):not(.next-event-cover):not(.catalog-event-thumb):not(.activity-next-thumb):not(.activity-thumb):not(.event-image):not(.progress-fill):not(.progress-track):not(.bar):not(.bar--accent):not(.bar--peak):not(.btn-primary):not(.sidebar-nav-item--active):not(.role-nav-item--active):not(.brand-mark):not(.ai-fab):not(.status-pill--ok),
+body.high-contrast-mode :is(
+    .ai-panel,
+    .chat-history,
+    .chat-main,
+    .chat-timeline,
+    .chat-bubble,
+    .detail-panel,
+    .card,
+    .kpi-card,
+    .log-card,
+    .chart-card,
+    .sidebar-panel,
+    .role-sidebar,
+    .next-event-card,
+    .form-card,
+    .brand-block,
+    .sidebar-header,
+    .sidebar-nav,
+    .sidebar-footer,
+    .page-shell,
+    .panel-main,
+    .chart-wrap,
+    .chart-body,
+    .kpi-value,
+    .kpi-label,
+    .kpi-sub
   ),
 body.high-contrast-mode :is(
     .ai-panel,
-    .ai-panel *:not(img):not(svg):not(path):not(canvas):not(iframe),
     .chat-history,
-    .chat-history *:not(img):not(svg),
     .chat-main,
-    .chat-timeline,
-    .chat-bubble,
     .detail-panel,
-    .detail-panel *,
     .card,
     .kpi-card,
     .log-card,
     .chart-card,
     .sidebar-panel,
-    .role-sidebar
-  ) {
-  background-color: var(--hc-bg, #000) !important;
+    .role-sidebar,
+    .next-event-card,
+    .form-card,
+    .brand-block,
+    .sidebar-header,
+    .sidebar-nav,
+    .sidebar-footer,
+    .page-shell,
+    .panel-main,
+    .chart-wrap,
+    .chart-body
+  ) *:not(img):not(svg):not(path):not(canvas):not(iframe):not([style*='background-image']):not(.event-thumb):not(.next-event-cover):not(.catalog-event-thumb):not(.activity-next-thumb):not(.activity-thumb):not(.event-image):not(.progress-fill):not(.progress-track):not(.bar):not(.bar--accent):not(.bar--peak):not(.btn-primary):not(.sidebar-nav-item--active):not(.role-nav-item--active):not(.brand-mark):not(.ai-fab):not(.status-pill--ok) {
+  background-color: var(--hc-bg, #121212) !important;
   background-image: none !important;
-  color: var(--hc-fg, #FFFF00) !important;
-  border-color: var(--hc-fg, #FFFF00) !important;
+  color: var(--hc-fg, #FFFFFF) !important;
+  border-color: var(--hc-line, #2A2A2A) !important;
 }
 
-/* Hover de fondo blanco: letra negra, nunca blanco sobre blanco. */
+/* Hover: superficie elevada, no inversión blanco/negro. */
 html[data-contrast='high'] :is(
     tr,
     td,
@@ -756,7 +875,7 @@ html[data-contrast='high'] :is(
     .close-sidebar-btn,
     .nav-bell-btn
   ):hover,
-html[data-contrast='high'] :is(tr, .clickable-row, .chat-hilo, .sidebar-nav-item, .ai-list li):hover *,
+html[data-contrast='high'] :is(tr, .clickable-row, .chat-hilo, .sidebar-nav-item, .ai-list li):hover *:not([style*='background-image']):not(.event-thumb):not(.next-event-cover):not(.catalog-event-thumb):not(.activity-next-thumb):not(.activity-thumb):not(.event-image):not(img):not(svg),
 body.high-contrast-mode :is(
     tr,
     td,
@@ -779,11 +898,11 @@ body.high-contrast-mode :is(
     .close-sidebar-btn,
     .nav-bell-btn
   ):hover,
-body.high-contrast-mode :is(tr, .clickable-row, .chat-hilo, .sidebar-nav-item, .ai-list li):hover * {
-  background-color: #fff !important;
+body.high-contrast-mode :is(tr, .clickable-row, .chat-hilo, .sidebar-nav-item, .ai-list li):hover *:not([style*='background-image']):not(.event-thumb):not(.next-event-cover):not(.catalog-event-thumb):not(.activity-next-thumb):not(.activity-thumb):not(.event-image):not(img):not(svg) {
+  background-color: #2A2A2A !important;
   background-image: none !important;
-  color: #000 !important;
-  border-color: #000 !important;
+  color: #FFFFFF !important;
+  border-color: #3F3F3F !important;
 }
 
 html[data-contrast='high'] :is(
@@ -814,7 +933,49 @@ html[data-contrast='high'] :is(
     .role-nav-item--active,
     .ai-bubble--user,
     .chat-bubble--user
-  ):is(:hover, :focus, :focus-visible, :active),
+  ):hover,
+html[data-contrast='high'] :is(
+    .btn-primary,
+    .submit-btn,
+    .login-button,
+    .ai-fab,
+    .ai-tab--active,
+    .ai-primary,
+    .ai-send,
+    .filter-chip--active,
+    .sidebar-nav-item--active,
+    .role-nav-item--active,
+    .ai-bubble--user,
+    .chat-bubble--user
+  ):focus,
+html[data-contrast='high'] :is(
+    .btn-primary,
+    .submit-btn,
+    .login-button,
+    .ai-fab,
+    .ai-tab--active,
+    .ai-primary,
+    .ai-send,
+    .filter-chip--active,
+    .sidebar-nav-item--active,
+    .role-nav-item--active,
+    .ai-bubble--user,
+    .chat-bubble--user
+  ):focus-visible,
+html[data-contrast='high'] :is(
+    .btn-primary,
+    .submit-btn,
+    .login-button,
+    .ai-fab,
+    .ai-tab--active,
+    .ai-primary,
+    .ai-send,
+    .filter-chip--active,
+    .sidebar-nav-item--active,
+    .role-nav-item--active,
+    .ai-bubble--user,
+    .chat-bubble--user
+  ):active,
 body.high-contrast-mode :is(
     .btn-primary,
     .submit-btn,
@@ -843,11 +1004,53 @@ body.high-contrast-mode :is(
     .role-nav-item--active,
     .ai-bubble--user,
     .chat-bubble--user
-  ):is(:hover, :focus, :focus-visible, :active) {
-  background: var(--hc-accent, #00FFFF) !important;
+  ):hover,
+body.high-contrast-mode :is(
+    .btn-primary,
+    .submit-btn,
+    .login-button,
+    .ai-fab,
+    .ai-tab--active,
+    .ai-primary,
+    .ai-send,
+    .filter-chip--active,
+    .sidebar-nav-item--active,
+    .role-nav-item--active,
+    .ai-bubble--user,
+    .chat-bubble--user
+  ):focus,
+body.high-contrast-mode :is(
+    .btn-primary,
+    .submit-btn,
+    .login-button,
+    .ai-fab,
+    .ai-tab--active,
+    .ai-primary,
+    .ai-send,
+    .filter-chip--active,
+    .sidebar-nav-item--active,
+    .role-nav-item--active,
+    .ai-bubble--user,
+    .chat-bubble--user
+  ):focus-visible,
+body.high-contrast-mode :is(
+    .btn-primary,
+    .submit-btn,
+    .login-button,
+    .ai-fab,
+    .ai-tab--active,
+    .ai-primary,
+    .ai-send,
+    .filter-chip--active,
+    .sidebar-nav-item--active,
+    .role-nav-item--active,
+    .ai-bubble--user,
+    .chat-bubble--user
+  ):active {
+  background: var(--hc-accent, #E53935) !important;
   background-image: none !important;
-  color: var(--hc-on-accent, #000) !important;
-  border-color: var(--hc-accent, #00FFFF) !important;
+  color: var(--hc-on-accent, #FFFFFF) !important;
+  border-color: var(--hc-accent, #E53935) !important;
 }
 
 html[data-contrast='high'] :is(
@@ -859,7 +1062,7 @@ html[data-contrast='high'] :is(
     .chat-bubble--user,
     .sidebar-nav-item--active,
     .role-nav-item--active
-  ) *,
+  ) *:not([style*='background-image']),
 html[data-contrast='high'] :is(
     .btn-primary,
     .ai-tab--active,
@@ -868,7 +1071,16 @@ html[data-contrast='high'] :is(
     .ai-bubble--user,
     .chat-bubble--user,
     .sidebar-nav-item--active
-  ):is(:hover, :focus) *,
+  ):hover *:not([style*='background-image']),
+html[data-contrast='high'] :is(
+    .btn-primary,
+    .ai-tab--active,
+    .ai-primary,
+    .ai-send,
+    .ai-bubble--user,
+    .chat-bubble--user,
+    .sidebar-nav-item--active
+  ):focus *:not([style*='background-image']),
 body.high-contrast-mode :is(
     .btn-primary,
     .ai-tab--active,
@@ -878,7 +1090,7 @@ body.high-contrast-mode :is(
     .chat-bubble--user,
     .sidebar-nav-item--active,
     .role-nav-item--active
-  ) *,
+  ) *:not([style*='background-image']),
 body.high-contrast-mode :is(
     .btn-primary,
     .ai-tab--active,
@@ -887,9 +1099,285 @@ body.high-contrast-mode :is(
     .ai-bubble--user,
     .chat-bubble--user,
     .sidebar-nav-item--active
-  ):is(:hover, :focus) * {
+  ):hover *:not([style*='background-image']),
+body.high-contrast-mode :is(
+    .btn-primary,
+    .ai-tab--active,
+    .ai-primary,
+    .ai-send,
+    .ai-bubble--user,
+    .chat-bubble--user,
+    .sidebar-nav-item--active
+  ):focus *:not([style*='background-image']) {
   background: transparent !important;
-  color: var(--hc-on-accent, #000) !important;
+  color: var(--hc-on-accent, #FFFFFF) !important;
+}
+
+/* Barras de progreso: track oscuro + fill rojo. */
+html[data-contrast='high'] :is(.progress-bar, .capacity-bar, .progress-track),
+body.high-contrast-mode :is(.progress-bar, .capacity-bar, .progress-track) {
+  background: #2A2A2A !important;
+}
+
+html[data-contrast='high'] :is(.progress-fill, .capacity-fill, .progress-bar > span, .progress-bar__fill),
+body.high-contrast-mode :is(.progress-fill, .capacity-fill, .progress-bar > span, .progress-bar__fill) {
+  background: var(--hc-accent, #E53935) !important;
+}
+
+/* ---------------------------------------------------------------------------
+   Fondo único (admin / panels): anula gradientes y rgba que dejan “capas”.
+   Todo al mismo #121212 excepto acentos (rojo activo, barras del chart).
+   --------------------------------------------------------------------------- */
+html[data-contrast='high'] :is(
+    .role-sidebar,
+    .role-sidebar-brand,
+    .role-sidebar-brand-label,
+    .role-profile-card,
+    .role-avatar:not(.role-avatar--photo),
+    .role-nav-list,
+    .role-nav-item:not(.role-nav-item--active),
+    .role-logout-btn,
+    .role-nav-divider,
+    .role-profile-name,
+    .role-profile-sub,
+    .dash-hero,
+    .dash-hero .page-title,
+    .dash-hero .page-subtitle,
+    .dash-hero .actions-row,
+    .kpi-grid,
+    .kpi-card,
+    .kpi-label,
+    .kpi-value,
+    .kpi-sub,
+    .analysis-grid,
+    .card,
+    .section-title,
+    .chart-sub,
+    .bar-chart,
+    .bar-item,
+    .bar-tooltip,
+    .bar-label,
+    .empty-text,
+    .actions-row,
+    .page-shell,
+    .panel-main,
+    .nav-bell-btn--dark
+  ),
+body.high-contrast-mode :is(
+    .role-sidebar,
+    .role-sidebar-brand,
+    .role-sidebar-brand-label,
+    .role-profile-card,
+    .role-avatar:not(.role-avatar--photo),
+    .role-nav-list,
+    .role-nav-item:not(.role-nav-item--active),
+    .role-logout-btn,
+    .role-nav-divider,
+    .role-profile-name,
+    .role-profile-sub,
+    .dash-hero,
+    .dash-hero .page-title,
+    .dash-hero .page-subtitle,
+    .dash-hero .actions-row,
+    .kpi-grid,
+    .kpi-card,
+    .kpi-label,
+    .kpi-value,
+    .kpi-sub,
+    .analysis-grid,
+    .card,
+    .section-title,
+    .chart-sub,
+    .bar-chart,
+    .bar-item,
+    .bar-tooltip,
+    .bar-label,
+    .empty-text,
+    .actions-row,
+    .page-shell,
+    .panel-main,
+    .nav-bell-btn--dark
+  ) {
+  background: #121212 !important;
+  background-image: none !important;
+  background-color: #121212 !important;
+}
+
+html[data-contrast='high'] .dash-hero .btn-primary,
+body.high-contrast-mode .dash-hero .btn-primary {
+  background: #E53935 !important;
+  color: #FFFFFF !important;
+  border-color: #E53935 !important;
+}
+
+html[data-contrast='high'] .dash-hero .btn-secondary,
+body.high-contrast-mode .dash-hero .btn-secondary {
+  background: #121212 !important;
+  color: #FFFFFF !important;
+  border: 2px solid #E53935 !important;
+}
+
+html[data-contrast='high'] .role-nav-item:not(.role-nav-item--active):hover,
+body.high-contrast-mode .role-nav-item:not(.role-nav-item--active):hover {
+  background: #1A1A1A !important;
+  background-image: none !important;
+  color: #FFFFFF !important;
+}
+
+html[data-contrast='high'] .role-nav-item--active,
+html[data-contrast='high'] .role-nav-item--active:hover,
+body.high-contrast-mode .role-nav-item--active,
+body.high-contrast-mode .role-nav-item--active:hover {
+  background: #E53935 !important;
+  background-image: none !important;
+  color: #FFFFFF !important;
+}
+
+html[data-contrast='high'] .bar:not(.bar--accent):not(.bar--peak),
+body.high-contrast-mode .bar:not(.bar--accent):not(.bar--peak) {
+  background: #2A2A2A !important;
+  background-image: none !important;
+}
+
+html[data-contrast='high'] .bar--accent,
+body.high-contrast-mode .bar--accent {
+  background: #E53935 !important;
+  background-image: none !important;
+}
+
+html[data-contrast='high'] .bar--peak,
+body.high-contrast-mode .bar--peak {
+  background: #EF5350 !important;
+  background-image: none !important;
+}
+
+/* Sidebar: el label no pinta su propio fondo (evita el “cajón” negro en Eventos). */
+html[data-contrast='high'] :is(
+    .nav-item-main,
+    .nav-item-main *,
+    .role-nav-item > span,
+    .sidebar-nav-item > span,
+    .role-sidebar-brand-label,
+    .role-sidebar-brand-label *:not(.brand-mark)
+  ),
+body.high-contrast-mode :is(
+    .nav-item-main,
+    .nav-item-main *,
+    .role-nav-item > span,
+    .sidebar-nav-item > span,
+    .role-sidebar-brand-label,
+    .role-sidebar-brand-label *:not(.brand-mark)
+  ) {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+/* Activo: hijos transparentes sobre el rojo del item. */
+html[data-contrast='high'] :is(.role-nav-item--active, .sidebar-nav-item--active) :is(.nav-item-main, .nav-item-main *, span),
+body.high-contrast-mode :is(.role-nav-item--active, .sidebar-nav-item--active) :is(.nav-item-main, .nav-item-main *, span) {
+  background: transparent !important;
+  background-color: transparent !important;
+  color: #FFFFFF !important;
+}
+
+/* Fotos de evento: última palabra — no pisar el url() inline (cualquier rol/clase). */
+html[data-contrast='high'] :is(
+    .event-thumb,
+    .next-event-cover,
+    .catalog-event-thumb,
+    .activity-next-thumb,
+    .activity-thumb,
+    .event-image
+  ),
+html[data-contrast='high'] [style*='background-image'],
+body.high-contrast-mode :is(
+    .event-thumb,
+    .next-event-cover,
+    .catalog-event-thumb,
+    .activity-next-thumb,
+    .activity-thumb,
+    .event-image
+  ),
+body.high-contrast-mode [style*='background-image'] {
+  background-color: #2A2A2A !important;
+  /* background-image deliberadamente omitido */
+  filter: none !important;
+}
+
+/* Textos/labels anidados: transparentes para no crear “cajones”. */
+html[data-contrast='high'] :is(
+    .next-event-body,
+    .next-event-kicker,
+    .next-event-title,
+    .next-event-actions,
+    .catalog-event-copy,
+    .catalog-event-main,
+    .event-card-body,
+    .event-tag,
+    .section-title,
+    .chart-sub,
+    .page-title,
+    .page-subtitle,
+    .kpi-label,
+    .kpi-value,
+    .kpi-sub,
+    .empty-text,
+    .data-table th,
+    .data-table td,
+    .table-wrap,
+    .form-card label,
+    .field-label
+  ),
+body.high-contrast-mode :is(
+    .next-event-body,
+    .next-event-kicker,
+    .next-event-title,
+    .next-event-actions,
+    .catalog-event-copy,
+    .catalog-event-main,
+    .event-card-body,
+    .event-tag,
+    .section-title,
+    .chart-sub,
+    .page-title,
+    .page-subtitle,
+    .kpi-label,
+    .kpi-value,
+    .kpi-sub,
+    .empty-text,
+    .data-table th,
+    .data-table td,
+    .table-wrap,
+    .form-card label,
+    .field-label
+  ) {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+html[data-contrast='high'] :is(.next-event-kicker, .event-tag, .kpi-label, .chart-sub, .page-subtitle, .kpi-sub),
+body.high-contrast-mode :is(.next-event-kicker, .event-tag, .kpi-label, .chart-sub, .page-subtitle, .kpi-sub) {
+  color: var(--hc-muted, #9CA3AF) !important;
+}
+
+html[data-contrast='high'] .next-event-kicker,
+body.high-contrast-mode .next-event-kicker {
+  color: var(--hc-accent, #E53935) !important;
+}
+
+/* Progress fill: última palabra en rojo (no lo pise el fondo de cards). */
+html[data-contrast='high'] .progress-track,
+body.high-contrast-mode .progress-track {
+  background: #2A2A2A !important;
+  background-image: none !important;
+}
+
+html[data-contrast='high'] .progress-fill,
+body.high-contrast-mode .progress-fill {
+  background: #E53935 !important;
+  background-image: none !important;
 }
 
 @media (forced-colors: active) {

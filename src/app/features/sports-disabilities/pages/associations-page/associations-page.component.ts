@@ -24,6 +24,7 @@ export class AssociationsPageComponent implements OnInit {
   form: FormGroup;
   selectedSportId: number | null = null;
   listSportId = '';
+  listDisabilityId = '';
   searchQuery = '';
   loading = true;
   errorMessage: string | null = null;
@@ -52,11 +53,20 @@ export class AssociationsPageComponent implements OnInit {
   }
 
   get associations(): SportDisability[] {
-    if (!this.listSportId) {
-      return this.allAssociations;
+    let items = this.allAssociations;
+    if (this.listSportId) {
+      const sportId = Number(this.listSportId);
+      items = items.filter((item) => item.sportId === sportId);
     }
-    const sportId = Number(this.listSportId);
-    return this.allAssociations.filter((item) => item.sportId === sportId);
+    if (this.listDisabilityId) {
+      const disabilityId = Number(this.listDisabilityId);
+      items = items.filter((item) => item.disabilityId === disabilityId);
+    }
+    return items;
+  }
+
+  get hasActiveFilters(): boolean {
+    return !!(this.searchQuery.trim() || this.listSportId || this.listDisabilityId);
   }
 
   get filteredAssociations(): SportDisability[] {
@@ -75,6 +85,7 @@ export class AssociationsPageComponent implements OnInit {
   clearSearch(): void {
     this.searchQuery = '';
     this.listSportId = '';
+    this.listDisabilityId = '';
   }
 
   create(): void {

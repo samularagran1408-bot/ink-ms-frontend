@@ -67,6 +67,15 @@ export interface DashboardFilters {
   module?: string;
 }
 
+export interface WeeklyScheduleResponse {
+  enabled: boolean;
+  reportConfigId?: string;
+  recipientEmail?: string;
+  frequency?: string;
+  lastRun?: string;
+  createdAt?: string;
+}
+
 export interface AuditLogExportItem {
   id?: string;
   adminEmail?: string;

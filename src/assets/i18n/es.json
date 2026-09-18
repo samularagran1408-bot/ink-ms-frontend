@@ -221,7 +221,13 @@
     "ATTENDANCE_METHOD": "Cómo registrar asistencia",
     "ATTENDANCE_METHOD_HINT": "Elige si confirmas asistencia con un formulario o escaneando un código QR.",
     "ATTENDANCE_QR": "Por QR: al escanear se guarda al instante, sin encuesta",
-    "ATTENDANCE_FORM": "Por formulario: completas una encuesta de asistencia"
+    "ATTENDANCE_FORM": "Por formulario: completas una encuesta de asistencia",
+    "WEEKLY_REPORT": "Envío semanal de reporte",
+    "WEEKLY_REPORT_HINT": "Si lo activas, cada semana recibirás por correo un PDF con el resumen del dashboard. Puedes cancelarlo cuando quieras.",
+    "WEEKLY_REPORT_ENABLED": "Programar envío semanal por correo",
+    "WEEKLY_REPORT_ACTIVE": "Programación activa: el próximo envío será automático.",
+    "WEEKLY_REPORT_INACTIVE": "Sin programación activa.",
+    "WEEKLY_REPORT_SYNC_ERROR": "Preferencias guardadas, pero no se pudo actualizar la programación del reporte."
   },
   "NOTIFICATIONS": {
     "TITLE": "Notificaciones",
@@ -671,6 +677,7 @@
     "SELECTED": "seleccionado",
     "SEARCH_PH": "Buscar por deporte, discapacidad o adaptaciones",
     "ALL_SPORTS": "Todos los deportes",
+    "ALL_DISABILITIES": "Todas las discapacidades",
     "FILTER_SPORT": "Filtrar por deporte",
     "EMPTY_SEARCH": "No hay asociaciones que coincidan con la búsqueda."
   },

@@ -15,6 +15,7 @@ export interface Preference {
   ttsEnabled?: boolean;
   voiceLanguage?: string;
   attendanceCheckInMethod?: AttendanceCheckInMethod | string;
+  weeklyReportEmailEnabled?: boolean;
   notificationPreferences?: unknown;
   trainingPreferences?: unknown;
 }
@@ -34,6 +35,7 @@ export interface PreferenceRequest {
   ttsEnabled?: boolean;
   voiceLanguage?: string;
   attendanceCheckInMethod?: AttendanceCheckInMethod | string;
+  weeklyReportEmailEnabled?: boolean;
 }
 
 export function normalizeAttendanceCheckInMethod(
