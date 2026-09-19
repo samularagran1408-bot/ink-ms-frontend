@@ -11,8 +11,39 @@
   <p class="banner error" *ngIf="errorMessage" role="alert">{{ errorMessage }}</p>
   <p class="banner info" *ngIf="infoMessage && !errorMessage">{{ infoMessage }}</p>
 
-  <!-- PREP -->
+  <!-- PASO 1: GUÍA OBLIGATORIA -->
+  <div class="card guide-step" *ngIf="step === 'guide'">
+    <p class="guide-step-badge">Paso 1 de 3 · Antes de presentar</p>
+    <h2>Guía de estudio · {{ roleLabel }}</h2>
+    <p class="guide-intro">{{ guideIntro }}</p>
+    <p class="guide-disclaimer">
+      Ayuda para prepararte. No es un solucionario: no te dice qué opción marcar.
+    </p>
+
+    <div class="guide-body">
+      <section class="guide-block" *ngFor="let section of guideSections">
+        <h3>{{ section.title }}</h3>
+        <ul>
+          <li *ngFor="let point of section.points">{{ point }}</li>
+        </ul>
+      </section>
+
+      <p class="guide-tip">
+        Cuando presentes: lee el enunciado completo, descarta lo temerario o que rompa privacidad/seguridad,
+        y elige la opción más alineada con inclusión real y buen uso de la plataforma.
+      </p>
+    </div>
+
+    <div class="actions-row">
+      <button type="button" class="btn-primary" (click)="continueFromGuide()">
+        Ya leí la guía, continuar
+      </button>
+    </div>
+  </div>
+
+  <!-- PASO 2: PREP -->
   <div class="card" *ngIf="step === 'prep'">
+    <p class="guide-step-badge">Paso 2 de 3 · Tu perfil</p>
     <h2>Antes de empezar</h2>
     <p class="hint">Indica tus años de experiencia y las disciplinas en las que te desempeñas.</p>
 
@@ -46,6 +77,9 @@
       </p>
 
       <div class="actions-row">
+        <button type="button" class="btn-secondary" (click)="backToGuide()">
+          Volver a la guía
+        </button>
         <button type="submit" class="btn-primary" [disabled]="busy || prep?.attemptsRemaining === 0">
           {{ busy ? 'Procesando…' : 'Continuar al quiz' }}
         </button>
@@ -53,8 +87,9 @@
     </form>
   </div>
 
-  <!-- QUIZ -->
+  <!-- PASO 3: QUIZ -->
   <div class="card" *ngIf="step === 'quiz' && quiz">
+    <p class="guide-step-badge">Paso 3 de 3 · Presentación</p>
     <h2>Preguntas</h2>
     <p class="hint">{{ quiz.mensaje }}</p>
 
@@ -100,6 +135,10 @@
     <ul class="topics" *ngIf="result.temas_a_reforzar?.length">
       <li *ngFor="let tema of result.temas_a_reforzar">Reforzar: {{ tema }}</li>
     </ul>
+
+    <p class="hint reinforce" *ngIf="!result.aprobado">
+      Al reintentar volverás a la guía de estudio antes de presentar de nuevo.
+    </p>
 
     <div class="actions-row">
       <button type="button" class="btn-primary" *ngIf="result.aprobado" (click)="goHome()">
