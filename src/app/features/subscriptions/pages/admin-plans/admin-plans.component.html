@@ -23,40 +23,42 @@
         <h2>PLANES REGISTRADOS</h2>
         <span>{{ planes.length }} plan(es) en catálogo</span>
       </div>
-      <table>
-        <thead>
-          <tr>
-            <th>NOMBRE</th>
-            <th>PRECIO (COP)</th>
-            <th>LÍMITE MES</th>
-            <th>COMISIÓN</th>
-            <th>DURACIÓN</th>
-            <th>ESTADO</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let plan of planes">
-            <td class="plan-cell"><b>{{ plan.nombre }}</b><small>{{ plan.descripcion }}</small></td>
-            <td class="price">${{ plan.precio | number: '1.0-0' }} COP</td>
-            <td>{{ plan.limiteEventosMes ?? 'Ilimitado' }}</td>
-            <td>{{ plan.porcentajeComision ?? 0 }}%</td>
-            <td>{{ plan.duracionDias }} días</td>
-            <td>
-              <span class="pill" [class.on]="plan.activo" [class.off]="!plan.activo">{{ plan.activo ? 'Activo' : 'Inactivo' }}</span>
-              <span class="pill on" *ngIf="plan.esGratuito">Gratuito</span>
-              <span class="pill on" *ngIf="plan.esPlanInicial">Inicial</span>
-            </td>
-            <td class="row-actions">
-              <button class="btn-edit" type="button" (click)="editarPlan(plan)">Editar</button>
-              <button class="btn-deactivate" type="button" *ngIf="plan.activo" (click)="desactivar(plan)">Desactivar</button>
-            </td>
-          </tr>
-          <tr *ngIf="!planes.length">
-            <td colspan="7" class="state-box">Todavía no hay planes creados.</td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>NOMBRE</th>
+              <th>PRECIO (COP)</th>
+              <th>LÍMITE MES</th>
+              <th>COMISIÓN</th>
+              <th>DURACIÓN</th>
+              <th>ESTADO</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let plan of planes">
+              <td class="plan-cell"><b>{{ plan.nombre }}</b><small>{{ plan.descripcion }}</small></td>
+              <td class="price">${{ plan.precio | number: '1.0-0' }} COP</td>
+              <td>{{ plan.limiteEventosMes ?? 'Ilimitado' }}</td>
+              <td>{{ plan.porcentajeComision ?? 0 }}%</td>
+              <td>{{ plan.duracionDias }} días</td>
+              <td>
+                <span class="pill" [class.on]="plan.activo" [class.off]="!plan.activo">{{ plan.activo ? 'Activo' : 'Inactivo' }}</span>
+                <span class="pill on" *ngIf="plan.esGratuito">Gratuito</span>
+                <span class="pill on" *ngIf="plan.esPlanInicial">Inicial</span>
+              </td>
+              <td class="row-actions">
+                <button class="btn-edit" type="button" (click)="editarPlan(plan)">Editar</button>
+                <button class="btn-deactivate" type="button" *ngIf="plan.activo" (click)="desactivar(plan)">Desactivar</button>
+              </td>
+            </tr>
+            <tr *ngIf="!planes.length">
+              <td colspan="7" class="state-box">Todavía no hay planes creados.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </section>
 
     <!-- Plan form -->
