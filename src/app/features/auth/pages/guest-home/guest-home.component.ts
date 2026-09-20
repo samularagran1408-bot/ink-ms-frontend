@@ -1,18 +1,15 @@
-import { Component } from '@angular/core';
-import { Location } from '@angular/common';
+import { Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
+
+import { ROLE_HOME } from '@core/models/app-role';
+import { SessionService } from '@core/services/session.service';
 
 interface Disciplina {
   img: string;
   alt: string;
   nombre: string;
   tags: string[];
-}
-
-interface Evento {
-  dia: string;
-  mes: string;
-  nombre: string;
-  lugar: string;
+  filtro: string;
 }
 
 @Component({
@@ -20,55 +17,65 @@ interface Evento {
   templateUrl: './guest-home.component.html',
   styleUrl: './guest-home.component.scss'
 })
-export class GuestHomeComponent {
-  readonly filtros = ['Todos', 'Paralímpico', 'Recreativo', 'Deportes de Equipo'];
+export class GuestHomeComponent implements OnInit {
+  readonly filtros = ['Todos', 'Individual', 'Equipo', 'Acuático'];
   selectedFiltro = 'Todos';
 
   readonly disciplinas: Disciplina[] = [
     {
-      img: 'https://images.unsplash.com/photo-1562771379-e71d25bd9ce3?w=400&h=300&fit=crop',
+      img: 'assets/events/baloncesto-silla.png',
       alt: 'Baloncesto en silla de ruedas',
-      nombre: 'Baloncesto en silla de ruedas',
-      tags: ['Alta Intensidad', 'En Equipo']
+      nombre: 'Baloncesto en silla',
+      tags: ['Equipo', 'Adaptado'],
+      filtro: 'Equipo'
     },
     {
-      img: 'https://images.unsplash.com/photo-1530549387789-4c1017266635?w=400&h=300&fit=crop',
-      alt: 'Para-Natación',
-      nombre: 'Para-Natación',
-      tags: ['Resistencia', 'Individual']
+      img: 'assets/events/natacion.png',
+      alt: 'Natación adaptada',
+      nombre: 'Natación adaptada',
+      tags: ['Individual', 'Acuático'],
+      filtro: 'Acuático'
     },
     {
-      img: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=400&h=300&fit=crop',
-      alt: 'Atletismo Adaptado',
-      nombre: 'Atletismo Adaptado',
-      tags: ['Sprint', 'Precisión']
+      img: 'assets/events/futbol-sala.png',
+      alt: 'Fútbol sala adaptado',
+      nombre: 'Fútbol sala adaptado',
+      tags: ['Equipo', 'Adaptado'],
+      filtro: 'Equipo'
     },
     {
-      img: 'https://images.unsplash.com/photo-1517649763962-0c623066013b?w=400&h=300&fit=crop',
-      alt: 'Para-Ciclismo',
-      nombre: 'Para-Ciclismo',
-      tags: ['Al Aire Libre', 'Fuerza']
+      img: 'assets/events/default.png',
+      alt: 'Atletismo adaptado',
+      nombre: 'Atletismo adaptado',
+      tags: ['Individual', 'Pista'],
+      filtro: 'Individual'
     }
   ];
 
-  readonly eventos: Evento[] = [
-    { dia: '12', mes: 'oct', nombre: 'Entrenamiento Maratón Adaptado', lugar: 'Estadio Central, Parque A' },
-    { dia: '18', mes: 'oct', nombre: 'Abierto de Tenis en Silla', lugar: 'Club Deportivo de la Ciudad' },
-    { dia: '24', mes: 'oct', nombre: 'Taller Tech Biomecánica', lugar: 'Laboratorios Inklusport' }
-  ];
+  constructor(
+    private router: Router,
+    private session: SessionService
+  ) {}
 
-  constructor(private location: Location) {}
-
-  goBack(): void {
-    this.location.back();
+  ngOnInit(): void {
+    if (this.session.isAuthenticated()) {
+      const role = this.session.getPrimaryRole();
+      void this.router.navigateByUrl(ROLE_HOME[role] || '/home');
+    }
   }
 
-  onViewEventDetails(nombre: string): void {
-    alert(`Detalles de "${nombre}" próximamente disponibles.`);
+  get disciplinasVisibles(): Disciplina[] {
+    if (this.selectedFiltro === 'Todos') {
+      return this.disciplinas;
+    }
+    return this.disciplinas.filter((d) => d.filtro === this.selectedFiltro || d.tags.includes(this.selectedFiltro));
   }
 
-  onJoinLeague(event: Event): void {
-    event.preventDefault();
-    alert('¡Gracias! Pronto nos pondremos en contacto contigo.');
+  goLogin(): void {
+    void this.router.navigate(['/login']);
+  }
+
+  goRegister(): void {
+    void this.router.navigate(['/register']);
   }
 }

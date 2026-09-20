@@ -59,7 +59,7 @@ export class PanelRouteReuseStrategy implements RouteReuseStrategy {
       return false;
     }
     const path = this.path(route);
-    if (!path || path === 'login' || path === 'register' || path === 'guest') {
+    if (!path || path === 'login' || path === 'register' || path === 'guest' || path === 'welcome') {
       return false;
     }
     return path.startsWith('home')

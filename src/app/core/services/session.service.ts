@@ -14,7 +14,7 @@ import { UnreadNotificationsService } from '@features/accessibility/services/unr
 import { PanelRouteReuseStrategy } from '@core/routing/panel-route-reuse.strategy';
 
 const TOKEN_KEY = 'auth_token';
-const PUBLIC_PATHS = new Set(['/', '', '/login', '/register', '/guest', '/forgot-password']);
+const PUBLIC_PATHS = new Set(['/', '', '/login', '/register', '/guest', '/welcome', '/forgot-password']);
 
 /**
  * sessionStorage: cada pestaña tiene su propio JWT.
