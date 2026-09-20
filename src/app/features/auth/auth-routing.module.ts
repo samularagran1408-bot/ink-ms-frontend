@@ -8,10 +8,11 @@ import { GuestHomeComponent } from './pages/guest-home/guest-home.component';
 import { ForgotPasswordComponent } from './pages/forgot-password/forgot-password.component';
 
 const routes: Routes = [
-  { path: '', component: StartInterfaceComponent },
+  { path: '', component: GuestHomeComponent },
+  { path: 'welcome', component: StartInterfaceComponent },
   { path: 'login', component: LoginComponent },
   { path: 'register', component: RegisterComponent },
-  { path: 'guest', component: GuestHomeComponent },
+  { path: 'guest', redirectTo: '', pathMatch: 'full' },
   { path: 'forgot-password', component: ForgotPasswordComponent },
 ];
 
