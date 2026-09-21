@@ -1143,10 +1143,13 @@ a.register-event-btn:hover {
 
   .welcome-banner {
     flex-direction: column;
+    padding: 16px;
+    gap: 12px;
   }
 
   .compete-banner {
     flex-wrap: wrap;
+    padding: 14px;
   }
 
   .compete-open-btn {
@@ -1156,5 +1159,19 @@ a.register-event-btn:hover {
   .calendar-filters,
   .calendar-filter-actions {
     grid-template-columns: 1fr;
+  }
+
+  .activity-card,
+  .event-card {
+    padding: 14px;
+  }
+
+  .stat-box-value {
+    font-size: 22px;
+  }
+
+  .voice-note {
+    max-width: none;
+    width: 100%;
   }
 }

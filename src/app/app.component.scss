@@ -54,6 +54,14 @@
   line-height: 1.4;
 }
 
+.a11y-toast-hint {
+  margin-top: 2px;
+  font-size: 11.5px !important;
+  font-weight: 700 !important;
+  color: #FDE68A !important;
+  letter-spacing: 0.02em;
+}
+
 @keyframes a11yToastIn {
   from {
     opacity: 0;
@@ -62,5 +70,26 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@media (max-width: 700px) {
+  .a11y-toast {
+    top: auto;
+    right: max(12px, env(safe-area-inset-right, 0px));
+    left: max(12px, env(safe-area-inset-left, 0px));
+    bottom: max(16px, env(safe-area-inset-bottom, 0px));
+    max-width: none;
+    width: auto;
+    padding: 14px 16px;
+    border-radius: 14px;
+  }
+
+  .a11y-toast-copy strong {
+    font-size: 15px;
+  }
+
+  .a11y-toast-copy span {
+    font-size: 13px;
   }
 }

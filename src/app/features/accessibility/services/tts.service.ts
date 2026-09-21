@@ -14,8 +14,13 @@ export class TtsService {
   private unlocked = false;
   private playingId: string | null = null;
   private speakTimer: ReturnType<typeof setTimeout> | null = null;
+  private resumeWatch: ReturnType<typeof setInterval> | null = null;
   private audioCtx: AudioContext | null = null;
+  private voicesHooked = false;
+  /** Texto pendiente hasta el primer gesto (obligatorio en iOS/Android). */
+  private pendingSpeak: { text: string; notificationId?: string; force?: boolean } | null = null;
   private readonly spokenIds = new Set<string>();
+  private readonly unlockedSubject = new BehaviorSubject<boolean>(false);
   private readonly prefsSubject = new BehaviorSubject<{
     voiceCommandsEnabled: boolean;
     ttsEnabled: boolean;
@@ -31,6 +36,7 @@ export class TtsService {
 
   readonly preferences$ = this.prefsSubject.asObservable();
   readonly playingId$ = this.playingIdSubject.asObservable();
+  readonly unlocked$ = this.unlockedSubject.asObservable();
 
   applyPreferences(prefs: Partial<Preference> | null | undefined): void {
     if (!prefs) {
@@ -76,25 +82,49 @@ export class TtsService {
     return typeof window !== 'undefined' && 'speechSynthesis' in window;
   }
 
-  /** Los navegadores exigen un gesto del usuario; llamar solo desde click/tecla. */
+  /** True tras el primer toque/clic del usuario (requisito móvil). */
+  get isUnlocked(): boolean {
+    return this.unlocked;
+  }
+
+  /** Hay un aviso en cola esperando el gesto para sonar. */
+  get hasPendingSpeak(): boolean {
+    return !!this.pendingSpeak;
+  }
+
+  /**
+   * Desbloquea audio con un gesto del usuario.
+   * Después de esto, los avisos nuevos deben sonar solos (como en PC).
+   */
   unlock(): void {
-    if (this.unlocked) {
-      this.resumeAudio();
-      return;
-    }
+    this.ensureVoicesHook();
+    const firstUnlock = !this.unlocked;
     this.unlocked = true;
+    this.unlockedSubject.next(true);
     this.resumeAudio();
+    this.primeSpeechEngine();
+    this.startResumeWatch();
+
     if (!this.isSupported) {
+      this.flushPendingSpeak();
       return;
     }
-    try {
-      const warmUp = new SpeechSynthesisUtterance(' ');
-      warmUp.volume = 0;
-      warmUp.lang = this.voiceLanguage;
-      window.speechSynthesis.speak(warmUp);
-    } catch {
-      // Ignorar errores de warm-up.
+
+    if (firstUnlock) {
+      try {
+        // Volumen mínimo (no 0): iOS a veces ignora utterances silenciosos.
+        const warmUp = new SpeechSynthesisUtterance(' ');
+        warmUp.volume = 0.01;
+        warmUp.rate = 2;
+        warmUp.lang = this.voiceLanguage;
+        this.resumeSpeechEngine();
+        window.speechSynthesis.speak(warmUp);
+      } catch {
+        // Ignorar errores de warm-up.
+      }
     }
+
+    this.flushPendingSpeak();
   }
 
   /** Pitido corto para avisar aunque el texto a voz esté bloqueado. */
@@ -130,10 +160,15 @@ export class TtsService {
       clearTimeout(this.speakTimer);
       this.speakTimer = null;
     }
+    this.pendingSpeak = null;
     if (!this.isSupported) {
       return;
     }
-    window.speechSynthesis.cancel();
+    try {
+      window.speechSynthesis.cancel();
+    } catch {
+      // ignore
+    }
     this.setPlayingId(null);
   }
 
@@ -146,30 +181,16 @@ export class TtsService {
       return;
     }
 
-    if (this.speakTimer) {
-      clearTimeout(this.speakTimer);
+    if (!this.unlocked) {
+      this.pendingSpeak = {
+        text: content,
+        notificationId: options?.notificationId,
+        force: options?.force
+      };
+      return;
     }
-    window.speechSynthesis.cancel();
-    this.setPlayingId(options?.notificationId || null);
 
-    this.speakTimer = setTimeout(() => {
-      this.speakTimer = null;
-      const utterance = new SpeechSynthesisUtterance(content);
-      utterance.lang = this.voiceLanguage;
-      utterance.rate = 1;
-      utterance.pitch = 1;
-      const voice = this.pickVoice(this.voiceLanguage);
-      if (voice) {
-        utterance.voice = voice;
-      }
-      utterance.onend = () => {
-        this.setPlayingId(null);
-      };
-      utterance.onerror = () => {
-        this.setPlayingId(null);
-      };
-      window.speechSynthesis.speak(utterance);
-    }, 120);
+    this.enqueueSpeak(content, options?.notificationId);
   }
 
   speakNotification(note: AppNotification, options?: { force?: boolean; skipIfSpoken?: boolean }): void {
@@ -183,7 +204,16 @@ export class TtsService {
     if (!parts.length) {
       return;
     }
-    this.speak(parts.join('. '), { ...options, notificationId: note.id });
+    const text = parts.join('. ');
+    if (!this.unlocked) {
+      this.pendingSpeak = {
+        text,
+        notificationId: note.id,
+        force: options?.force
+      };
+      return;
+    }
+    this.speak(text, { ...options, notificationId: note.id });
     if (note.id) {
       this.spokenIds.add(note.id);
     }
@@ -218,7 +248,7 @@ export class TtsService {
 
     this.speak(text, { force: options?.force, notificationId: list[0]?.id });
 
-    if (options?.markSpoken !== false) {
+    if (this.unlocked && options?.markSpoken !== false) {
       list.forEach((note) => {
         if (note.id) {
           this.spokenIds.add(note.id);
@@ -235,9 +265,158 @@ export class TtsService {
     this.spokenIds.clear();
   }
 
+  private flushPendingSpeak(): void {
+    if (!this.pendingSpeak) {
+      return;
+    }
+    const pending = this.pendingSpeak;
+    this.pendingSpeak = null;
+    if (!pending.force && !this.isAudioNotificationsActive) {
+      return;
+    }
+    this.enqueueSpeak(pending.text, pending.notificationId);
+    if (pending.notificationId) {
+      this.spokenIds.add(pending.notificationId);
+    }
+  }
+
+  private enqueueSpeak(content: string, notificationId?: string): void {
+    if (this.speakTimer) {
+      clearTimeout(this.speakTimer);
+      this.speakTimer = null;
+    }
+
+    this.setPlayingId(notificationId || null);
+    this.resumeAudio();
+    this.resumeSpeechEngine();
+
+    // Ya desbloqueado: reproducir al llegar el aviso (mismo comportamiento que PC).
+    // En móvil evitamos delays; en desktop un pequeño gap evita solapar utterances.
+    const delayMs = this.isMobileLike() ? 0 : 60;
+    const run = () => {
+      this.speakTimer = null;
+      this.resumeSpeechEngine();
+
+      // Si hay algo hablando, cortar y seguir (iOS necesita resume tras cancel).
+      try {
+        if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
+          window.speechSynthesis.cancel();
+          this.resumeSpeechEngine();
+        }
+      } catch {
+        // ignore
+      }
+
+      const utterance = new SpeechSynthesisUtterance(content);
+      utterance.lang = this.voiceLanguage;
+      utterance.rate = 1;
+      utterance.pitch = 1;
+      utterance.volume = 1;
+      const voice = this.pickVoice(this.voiceLanguage);
+      if (voice) {
+        utterance.voice = voice;
+      }
+      utterance.onend = () => {
+        this.setPlayingId(null);
+        this.resumeSpeechEngine();
+      };
+      utterance.onerror = () => {
+        this.setPlayingId(null);
+        this.resumeSpeechEngine();
+        // Reintento único: iOS a veces falla el primer speak tras poll async.
+        this.speakTimer = setTimeout(() => {
+          this.speakTimer = null;
+          this.resumeSpeechEngine();
+          try {
+            const retry = new SpeechSynthesisUtterance(content);
+            retry.lang = this.voiceLanguage;
+            retry.volume = 1;
+            const retryVoice = this.pickVoice(this.voiceLanguage);
+            if (retryVoice) {
+              retry.voice = retryVoice;
+            }
+            retry.onend = () => this.setPlayingId(null);
+            retry.onerror = () => this.setPlayingId(null);
+            window.speechSynthesis.speak(retry);
+          } catch {
+            this.setPlayingId(null);
+          }
+        }, 180);
+      };
+
+      try {
+        window.speechSynthesis.speak(utterance);
+        // Safari a veces deja el motor en paused justo al encolar.
+        this.resumeSpeechEngine();
+      } catch {
+        this.setPlayingId(null);
+      }
+    };
+
+    if (delayMs <= 0) {
+      run();
+    } else {
+      this.speakTimer = setTimeout(run, delayMs);
+    }
+  }
+
+  /** iOS: speechSynthesis se queda en paused y deja de leer avisos nuevos. */
+  private resumeSpeechEngine(): void {
+    if (!this.isSupported) {
+      return;
+    }
+    try {
+      if (window.speechSynthesis.paused) {
+        window.speechSynthesis.resume();
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  private startResumeWatch(): void {
+    if (this.resumeWatch || typeof window === 'undefined') {
+      return;
+    }
+    this.resumeWatch = setInterval(() => this.resumeSpeechEngine(), 2500);
+  }
+
+  private primeSpeechEngine(): void {
+    this.resumeSpeechEngine();
+    try {
+      void window.speechSynthesis?.getVoices();
+    } catch {
+      // ignore
+    }
+  }
+
+  private isMobileLike(): boolean {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return false;
+    }
+    return (
+      window.matchMedia('(pointer: coarse)').matches
+      || window.matchMedia('(max-width: 700px)').matches
+      || /iPhone|iPad|iPod|Android/i.test(navigator.userAgent || '')
+    );
+  }
+
   private setPlayingId(id: string | null): void {
     this.playingId = id;
     this.playingIdSubject.next(id);
+  }
+
+  private ensureVoicesHook(): void {
+    if (this.voicesHooked || !this.isSupported) {
+      return;
+    }
+    this.voicesHooked = true;
+    try {
+      window.speechSynthesis.addEventListener('voiceschanged', () => undefined);
+      void window.speechSynthesis.getVoices();
+    } catch {
+      // ignore
+    }
   }
 
   private pickVoice(lang: string): SpeechSynthesisVoice | null {

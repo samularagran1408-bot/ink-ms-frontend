@@ -86,6 +86,7 @@ export class NotificationsPageComponent implements OnInit, OnDestroy {
     if (!this.audioMode) {
       return;
     }
+    this.tts.unlock();
     if (this.playingId === note.id) {
       this.tts.stop();
       return;
