@@ -101,6 +101,17 @@ export class PaymentGatewayComponent implements OnInit, AfterViewInit {
   }
 
   private initCardForm(): void {
+    if (!this.monto || this.monto <= 0) {
+      this.zone.run(() => {
+        this.error =
+          'Este cobro no tiene un monto válido (debe ser mayor a 0). ' +
+          (this.modo === 'evento'
+            ? 'Pide al organizador que configure un valor de inscripción mayor a 0 y vuelve a intentar.'
+            : 'Elige de nuevo el plan e inicia el pago otra vez.');
+      });
+      return;
+    }
+
     void loadMercadoPagoSdk()
       .then(() => this.mountCardForm())
       .catch(() => {
@@ -159,17 +170,27 @@ export class PaymentGatewayComponent implements OnInit, AfterViewInit {
       return;
     }
 
+    // Si MP no cargó cuotas (amount 0, BIN desconocido, etc.), el select queda vacío
+    // y el backend responde 400 "debe ser mayor que 0". Forzamos al menos 1 cuota.
+    const installments = Math.max(1, parseInt(String(datos.installments ?? '1'), 10) || 1);
+    const paymentMethodId = String(datos.paymentMethodId || '').trim();
+    if (!paymentMethodId) {
+      this.error =
+        'No se reconoció el medio de pago. Completa el número de tarjeta y espera a que carguen banco y cuotas.';
+      return;
+    }
+
     this.procesando = true;
     this.error = null;
 
     this.subscriptions
       .pagarConTarjeta(this.referencia, {
         cardToken: datos.token,
-        installments: Number(datos.installments),
-        paymentMethodId: datos.paymentMethodId,
-        issuerId: datos.issuerId,
-        docType: datos.identificationType,
-        docNumber: datos.identificationNumber,
+        installments,
+        paymentMethodId,
+        issuerId: datos.issuerId != null && datos.issuerId !== '' ? String(datos.issuerId) : undefined,
+        docType: String(datos.identificationType || '').trim(),
+        docNumber: String(datos.identificationNumber || '').trim(),
       })
       .subscribe({
         next: (resp) => {
@@ -198,7 +219,14 @@ export class PaymentGatewayComponent implements OnInit, AfterViewInit {
         },
         error: (err) => {
           this.procesando = false;
-          this.error = err?.error?.message ?? 'No se pudo procesar el pago. Intenta de nuevo.';
+          const status = err?.status;
+          if (status === 401) {
+            this.error = 'Tu sesión expiró. Vuelve a iniciar sesión e intenta el pago otra vez.';
+            return;
+          }
+          this.error = err?.error?.message
+            ?? err?.error?.detail
+            ?? 'No se pudo procesar el pago. Intenta de nuevo.';
         },
       });
   }
