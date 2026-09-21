@@ -25,6 +25,7 @@ export class NotificationAnnounceService implements OnDestroy {
   private started = false;
   private lastSeenCount = -1;
   private toastTimer: ReturnType<typeof setTimeout> | undefined;
+  private lastIncoming: AppNotification | null = null;
   private readonly shownIds = new Set<string>();
   private readonly visualAlertSubject = new BehaviorSubject<LiveNotificationAlert | null>(null);
 
@@ -53,6 +54,11 @@ export class NotificationAnnounceService implements OnDestroy {
       this.refreshPreferences().subscribe();
     }
     this.bindUnreadAnnouncements();
+  }
+
+  /** Solo el listener de gesto, antes de entrar al panel (login → home). */
+  startUnlockCapture(): void {
+    this.bindUnlockGesture();
   }
 
   stop(): void {
@@ -92,9 +98,22 @@ export class NotificationAnnounceService implements OnDestroy {
 
   announceOne(note: AppNotification, force = false): void {
     this.refreshPreferences().subscribe(() => {
+      this.tts.unlock();
       this.showVisual(note);
       this.tts.speakNotification(note, { force, skipIfSpoken: !force });
     });
+  }
+
+  /**
+   * Desde el toast en móvil: desbloquea audio y lee el último aviso
+   * (iOS no deja sonar sin gesto del usuario).
+   */
+  activateAudioFromGesture(): void {
+    this.tts.unlock();
+    if (this.lastIncoming) {
+      this.tts.playAlertChime();
+      this.tts.speakNotification(this.lastIncoming, { force: true, skipIfSpoken: false });
+    }
   }
 
   private bindUnreadAnnouncements(): void {
@@ -137,9 +156,14 @@ export class NotificationAnnounceService implements OnDestroy {
 
   /** Muestra el aviso y lo lee en voz alta, sin entrar al panel. */
   private presentIncoming(note: AppNotification): void {
-    this.tts.playAlertChime();
+    this.lastIncoming = note;
     this.showVisual(note);
     this.pushOsNotification(note);
+    // Si ya hubo un toque en la app, reproducir al instante (como en PC).
+    // Si no, queda en cola y suena en el próximo gesto.
+    if (this.tts.isUnlocked) {
+      this.tts.playAlertChime();
+    }
     this.tts.speakNotification(note, { force: true, skipIfSpoken: false });
   }
 
@@ -193,6 +217,7 @@ export class NotificationAnnounceService implements OnDestroy {
       this.tts.unlock();
     };
     document.addEventListener('pointerdown', this.unlockListener, { passive: true });
+    document.addEventListener('touchstart', this.unlockListener, { passive: true });
     document.addEventListener('keydown', this.unlockListener, { passive: true });
   }
 
@@ -201,6 +226,7 @@ export class NotificationAnnounceService implements OnDestroy {
       return;
     }
     document.removeEventListener('pointerdown', this.unlockListener);
+    document.removeEventListener('touchstart', this.unlockListener);
     document.removeEventListener('keydown', this.unlockListener);
     this.unlockListener = null;
   }
