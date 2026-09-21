@@ -64,7 +64,7 @@
 /* APLICACIÓN DINÁMICA DE TAMAÑO DE FUENTE */
 .login-wrapper .auth-title { font-size: calc(26px + var(--font-offset)); }
 .login-wrapper .hero-title { font-size: calc(34px + var(--font-offset)); }
-.login-wrapper .input-field { font-size: calc(13px + var(--font-offset)); }
+.login-wrapper .input-field { font-size: calc(16px + var(--font-offset)); }
 .login-wrapper .input-label { font-size: calc(10px + var(--font-offset)); }
 .login-wrapper .auth-footer { font-size: calc(12px + var(--font-offset)); }
 
@@ -460,7 +460,7 @@
   border: none;
   background: transparent;
   outline: none;
-  font-size: 13px;
+  font-size: 16px;
   color: #1E293B;
   font-weight: 500;
 }
@@ -609,6 +609,9 @@ select.input-field {
   .auth-card {
     max-width: 460px;
     height: auto;
+  }
+  .form-panel {
+    width: 100%;
   }
 }
 
