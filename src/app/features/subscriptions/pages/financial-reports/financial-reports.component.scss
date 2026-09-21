@@ -1,3 +1,5 @@
+@use 'breakpoints' as bp;
+
 // Variables
 $bg-main: #f8fafc;
 $card-bg: #ffffff;
@@ -232,7 +234,7 @@ $font-family: 'Inter', -apple-system, sans-serif;
         border: 1px solid $border-color;
         padding: 8px 12px;
         border-radius: 6px;
-        font-size: 0.85rem;
+        font-size: 1rem;
         outline: none;
       }
     }
@@ -538,7 +540,7 @@ $font-family: 'Inter', -apple-system, sans-serif;
         border: 1px solid $border-color;
         padding: 6px 10px;
         border-radius: 6px;
-        font-size: 0.75rem;
+        font-size: 1rem;
       }
 
       .results-count {
@@ -646,4 +648,51 @@ $font-family: 'Inter', -apple-system, sans-serif;
   margin-top: 24px;
   padding-top: 12px;
   border-top: 1px solid $border-color;
+}
+
+/* Responsive: reportes financieros apilados en móvil/tablet. */
+@include bp.mobile {
+  :host {
+    padding: 16px 12px;
+  }
+
+  .top-nav {
+    flex-wrap: wrap;
+    row-gap: 10px;
+
+    .nav-right {
+      width: 100%;
+      justify-content: space-between;
+    }
+  }
+
+  .filter-header,
+  .card-title-bar,
+  .table-header,
+  .table-footer {
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+
+  .filter-form {
+    flex-wrap: wrap;
+
+    .input-group {
+      min-width: 45%;
+      flex: 1 1 45%;
+    }
+
+    .btn-search {
+      width: 100%;
+    }
+  }
+
+  .kpi-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .table-controls {
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
 }

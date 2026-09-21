@@ -1,3 +1,5 @@
+@use 'breakpoints' as bp;
+
 // Variables
 $bg-main: #f8fafc;
 $card-bg: #ffffff;
@@ -349,7 +351,7 @@ $font-family: 'Inter', -apple-system, sans-serif;
           width: 100%;
           border: none;
           padding: 10px 0;
-          font-size: 0.95rem;
+          font-size: 1rem;
           font-weight: 700;
           outline: none;
         }
@@ -655,12 +657,67 @@ $font-family: 'Inter', -apple-system, sans-serif;
 }
 
 .sim-input {
-  width: 60px;
+  width: 68px;
   border: 1px solid $border-color;
   border-radius: 6px;
   padding: 2px 6px;
   font: inherit;
-  font-size: 0.75rem;
+  font-size: 1rem;
   text-align: center;
   margin: 0 4px;
+}
+
+/* Responsive: el checkout se apila en una columna en móvil/tablet. */
+@include bp.mobile {
+  :host {
+    padding: 16px 12px;
+  }
+
+  .header-card,
+  .event-banner,
+  .toggle-box,
+  .form-footer {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .header-card .header-right,
+  .event-banner .event-info {
+    width: 100%;
+  }
+
+  .event-meta {
+    flex-wrap: wrap;
+    row-gap: 10px;
+  }
+
+  .pricing-row {
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .simulator-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .features-row {
+    grid-template-columns: 1fr;
+  }
+
+  .form-footer {
+    .security-info {
+      order: 2;
+    }
+
+    .button-group {
+      order: 1;
+      width: 100%;
+
+      .btn-cancel,
+      .btn-save {
+        flex: 1;
+        justify-content: center;
+      }
+    }
+  }
 }
