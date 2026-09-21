@@ -11,6 +11,7 @@ import { PreferencesApiService } from '@features/accessibility/services/preferen
 import { SessionService } from '@core/services/session.service';
 import { SportsService } from '@features/sports-disabilities/services/sports.service';
 import { extractQrCode, eventDateTimeMs } from '@core/utils/qr-attendance.util';
+import { LiveSyncService } from '@features/accessibility/services/live-sync.service';
 import { SharedModule } from '@shared/shared.module';
 
 @Component({
@@ -47,7 +48,8 @@ export class AttendanceCheckinPageComponent implements OnInit, OnDestroy {
     private router: Router,
     private session: SessionService,
     private sportsService: SportsService,
-    private preferencesApi: PreferencesApiService
+    private preferencesApi: PreferencesApiService,
+    private liveSync: LiveSyncService
   ) {}
 
   ngOnInit(): void {
@@ -196,6 +198,10 @@ export class AttendanceCheckinPageComponent implements OnInit, OnDestroy {
         if (this.registration) {
           this.registration = { ...this.registration, attended: true };
         }
+        this.liveSync.emitAttendance(
+          this.info?.eventId || this.event?.id,
+          'attendance_confirmed'
+        );
       },
       error: (error) => {
         this.submitting = false;

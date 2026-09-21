@@ -16,9 +16,24 @@ export interface LiveSyncPulse {
   eventId?: string;
 }
 
+const ATTENDANCE_TYPES = new Set([
+  'attendance_confirmed',
+  'attendance_checkin',
+  'admin_attendance_checkin'
+]);
+
+/** True si el tipo de notificación implica un check-in reciente. */
+export function isAttendanceNotificationType(type?: string | null): boolean {
+  if (!type) {
+    return false;
+  }
+  const normalized = type.trim().toLowerCase();
+  return ATTENDANCE_TYPES.has(normalized) || normalized.includes('attendance');
+}
+
 /**
- * Punto de extensión para refrescar pantallas. El canal SSE de notificaciones
- * se eliminó; las vistas se actualizan al navegar o al recargar datos.
+ * Refresco en caliente de pantallas abiertas (sin F5).
+ * Emite tras check-in local o al detectar/leer avisos de asistencia.
  */
 @Injectable({ providedIn: 'root' })
 export class LiveSyncService implements OnDestroy {
@@ -32,6 +47,21 @@ export class LiveSyncService implements OnDestroy {
       return;
     }
     this.started = true;
+  }
+
+  /** Avisa a las vistas suscritas para que recarguen datos en silencio. */
+  emit(pulse: LiveSyncPulse): void {
+    this.start();
+    this.pulseSubject.next(pulse);
+  }
+
+  /** Atajo para check-ins (QR, manual o aviso recibido). */
+  emitAttendance(eventId?: string | null, type?: string): void {
+    this.emit({
+      kind: 'attendance',
+      type,
+      eventId: eventId || undefined
+    });
   }
 
   ngOnDestroy(): void {

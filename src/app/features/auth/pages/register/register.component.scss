@@ -492,31 +492,35 @@ select.input-field {
 /* CHECKBOX DE TÉRMINOS */
 .terms-group {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 2px 0;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 4px 0 2px;
 }
 
 .terms-checkbox {
   width: 15px;
   height: 15px;
+  margin-top: 2px;
+  flex-shrink: 0;
   accent-color: #A30D11;
   cursor: pointer;
 }
 
 .terms-label {
-  font-size: 11px;
+  font-size: 12px;
+  line-height: 1.45;
   color: #475569;
 }
 
 .terms-link {
   color: #A30D11;
-  text-decoration: none;
-  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  font-weight: 700;
 }
 
 .terms-link:hover {
-  text-decoration: underline;
+  color: #890A0D;
 }
 
 .submit-btn {
@@ -546,45 +550,7 @@ select.input-field {
   transform: scale(0.98);
 }
 
-/* SOCIAL LOGIN & FOOTER */
-.auth-social {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-top: 14px;
-}
-
-.auth-divider {
-  font-size: 9px;
-  font-weight: 800;
-  color: #64748B;
-  letter-spacing: 0.8px;
-  margin-bottom: 8px;
-}
-
-.social-buttons {
-  display: flex;
-  gap: 10px;
-}
-
-.social-btn {
-  width: 40px;
-  height: 34px;
-  background-color: #F8FAFC;
-  border: 1px solid #E2E8F0;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background-color 0.2s, border-color 0.2s;
-}
-
-.social-btn:hover {
-  background-color: #F1F5F9;
-  border-color: #CBD5E1;
-}
-
+/* FOOTER */
 .auth-footer {
   text-align: center;
   font-size: 12px;

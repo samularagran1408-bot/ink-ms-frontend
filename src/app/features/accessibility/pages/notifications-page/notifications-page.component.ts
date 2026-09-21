@@ -11,6 +11,7 @@ import { PreferencesApiService } from '@features/accessibility/services/preferen
 import { NotificationAnnounceService } from '@features/accessibility/services/notification-announce.service';
 import { TtsService } from '@features/accessibility/services/tts.service';
 import { UnreadNotificationsService } from '@features/accessibility/services/unread-notifications.service';
+import { isAttendanceNotificationType, LiveSyncService } from '@features/accessibility/services/live-sync.service';
 import { SharedModule } from '@shared/shared.module';
 
 @Component({
@@ -37,7 +38,8 @@ export class NotificationsPageComponent implements OnInit, OnDestroy {
     private notificationAnnounce: NotificationAnnounceService,
     private tts: TtsService,
     private translate: TranslateService,
-    private unreadNotifications: UnreadNotificationsService
+    private unreadNotifications: UnreadNotificationsService,
+    private liveSync: LiveSyncService
   ) {}
 
   ngOnInit(): void {
@@ -100,10 +102,16 @@ export class NotificationsPageComponent implements OnInit, OnDestroy {
   }
 
   markAll(): void {
+    const hadAttendance = this.notifications.some(
+      (n) => !n.read && isAttendanceNotificationType(n.type)
+    );
     this.preferencesApi.markAllAsRead().subscribe({
       next: () => {
         this.notifications = this.notifications.map((n) => ({ ...n, read: true }));
         this.unreadNotifications.setCount(0);
+        if (hadAttendance) {
+          this.liveSync.emitAttendance();
+        }
       },
       error: (error) => {
         this.errorMessage =
@@ -117,6 +125,9 @@ export class NotificationsPageComponent implements OnInit, OnDestroy {
       next: () => {
         note.read = true;
         this.unreadNotifications.setCount(this.unreadNotifications.count - 1);
+        if (isAttendanceNotificationType(note.type)) {
+          this.liveSync.emitAttendance(note.eventId, note.type);
+        }
       }
     });
   }

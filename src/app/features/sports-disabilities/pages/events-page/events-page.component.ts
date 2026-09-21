@@ -187,6 +187,15 @@ export class EventsPageComponent implements OnInit, OnDestroy {
     this.startOccupancyWatch();
     this.liveSync.start();
     this.liveSub = this.liveSync.pulse$.subscribe((pulse) => {
+      // Con el scanner abierto no regeneramos todo el panel (evita “recarga”).
+      if (pulse.kind === 'attendance' && this.checkInOpen) {
+        if (this.reportOpen && this.reportEventId) {
+          if (!pulse.eventId || pulse.eventId === this.reportEventId) {
+            this.fetchAttendanceReport(this.reportEventId, true);
+          }
+        }
+        return;
+      }
       this.reload(true);
       if (this.reportOpen && this.reportEventId) {
         if (!pulse.eventId || pulse.eventId === this.reportEventId || pulse.kind === 'reconnect') {
@@ -524,11 +533,25 @@ export class EventsPageComponent implements OnInit, OnDestroy {
 
     this.sportsService.updateEvent(row.event.id, payload).subscribe({
       next: () => {
+        const updated: EventItem = {
+          ...row.event,
+          name: payload.name,
+          eventDate: payload.eventDate,
+          eventTime: payload.eventTime,
+          location: payload.location,
+          latitude: payload.latitude,
+          longitude: payload.longitude,
+          maxCapacity: payload.maxCapacity
+        };
+        row.event = updated;
+        const idx = this.events.findIndex((item) => item.id === updated.id);
+        if (idx >= 0) {
+          this.events[idx] = updated;
+        }
         row.saving = false;
         row.editing = false;
         this.successMessage = null;
         this.errorMessage = null;
-        this.reload(true);
         this.notifySuccess(
           'EVENTS_PAGE.SUCCESS_UPDATE_TITLE',
           this.translate.instant('EVENTS_PAGE.SUCCESS_UPDATE_MSG', { name: payload.name })
@@ -1466,12 +1489,8 @@ export class EventsPageComponent implements OnInit, OnDestroy {
         this.checkInMessage = response?.message || this.translate.instant('EVENTS_PAGE.SUCCESS_CHECKIN_MSG');
         this.manualQrCode = '';
         this.checkInNotes = '';
-        void this.stopScanner();
-        this.reload(true);
-        this.notifySuccess(
-          'EVENTS_PAGE.SUCCESS_CHECKIN_TITLE',
-          response?.message || this.translate.instant('EVENTS_PAGE.SUCCESS_CHECKIN_MSG')
-        );
+        this.unreadNotifications.refreshAfterAction();
+        this.liveSync.emitAttendance(this.checkInEvent?.id, 'attendance_checkin');
         if (this.reportOpen && this.reportEventId) {
           this.fetchAttendanceReport(this.reportEventId, true);
         }
