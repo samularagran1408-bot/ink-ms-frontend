@@ -84,6 +84,11 @@ export class AuthService {
     return this.http.post<LoginResponse>(`${this.apiUrlAuth}/login`, data);
   }
 
+  /** RF: Google Identity Services → JWT propio de InkluSport. */
+  loginWithGoogle(credential: string): Observable<LoginResponse> {
+    return this.http.post<LoginResponse>(`${this.apiUrlAuth}/google`, { credential });
+  }
+
   forgotPassword(data: ForgotPasswordRequest): Observable<ForgotPasswordResponse> {
     return this.http.post<ForgotPasswordResponse>(`${this.apiUrlAuth}/forgot-password`, data);
   }

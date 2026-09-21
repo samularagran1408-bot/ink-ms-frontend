@@ -4,6 +4,7 @@ import { firstValueFrom } from 'rxjs';
 
 interface MapsRuntimeConfig {
   googleMapsApiKey?: string;
+  googleClientId?: string;
 }
 
 /**

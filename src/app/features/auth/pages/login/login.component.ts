@@ -1,13 +1,15 @@
-import { Component } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, OnDestroy, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Location } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { isSafeReturnUrl } from '@core/utils/qr-attendance.util';
+import { Subscription } from 'rxjs';
 
 import { AuthService } from '../../services/auth.service';
 import { LoginRequest } from '../../models/login-request';
 import { AccessibilityService } from '@features/accessibility/services/accessibility.service';
 import { SessionService } from '@core/services/session.service';
+import { GoogleAuthService } from '@core/services/google-auth.service';
 import { TranslateService } from '@ngx-translate/core';
 
 @Component({
@@ -15,7 +17,9 @@ import { TranslateService } from '@ngx-translate/core';
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss'
 })
-export class LoginComponent {
+export class LoginComponent implements AfterViewInit, OnDestroy {
+  @ViewChild('googleBtnHost') googleBtnHost?: ElementRef<HTMLElement>;
+
   loginForm: FormGroup;
 
   showPassword = false;
@@ -24,6 +28,9 @@ export class LoginComponent {
   loginSuccess = false;
   loginFailed = false;
   attemptedEmail = '';
+  googleEnabled = false;
+
+  private subs = new Subscription();
 
   constructor(
     private fb: FormBuilder,
@@ -33,12 +40,28 @@ export class LoginComponent {
     private route: ActivatedRoute,
     private router: Router,
     public accessibilityService: AccessibilityService,
-    private translate: TranslateService
+    private translate: TranslateService,
+    private googleAuth: GoogleAuthService
   ) {
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
       password: ['', Validators.required],
     });
+  }
+
+  ngAfterViewInit(): void {
+    this.subs.add(
+      this.googleAuth.isEnabled().subscribe((enabled) => {
+        this.googleEnabled = enabled;
+        if (enabled) {
+          setTimeout(() => this.mountGoogleButton());
+        }
+      })
+    );
+  }
+
+  ngOnDestroy(): void {
+    this.subs.unsubscribe();
   }
 
   goBack(): void {
@@ -67,32 +90,8 @@ export class LoginComponent {
     this.isSubmitting = true;
 
     this.authService.login(this.loginForm.value as LoginRequest).subscribe({
-      next: (response) => {
-        this.session.bootstrapAfterLogin(response.token).subscribe({
-          next: (home) => {
-            this.isSubmitting = false;
-            this.loginSuccess = true;
-            this.navigateAfterLogin(home);
-          },
-          error: () => {
-            this.isSubmitting = false;
-            this.loginSuccess = true;
-            this.navigateAfterLogin(this.session.homeForCurrentUser());
-          }
-        });
-      },
-      error: (error) => {
-        this.isSubmitting = false;
-
-        if (error?.status === 401) {
-          this.attemptedEmail = this.loginForm.value.email;
-          this.loginFailed = true;
-        } else if (error?.status === 0 || error?.status === 502 || error?.status === 503 || error?.status === 504) {
-          this.errorMessage = this.translate.instant('AUTH.SERVICE_UNAVAILABLE');
-        } else {
-            this.errorMessage = error?.error?.message || this.translate.instant('AUTH.DENIED_DESC');
-        }
-      }
+      next: (response) => this.finishLogin(response.token),
+      error: (error) => this.handleLoginError(error, this.loginForm.value.email)
     });
   }
 
@@ -103,6 +102,60 @@ export class LoginComponent {
 
   onNeedHelp(): void {
     alert('Contáctanos en soporte.inklusport@gmail.com');
+  }
+
+  private mountGoogleButton(): void {
+    const host = this.googleBtnHost?.nativeElement;
+    if (!host || host.childElementCount > 0) {
+      return;
+    }
+    this.subs.add(
+      this.googleAuth.mountButton(host, (credential) => this.onGoogleCredential(credential), 320).subscribe({
+        error: (err) => {
+          this.errorMessage = err?.message || this.translate.instant('AUTH.GOOGLE_UNAVAILABLE');
+        }
+      })
+    );
+  }
+
+  private onGoogleCredential(credential: string): void {
+    this.errorMessage = null;
+    this.loginFailed = false;
+    this.isSubmitting = true;
+    this.authService.loginWithGoogle(credential).subscribe({
+      next: (response) => this.finishLogin(response.token),
+      error: (error) => this.handleLoginError(error)
+    });
+  }
+
+  private finishLogin(token: string): void {
+    this.session.bootstrapAfterLogin(token).subscribe({
+      next: (home) => {
+        this.isSubmitting = false;
+        this.loginSuccess = true;
+        this.navigateAfterLogin(home);
+      },
+      error: () => {
+        this.isSubmitting = false;
+        this.loginSuccess = true;
+        this.navigateAfterLogin(this.session.homeForCurrentUser());
+      }
+    });
+  }
+
+  private handleLoginError(error: { status?: number; error?: { message?: string } }, email = ''): void {
+    this.isSubmitting = false;
+
+    if (error?.status === 401) {
+      this.attemptedEmail = email;
+      this.loginFailed = true;
+    } else if (error?.status === 0 || error?.status === 502 || error?.status === 503 || error?.status === 504) {
+      this.errorMessage = this.translate.instant('AUTH.SERVICE_UNAVAILABLE');
+    } else {
+      this.errorMessage =
+        error?.error?.message
+        || this.translate.instant(email ? 'AUTH.DENIED_DESC' : 'AUTH.GOOGLE_FAILED');
+    }
   }
 
   private navigateAfterLogin(home: string): void {
