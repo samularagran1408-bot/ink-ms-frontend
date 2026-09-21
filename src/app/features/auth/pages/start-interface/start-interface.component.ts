@@ -29,6 +29,6 @@ export class StartInterfaceComponent {
   }
 
   goToGuest(): void {
-    this.router.navigate(['/guest']);
+    this.router.navigate(['/']);
   }
 }

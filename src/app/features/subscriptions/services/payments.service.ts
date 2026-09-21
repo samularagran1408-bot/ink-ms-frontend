@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable, of, timeout } from 'rxjs';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { Observable, of, throwError, timeout } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
 import { API_BASE_URL } from '@core/config/api.config';
@@ -15,10 +15,20 @@ export class PaymentsService {
 
   constructor(private http: HttpClient) {}
 
+  /**
+   * Solo trata 404 como “sin config / gratuito”. Timeout, 401 u otros errores
+   * no deben convertirse en inscripción gratis silenciosa (RF57).
+   */
   obtenerConfiguracionEvento(eventoId: string): Observable<EventoPagoConfig> {
     return this.http.get<EventoPagoConfig>(`${this.configUrl}/${eventoId}`).pipe(
-      timeout(2500),
-      catchError(() => of({ esPago: false } as EventoPagoConfig))
+      timeout(8000),
+      catchError((err: unknown) => {
+        const status = err instanceof HttpErrorResponse ? err.status : 0;
+        if (status === 404) {
+          return of({ esPago: false } as EventoPagoConfig);
+        }
+        return throwError(() => err);
+      })
     );
   }
 

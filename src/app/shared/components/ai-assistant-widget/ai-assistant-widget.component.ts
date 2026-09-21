@@ -21,7 +21,7 @@ import { SessionService } from '@core/services/session.service';
 import { UsersService } from '@features/users/services/users.service';
 import { HeroIconName } from '../../icons/heroicons-outline';
 
-const PUBLIC_PATHS = new Set(['/', '', '/login', '/register', '/guest', '/forgot-password']);
+const PUBLIC_PATHS = new Set(['/', '', '/login', '/register', '/guest', '/welcome', '/forgot-password']);
 
 @Component({
   selector: 'app-ai-assistant-widget',

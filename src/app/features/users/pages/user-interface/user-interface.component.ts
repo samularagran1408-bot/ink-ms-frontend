@@ -411,12 +411,23 @@ export class UserInterfaceComponent implements OnInit, OnDestroy {
 
       // Misma regla que events-page (RF57): si es de pago, ir al panel de checkout
       // antes de llamar a sports (que ahora rechaza inscripción gratis en eventos pago).
-      this.paymentsService.obtenerConfiguracionEvento(event.id).subscribe((config) => {
-        if (config.esPago) {
-          this.irAPagoInscripcion(event);
-          return;
-        }
-        this.registrarEventoSinCosto(event, userId);
+      this.paymentsService.obtenerConfiguracionEvento(event.id).subscribe({
+        next: (config) => {
+          if (config.esPago) {
+            this.irAPagoInscripcion(event);
+            return;
+          }
+          this.registrarEventoSinCosto(event, userId);
+        },
+        error: (err) => {
+          this.registeringId = null;
+          const msg =
+            err?.error?.message ||
+            err?.error?.detail ||
+            this.translate.instant('HOME.REGISTER_ERROR');
+          this.errorMessage = msg;
+          void this.confirm.error({ title: 'No se pudo inscribir', message: msg });
+        },
       });
     });
   }

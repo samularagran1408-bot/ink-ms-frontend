@@ -86,6 +86,24 @@
         </div>
       </div>
 
+      <div class="checkbox-section" style="grid-column: 1 / -1;">
+        <h3 class="section-title">{{ 'ACCESSIBILITY.WEEKLY_REPORT' | translate }}</h3>
+        <p class="page-subtitle" style="margin-bottom: 12px;">
+          {{ 'ACCESSIBILITY.WEEKLY_REPORT_HINT' | translate }}
+        </p>
+        <div class="checkbox-grid">
+          <label class="checkbox-row">
+            <input type="checkbox" formControlName="weeklyReportEmailEnabled" />
+            <span>{{ 'ACCESSIBILITY.WEEKLY_REPORT_ENABLED' | translate }}</span>
+          </label>
+        </div>
+        <p class="page-subtitle" style="margin-top: 8px;">
+          {{ (scheduleActive
+            ? 'ACCESSIBILITY.WEEKLY_REPORT_ACTIVE'
+            : 'ACCESSIBILITY.WEEKLY_REPORT_INACTIVE') | translate }}
+        </p>
+      </div>
+
       <p class="page-subtitle" style="grid-column: 1 / -1;">
         {{ 'ACCESSIBILITY.TTS_HINT' | translate }}
       </p>

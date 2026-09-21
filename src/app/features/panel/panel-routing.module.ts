@@ -314,7 +314,10 @@ const routes: Routes = [
         data: { quizRolePath: 'organizer' }
       },
       {
+        // pathMatch full: si no, "events" (prefix) compite con events/:id/pago-config
+        // y la pantalla de configurar cobro no carga.
         path: 'events',
+        pathMatch: 'full',
         loadComponent: () =>
           import('@features/sports-disabilities/pages/events-page/events-page.component').then(
             (m) => m.EventsPageComponent

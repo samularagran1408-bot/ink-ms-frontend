@@ -76,8 +76,32 @@
     "WELCOME_SUB": "Your platform for high-performance adapted sport.",
     "LOGIN_CTA": "Log in",
     "REGISTER_CTA": "Register",
-    "GUEST_CTA": "Continue as guest",
+    "GUEST_CTA": "Explore the platform",
     "COMMUNITY": "Join the community"
+  },
+  "GUEST": {
+    "HERO_LABEL": "Adapted sport",
+    "HERO_LINE1": "Train, compete",
+    "HERO_LINE2": "and belong",
+    "HERO_TEXT": "Inclusive events, adapted routines, accessibility and an assistant that guides you in InkluSport. Create an account to get started.",
+    "CTA_START": "Create account",
+    "CTA_EXPLORE": "What you get",
+    "FEATURES_TITLE": "What you will find",
+    "FEATURES_SUB": "The same tools as in the app panel, introduced for first-time visitors.",
+    "FEAT1_TAG": "Events",
+    "FEAT1_TITLE": "Events and registration",
+    "FEAT1_DESC": "Browse the calendar, sign up, and manage capacity or waitlists according to your role.",
+    "FEAT2_TAG": "Training",
+    "FEAT2_TITLE": "Routines and assistant",
+    "FEAT2_DESC": "Adapted routines, plans and an assistant for questions about the platform, sports and adaptations.",
+    "FEAT3_TAG": "Accessibility",
+    "FEAT3_TITLE": "Access preferences",
+    "FEAT3_DESC": "Contrast, font size, language and settings so the app adapts to you.",
+    "SPORTS_TITLE": "Disciplines",
+    "SPORTS_FILTERS": "Filter disciplines",
+    "CTA_TITLE": "Ready to join?",
+    "CTA_TEXT": "Register as an athlete, coach or organizer. An administrator validates special roles when needed.",
+    "FOOTER": "© InkluSport. Adapted sport without barriers."
   },
   "ROLES": {
     "ADMIN": "Administrator",
@@ -221,7 +245,13 @@
     "ATTENDANCE_METHOD": "How to check in",
     "ATTENDANCE_METHOD_HINT": "Choose whether you confirm attendance with a form or by scanning a QR code.",
     "ATTENDANCE_QR": "By QR: scanning saves attendance instantly, no survey",
-    "ATTENDANCE_FORM": "By form: you complete an attendance survey"
+    "ATTENDANCE_FORM": "By form: you complete an attendance survey",
+    "WEEKLY_REPORT": "Weekly report email",
+    "WEEKLY_REPORT_HINT": "When enabled, you will receive a weekly PDF dashboard summary by email. You can cancel it anytime.",
+    "WEEKLY_REPORT_ENABLED": "Schedule weekly email delivery",
+    "WEEKLY_REPORT_ACTIVE": "Schedule active: the next send will be automatic.",
+    "WEEKLY_REPORT_INACTIVE": "No active schedule.",
+    "WEEKLY_REPORT_SYNC_ERROR": "Preferences saved, but the report schedule could not be updated."
   },
   "NOTIFICATIONS": {
     "TITLE": "Notifications",
@@ -669,6 +699,7 @@
     "SELECTED": "selected",
     "SEARCH_PH": "Search by sport, disability or adaptations",
     "ALL_SPORTS": "All sports",
+    "ALL_DISABILITIES": "All disabilities",
     "FILTER_SPORT": "Filter by sport",
     "EMPTY_SEARCH": "No associations match your search."
   },

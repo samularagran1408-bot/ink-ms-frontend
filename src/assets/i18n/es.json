@@ -76,8 +76,32 @@
     "WELCOME_SUB": "Tu plataforma para el deporte adaptado de alto rendimiento.",
     "LOGIN_CTA": "Iniciar sesión",
     "REGISTER_CTA": "Registrarse",
-    "GUEST_CTA": "Iniciar como invitado",
+    "GUEST_CTA": "Ver la plataforma",
     "COMMUNITY": "Únete a la comunidad"
+  },
+  "GUEST": {
+    "HERO_LABEL": "Deporte adaptado",
+    "HERO_LINE1": "Entrena, compite",
+    "HERO_LINE2": "e inclúyete",
+    "HERO_TEXT": "Eventos inclusivos, rutinas adaptadas, accesibilidad y un asistente que te orienta en InkluSport. Crea tu cuenta para empezar.",
+    "CTA_START": "Crear cuenta",
+    "CTA_EXPLORE": "Qué ofrece",
+    "FEATURES_TITLE": "Lo que encontrarás",
+    "FEATURES_SUB": "Las mismas herramientas del panel, presentadas para quien llega por primera vez.",
+    "FEAT1_TAG": "Eventos",
+    "FEAT1_TITLE": "Eventos e inscripciones",
+    "FEAT1_DESC": "Consulta el calendario, inscríbete, gestiona cupos y lista de espera según tu rol.",
+    "FEAT2_TAG": "Entrenamiento",
+    "FEAT2_TITLE": "Rutinas y asistente",
+    "FEAT2_DESC": "Rutinas adaptadas, planes y un asistente para resolver dudas sobre la plataforma, deportes y adaptaciones.",
+    "FEAT3_TAG": "Accesibilidad",
+    "FEAT3_TITLE": "Preferencias de acceso",
+    "FEAT3_DESC": "Contraste, tamaño de letra, idioma y ajustes pensados para que la app se adapte a ti.",
+    "SPORTS_TITLE": "Disciplinas",
+    "SPORTS_FILTERS": "Filtrar disciplinas",
+    "CTA_TITLE": "¿Listo para entrar?",
+    "CTA_TEXT": "Regístrate como atleta, entrenador u organizador. El administrador valida roles especiales cuando hace falta.",
+    "FOOTER": "© InkluSport. Deporte adaptado sin barreras."
   },
   "ROLES": {
     "ADMIN": "Administrador",
@@ -221,7 +245,13 @@
     "ATTENDANCE_METHOD": "Cómo registrar asistencia",
     "ATTENDANCE_METHOD_HINT": "Elige si confirmas asistencia con un formulario o escaneando un código QR.",
     "ATTENDANCE_QR": "Por QR: al escanear se guarda al instante, sin encuesta",
-    "ATTENDANCE_FORM": "Por formulario: completas una encuesta de asistencia"
+    "ATTENDANCE_FORM": "Por formulario: completas una encuesta de asistencia",
+    "WEEKLY_REPORT": "Envío semanal de reporte",
+    "WEEKLY_REPORT_HINT": "Si lo activas, cada semana recibirás por correo un PDF con el resumen del dashboard. Puedes cancelarlo cuando quieras.",
+    "WEEKLY_REPORT_ENABLED": "Programar envío semanal por correo",
+    "WEEKLY_REPORT_ACTIVE": "Programación activa: el próximo envío será automático.",
+    "WEEKLY_REPORT_INACTIVE": "Sin programación activa.",
+    "WEEKLY_REPORT_SYNC_ERROR": "Preferencias guardadas, pero no se pudo actualizar la programación del reporte."
   },
   "NOTIFICATIONS": {
     "TITLE": "Notificaciones",
@@ -671,6 +701,7 @@
     "SELECTED": "seleccionado",
     "SEARCH_PH": "Buscar por deporte, discapacidad o adaptaciones",
     "ALL_SPORTS": "Todos los deportes",
+    "ALL_DISABILITIES": "Todas las discapacidades",
     "FILTER_SPORT": "Filtrar por deporte",
     "EMPTY_SEARCH": "No hay asociaciones que coincidan con la búsqueda."
   },
