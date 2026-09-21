@@ -12,7 +12,7 @@ interface FaqItem {
   styleUrl: './support-page.component.scss'
 })
 export class SupportPageComponent {
-  readonly supportEmail = 'soporte@inklusport.com';
+  readonly supportEmail = 'soporte.inklusport@gmail.com';
 
   readonly faqs: FaqItem[] = [
     {

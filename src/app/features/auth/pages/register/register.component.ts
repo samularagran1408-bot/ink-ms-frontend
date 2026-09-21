@@ -245,6 +245,6 @@ export class RegisterComponent implements OnDestroy {
   }
 
   onNeedHelp(): void {
-    alert('Contáctanos en soporte@inklusport.com');
+    alert('Contáctanos en soporte.inklusport@gmail.com');
   }
 }
