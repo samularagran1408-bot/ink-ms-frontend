@@ -8,6 +8,7 @@ import { PreferencesApiService } from './preferences-api.service';
 import { SessionService } from '@core/services/session.service';
 import { TtsService } from './tts.service';
 import { UnreadNotificationsService } from './unread-notifications.service';
+import { isAttendanceNotificationType, LiveSyncService } from './live-sync.service';
 
 export interface LiveNotificationAlert {
   count: number;
@@ -34,6 +35,7 @@ export class NotificationAnnounceService implements OnDestroy {
     private session: SessionService,
     private tts: TtsService,
     private unreadNotifications: UnreadNotificationsService,
+    private liveSync: LiveSyncService,
     private translate: TranslateService
   ) {}
 
@@ -123,6 +125,12 @@ export class NotificationAnnounceService implements OnDestroy {
           this.shownIds.add(note.id);
         }
       });
+      // Si llegó un aviso de asistencia (p. ej. admin escaneó el QR),
+      // refrescar pantallas abiertas sin F5.
+      const attendanceNote = fresh.find((note) => isAttendanceNotificationType(note.type));
+      if (attendanceNote) {
+        this.liveSync.emitAttendance(attendanceNote.eventId, attendanceNote.type);
+      }
       this.presentIncoming(fresh[0]);
     });
   }
