@@ -102,7 +102,7 @@ export class LoginComponent {
   }
 
   onNeedHelp(): void {
-    alert('Contáctanos en soporte@inklusport.com');
+    alert('Contáctanos en soporte.inklusport@gmail.com');
   }
 
   private navigateAfterLogin(home: string): void {
