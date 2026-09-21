@@ -224,7 +224,8 @@ export class SidebarNavComponent implements OnInit, OnDestroy {
     return [
       { labelKey: 'NAV.PROFILE', route: `${base}/profile`, icon: 'user-circle' },
       { labelKey: 'NAV.ACCESSIBILITY', route: `${base}/accessibility`, icon: 'eye' },
-      { labelKey: 'NAV.NOTIFICATIONS', route: `${base}/notifications`, showBadge: true, icon: 'bell' }
+      { labelKey: 'NAV.NOTIFICATIONS', route: `${base}/notifications`, showBadge: true, icon: 'bell' },
+      { labelKey: 'NAV.SUPPORT', route: '/soporte', icon: 'chat-bubble-left-right' }
     ];
   }
 
