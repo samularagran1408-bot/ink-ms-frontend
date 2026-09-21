@@ -1,0 +1,43 @@
+<div class="support-wrapper">
+  <header class="top-header">
+    <div class="container top-header-inner">
+      <a class="brand-logo-container" routerLink="/" aria-label="InkluSport">
+        <img class="brand-mark" src="assets/brand/inklusport-logo.png" alt="" aria-hidden="true" />
+        <span class="brand-name">INKLUSPORT</span>
+      </a>
+      <button type="button" class="btn btn-ghost" (click)="goBack()">← Volver</button>
+    </div>
+  </header>
+
+  <main class="support-main">
+    <div class="container support-content">
+      <p class="eyebrow">Ayuda</p>
+      <h1>¿En qué te podemos ayudar?</h1>
+      <p class="lead">
+        Encuentra respuestas a las preguntas más comunes sobre InkluSport. Si no encuentras lo que
+        buscas, escríbenos directamente.
+      </p>
+
+      <section class="contact-card">
+        <div class="contact-copy">
+          <h2>¿No encontraste tu respuesta?</h2>
+          <p>Escríbenos y te ayudamos lo antes posible.</p>
+        </div>
+        <a class="btn btn-primary" href="mailto:{{ supportEmail }}">✉️ Escribir a soporte</a>
+      </section>
+
+      <section class="faq-list" aria-label="Preguntas frecuentes">
+        <h2 class="faq-title">Preguntas frecuentes</h2>
+        <details class="faq-item" *ngFor="let item of faqs; let i = index" [open]="i === 0">
+          <summary>{{ item.question }}</summary>
+          <p>{{ item.answer }}</p>
+        </details>
+      </section>
+
+      <p class="legal-note">
+        ¿Buscas los términos de uso o la política de privacidad? Están en la
+        <a routerLink="/terminos">página de Términos y Condiciones</a>.
+      </p>
+    </div>
+  </main>
+</div>

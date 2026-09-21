@@ -1,0 +1,164 @@
+<div class="legal-wrapper">
+  <header class="top-header">
+    <div class="container top-header-inner">
+      <a class="brand-logo-container" routerLink="/" aria-label="InkluSport">
+        <img class="brand-mark" src="assets/brand/inklusport-logo.png" alt="" aria-hidden="true" />
+        <span class="brand-name">INKLUSPORT</span>
+      </a>
+      <button type="button" class="btn btn-ghost" (click)="goBack()">← Volver</button>
+    </div>
+  </header>
+
+  <main class="legal-main">
+    <div class="container legal-content">
+      <div class="draft-notice">
+        <strong>Documento borrador.</strong> Este texto es una plantilla inicial para que InkluSport
+        empiece a operar con unos términos claros. Antes de considerarlo definitivo, debe revisarlo
+        una persona con conocimiento legal (especialmente las secciones de datos personales y pagos).
+      </div>
+
+      <nav class="legal-toc" aria-label="Contenido">
+        <a href="#terms">Términos y Condiciones</a>
+        <span class="sep">·</span>
+        <a href="#privacy">Política de Privacidad</a>
+      </nav>
+
+      <section id="terms" class="legal-section">
+        <p class="legal-updated">Última actualización: {{ currentYear }}</p>
+        <h1>Términos y Condiciones de Uso</h1>
+        <p class="legal-lead">
+          Estos Términos regulan el acceso y uso de InkluSport, la plataforma digital para la gestión
+          de eventos deportivos adaptados, entrenamiento y seguimiento de atletas con discapacidad en
+          Colombia. Al crear una cuenta o usar la plataforma, aceptas lo descrito a continuación.
+        </p>
+
+        <h2>1. Quiénes pueden usar InkluSport</h2>
+        <p>
+          InkluSport asigna a cada persona un rol: <strong>Atleta Adaptado</strong>,
+          <strong>Entrenador</strong>, <strong>Organizador</strong> o <strong>Administrador</strong>.
+          Cada rol tiene funciones y permisos distintos dentro de la plataforma. Para registrarte
+          debes aportar información veraz y mantenerla actualizada; eres responsable de la actividad
+          que ocurra en tu cuenta y de la confidencialidad de tu contraseña.
+        </p>
+
+        <h2>2. Uso de la plataforma</h2>
+        <ul>
+          <li>La plataforma se ofrece para facilitar la inscripción a eventos deportivos adaptados, la
+            gestión de entrenamientos y el seguimiento de aptitudes deportivas.</li>
+          <li>No está permitido usar InkluSport para fines distintos a los deportivos/inclusivos que
+            plantea, ni para suplantar a otra persona, publicar contenido ofensivo o discriminatorio,
+            o intentar vulnerar la seguridad de la plataforma.</li>
+          <li>Los Organizadores son responsables de la veracidad de la información de los eventos que
+            publican (fechas, cupos, ubicación, condiciones de accesibilidad).</li>
+        </ul>
+
+        <h2>3. Inscripciones, pagos y suscripciones</h2>
+        <p>
+          Algunos eventos y planes de Organizador tienen un costo, expresado en pesos colombianos
+          (COP). Los pagos se procesan a través de Mercado Pago; InkluSport no almacena los datos
+          completos de tu tarjeta. Al confirmarse el pago, la inscripción o suscripción queda activa;
+          si el pago es rechazado, la inscripción no se completa. Las condiciones de cancelación y
+          reembolso de un evento específico son definidas por el Organizador de ese evento, salvo que
+          la ley aplicable disponga algo distinto.
+        </p>
+
+        <h2>4. Contenido generado por el usuario</h2>
+        <p>
+          Fotos de perfil, resultados de quices de aptitud, comentarios de asistencia y demás
+          información que ingreses siguen siendo tuyos; al publicarlos en InkluSport nos das permiso
+          para mostrarlos dentro de la plataforma con el fin de prestar el servicio (por ejemplo,
+          mostrarle tu progreso a tu entrenador).
+        </p>
+
+        <h2>5. Propiedad intelectual</h2>
+        <p>
+          El nombre InkluSport, su logotipo y el diseño de la plataforma son propiedad de InkluSport
+          o de sus licenciantes. No está permitido copiar, distribuir o crear obras derivadas sin
+          autorización previa.
+        </p>
+
+        <h2>6. Disponibilidad y responsabilidad</h2>
+        <p>
+          Hacemos esfuerzos razonables para que la plataforma esté disponible, pero no garantizamos un
+          funcionamiento ininterrumpido o libre de errores. InkluSport actúa como intermediario entre
+          atletas, entrenadores y organizadores; no es responsable por la ejecución física del evento
+          deportivo ni por lesiones ocurridas durante su desarrollo, sin perjuicio de las obligaciones
+          legales que correspondan al Organizador de cada evento.
+        </p>
+
+        <h2>7. Cambios a estos términos</h2>
+        <p>
+          Podemos actualizar estos Términos para reflejar cambios en la plataforma o en la normativa
+          aplicable. Si el cambio es significativo, lo avisaremos dentro de la plataforma antes de que
+          entre en vigor.
+        </p>
+
+        <h2>8. Ley aplicable</h2>
+        <p>
+          Estos Términos se rigen por las leyes de la República de Colombia.
+        </p>
+      </section>
+
+      <hr class="legal-divider" />
+
+      <section id="privacy" class="legal-section">
+        <h1>Política de Privacidad</h1>
+        <p class="legal-lead">
+          En InkluSport tratamos datos de personas con y sin discapacidad para poder ofrecer un
+          servicio de deporte adaptado. Esta política explica qué datos recolectamos, para qué los
+          usamos y cuáles son tus derechos, en línea con la Ley 1581 de 2012 (protección de datos
+          personales) y la Ley 1996 de 2019 (reconocimiento de la capacidad legal de las personas con
+          discapacidad) de Colombia.
+        </p>
+
+        <h2>1. Qué datos recolectamos</h2>
+        <ul>
+          <li><strong>Datos de cuenta:</strong> nombre, correo, contraseña (cifrada), rol.</li>
+          <li><strong>Datos de perfil:</strong> foto, tipo de discapacidad y preferencias de apoyo (solo
+            si decides compartirlos, para adaptar mejor tu experiencia deportiva).</li>
+          <li><strong>Datos de uso:</strong> eventos a los que te inscribes, resultados del quiz de
+            aptitud, asistencia a sesiones, preferencias de accesibilidad (tamaño de letra, contraste,
+            idioma).</li>
+          <li><strong>Datos de pago:</strong> el estado y monto de tus transacciones; los datos de la
+            tarjeta los procesa directamente Mercado Pago, InkluSport no los almacena.</li>
+        </ul>
+
+        <h2>2. Para qué usamos tus datos</h2>
+        <p>
+          Para crear y administrar tu cuenta, gestionar inscripciones y pagos, adaptar la plataforma a
+          tus necesidades de accesibilidad, comunicarnos contigo sobre tus eventos o pagos, y cumplir
+          obligaciones legales.
+        </p>
+
+        <h2>3. Con quién compartimos tus datos</h2>
+        <p>
+          Con Mercado Pago, únicamente para procesar tus pagos. Con el Entrenador u Organizador del
+          evento al que te inscribes, solo la información necesaria para prestarte el servicio (por
+          ejemplo, tus preferencias de apoyo declaradas). No vendemos tus datos a terceros.
+        </p>
+
+        <h2>4. Tus derechos (Habeas Data)</h2>
+        <p>
+          Puedes conocer, actualizar, rectificar y solicitar la supresión de tus datos personales, así
+          como revocar tu autorización, escribiendo a
+          <a href="mailto:soporte&#64;inklusport.com">soporte&#64;inklusport.com</a>. Los datos
+          sensibles relacionados con tu discapacidad solo se recolectan si tú decides ingresarlos y con
+          el único fin de adaptar el servicio deportivo.
+        </p>
+
+        <h2>5. Seguridad</h2>
+        <p>
+          Usamos autenticación con contraseña cifrada y control de acceso por rol. Ningún sistema es
+          100% seguro, así que te recomendamos no compartir tu contraseña con nadie.
+        </p>
+
+        <h2>6. Contacto</h2>
+        <p>
+          Para preguntas sobre esta política o el tratamiento de tus datos, escríbenos a
+          <a href="mailto:soporte&#64;inklusport.com">soporte&#64;inklusport.com</a> o visita nuestra
+          <a routerLink="/soporte">página de soporte</a>.
+        </p>
+      </section>
+    </div>
+  </main>
+</div>

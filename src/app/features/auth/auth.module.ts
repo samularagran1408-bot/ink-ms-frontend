@@ -9,6 +9,8 @@ import { RegisterComponent } from './pages/register/register.component';
 import { StartInterfaceComponent } from './pages/start-interface/start-interface.component';
 import { GuestHomeComponent } from './pages/guest-home/guest-home.component';
 import { ForgotPasswordComponent } from './pages/forgot-password/forgot-password.component';
+import { TermsPageComponent } from './pages/terms-page/terms-page.component';
+import { SupportPageComponent } from './pages/support-page/support-page.component';
 
 
 @NgModule({
@@ -17,7 +19,9 @@ import { ForgotPasswordComponent } from './pages/forgot-password/forgot-password
     RegisterComponent,
     StartInterfaceComponent,
     GuestHomeComponent,
-    ForgotPasswordComponent
+    ForgotPasswordComponent,
+    TermsPageComponent,
+    SupportPageComponent
   ],
   imports: [
     CommonModule,
