@@ -106,18 +106,11 @@ textarea {
 }
 
 .brand-mark {
-  display: inline-grid;
-  place-items: center;
+  display: inline-block;
   width: 30px;
   height: 30px;
   border-radius: 9px;
-  background: var(--ink-red);
-  color: var(--ink-on-accent);
-  font-family: 'Oswald', sans-serif;
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: 0;
-  line-height: 1;
+  object-fit: cover;
   flex-shrink: 0;
   box-shadow: 0 6px 14px rgba(163, 13, 17, 0.28);
 }
