@@ -300,6 +300,20 @@
   .top-nav {
     padding-left: 16px;
     padding-right: 16px;
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+
+  .nav-left {
+    gap: 10px;
+  }
+
+  .nav-right {
+    gap: 8px;
+  }
+
+  .user-info-text {
+    display: none;
   }
 }
 
