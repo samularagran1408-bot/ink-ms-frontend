@@ -109,8 +109,11 @@ export class LoginComponent implements AfterViewInit, OnDestroy {
     if (!host || host.childElementCount > 0) {
       return;
     }
+    // El boton de Google no acepta ancho porcentual: se mide el contenedor real
+    // para que no se salga en pantallas angostas (Google exige min. 200px).
+    const width = Math.max(200, Math.min(320, host.clientWidth || 320));
     this.subs.add(
-      this.googleAuth.mountButton(host, (credential) => this.onGoogleCredential(credential), 320).subscribe({
+      this.googleAuth.mountButton(host, (credential) => this.onGoogleCredential(credential), width).subscribe({
         error: (err) => {
           this.errorMessage = err?.message || this.translate.instant('AUTH.GOOGLE_UNAVAILABLE');
         }

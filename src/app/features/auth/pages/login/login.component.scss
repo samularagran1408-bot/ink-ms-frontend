@@ -700,12 +700,18 @@ $inklu-border: #E2E8F0;
    ========================================================================== */
 @media (max-width: 860px) {
   .login-wrapper {
+    padding: 20px 16px;
+
     .auth-card {
       max-width: 460px;
       height: auto;
 
       .hero-panel {
         display: none;
+      }
+
+      .form-panel {
+        padding: 28px 20px;
       }
     }
   }

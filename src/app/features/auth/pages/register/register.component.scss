@@ -569,6 +569,9 @@ select.input-field {
 }
 
 @media (max-width: 860px) {
+  .login-wrapper {
+    padding: 20px 16px;
+  }
   .hero-panel {
     display: none;
   }
@@ -578,6 +581,14 @@ select.input-field {
   }
   .form-panel {
     width: 100%;
+    padding: 20px 20px;
+  }
+  .role-options {
+    flex-direction: column;
+  }
+  .form-row {
+    flex-direction: column;
+    gap: 14px;
   }
 }
 
