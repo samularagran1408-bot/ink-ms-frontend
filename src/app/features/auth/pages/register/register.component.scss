@@ -3,8 +3,10 @@
   position: fixed;
   top: 0;
   left: 0;
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  height: 100%;
   background:
     radial-gradient(900px 420px at 8% -10%, rgba(163, 13, 17, 0.1), transparent 50%),
     radial-gradient(720px 380px at 100% 110%, rgba(15, 23, 42, 0.06), transparent 48%),
@@ -12,12 +14,15 @@
   z-index: 9999;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
+  gap: 16px;
   padding: 20px 40px;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   box-sizing: border-box;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   transition: background-color 0.3s ease;
 }
 
@@ -117,6 +122,13 @@
   border-color: #E8B4B6;
 }
 
+.brand-mark {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
 .brand-name {
   font-family: 'Oswald', sans-serif;
   font-size: 22px;
@@ -130,13 +142,15 @@
   display: flex;
   width: 100%;
   max-width: 950px;
-  height: calc(100vh - 100px);
-  max-height: 620px;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: min(620px, calc(100dvh - 100px));
+  max-height: none;
   background-color: #ffffff;
   border-radius: 24px;
   box-shadow: 0 28px 64px rgba(15, 23, 42, 0.12);
   overflow: hidden;
-  margin: auto;
+  margin: 0 auto auto;
   z-index: 5;
   border: 1px solid #E2E8F0;
   animation: inkRise 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
@@ -153,6 +167,8 @@
   display: flex;
   flex-direction: column;
   width: 40%;
+  min-width: 0;
+  flex-shrink: 0;
   justify-content: flex-end;
   padding: 40px 40px 56px 56px;
 }
@@ -206,8 +222,12 @@
 .form-panel {
   display: flex;
   flex-direction: column;
+  overflow-x: hidden;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   width: 60%;
+  min-width: 0;
+  min-height: 0;
   padding: 20px 40px;
   gap: 10px;
 }
@@ -235,10 +255,6 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
-}
-
-.input-group--full {
-  width: 100%;
 }
 
 .role-options {
@@ -372,7 +388,8 @@
 
 .form-row {
   display: flex;
-  gap: 40px;
+  flex-wrap: wrap;
+  gap: 16px 24px;
   width: 100%;
 }
 
@@ -381,7 +398,13 @@
   flex-direction: column;
   gap: 6px;
   align-items: flex-start;
-  width: 100%;
+  flex: 1 1 200px;
+  min-width: 0;
+  width: auto;
+}
+
+.input-group--full {
+  flex: 1 1 100%;
 }
 
 .input-label {
@@ -568,26 +591,137 @@ select.input-field {
   text-decoration: underline;
 }
 
+@media (max-width: 1024px) {
+  .login-wrapper {
+    padding: 16px 24px;
+  }
+
+  .hero-panel {
+    padding: 28px 28px 40px 32px;
+  }
+
+  .form-panel {
+    padding: 18px 28px;
+  }
+
+  .form-row {
+    gap: 14px 18px;
+  }
+}
+
 @media (max-width: 860px) {
   .login-wrapper {
-    padding: 20px 16px;
+    padding: 16px;
+    gap: 12px;
+    justify-content: flex-start;
   }
+
+  .top-header {
+    max-width: 460px;
+  }
+
   .hero-panel {
     display: none;
   }
+
   .auth-card {
     max-width: 460px;
     height: auto;
+    flex: 0 1 auto;
+    overflow: visible;
+    margin: 0 auto 24px;
   }
+
   .form-panel {
     width: 100%;
-    padding: 20px 20px;
+    padding: 20px;
+    overflow: visible;
   }
+
   .role-options {
     flex-direction: column;
   }
+
   .form-row {
     flex-direction: column;
+    flex-wrap: nowrap;
+    gap: 14px;
+  }
+
+  .input-group {
+    flex: 1 1 auto;
+    width: 100%;
+  }
+
+  .success-card {
+    margin: 0 auto 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-wrapper {
+    padding: 12px;
+  }
+
+  .brand-name {
+    font-size: 18px;
+  }
+
+  .brand-mark {
+    width: 28px;
+    height: 28px;
+  }
+
+  .back-arrow-btn {
+    width: 34px;
+    height: 34px;
+  }
+
+  .auth-card {
+    border-radius: 18px;
+  }
+
+  .form-panel {
+    padding: 16px 14px;
+  }
+
+  .auth-title {
+    font-size: 20px;
+  }
+
+  .companion-section {
+    padding: 12px;
+  }
+
+  .success-card {
+    padding: 32px 18px;
+    border-radius: 16px;
+  }
+
+  .success-title {
+    font-size: 22px;
+  }
+
+  .success-email-box {
+    flex-wrap: wrap;
+    word-break: break-word;
+  }
+}
+
+@media (max-height: 700px) and (min-width: 861px) {
+  .auth-card {
+    height: calc(100dvh - 88px);
+  }
+
+  .hero-panel {
+    padding: 24px 28px 36px 36px;
+  }
+
+  .form-panel {
+    padding: 14px 28px;
+  }
+
+  .login-form {
     gap: 14px;
   }
 }
@@ -605,8 +739,9 @@ select.input-field {
   box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
   border: 1px solid #E2E8F0;
   padding: 48px 40px;
-  margin: auto;
+  margin: 0 auto auto;
   z-index: 5;
+  box-sizing: border-box;
 }
 
 .success-icon {
