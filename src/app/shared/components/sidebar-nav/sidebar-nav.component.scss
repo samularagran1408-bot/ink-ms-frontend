@@ -68,6 +68,13 @@
 
 .user-info-text {
   text-align: right;
+  min-width: 0;
+}
+
+.user-name-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .user-role-label {
@@ -310,10 +317,13 @@
 
   .nav-right {
     gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    row-gap: 6px;
   }
 
   .user-info-text {
-    display: none;
+    max-width: 130px;
   }
 }
 

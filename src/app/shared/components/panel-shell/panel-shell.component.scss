@@ -10,13 +10,17 @@
 }
 
 .panel-shell--fixed .panel-main {
-  margin-left: 272px;
+  /* En pantallas muy grandes, el sidebar fijo (272px) deja todo el contenido
+     pegado a la izquierda; se reparte el espacio sobrante para centrarlo. */
+  margin-left: calc(272px + max(0px, (100vw - 272px - 1280px) / 2));
+  margin-right: max(0px, (100vw - 272px - 1280px) / 2);
 }
 
 .panel-main {
   padding: 36px 40px 120px 40px;
   max-width: 1280px;
   min-width: 0;
+  margin: 0 auto;
   overflow-x: hidden;
   animation: inkFadeIn 0.4s ease both;
 }
@@ -30,6 +34,7 @@
 @media (max-width: 900px) {
   .panel-shell--fixed .panel-main {
     margin-left: 228px;
+    margin-right: 0;
     padding: 24px 20px 112px 20px;
   }
 }
@@ -38,6 +43,7 @@
   .panel-main,
   .panel-shell--fixed .panel-main {
     margin-left: 0;
+    margin-right: 0;
     padding: 16px max(16px, env(safe-area-inset-right, 0px)) 112px max(16px, env(safe-area-inset-left, 0px));
   }
 }
