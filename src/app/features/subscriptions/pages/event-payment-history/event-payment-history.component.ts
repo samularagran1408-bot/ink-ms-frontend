@@ -1,6 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { NavigationEnd, Router } from '@angular/router';
+import { Subscription } from 'rxjs';
+import { filter } from 'rxjs/operators';
 
 import { SubscriptionService } from '../../services/subscription.service';
 import { PagoEventoResponse } from '../../models/subscription-models';
@@ -14,19 +17,49 @@ import { ConfirmDialogService } from '@shared/services/confirm-dialog.service';
   templateUrl: './event-payment-history.component.html',
   styleUrl: './event-payment-history.component.scss'
 })
-export class EventPaymentHistoryComponent implements OnInit {
+export class EventPaymentHistoryComponent implements OnInit, OnDestroy {
   pagos: PagoEventoResponse[] = [];
   loading = true;
   errorMessage: string | null = null;
   filtro = '';
   descargandoId: number | null = null;
 
+  private navSub: Subscription | null = null;
+
   constructor(
     private readonly subscriptions: SubscriptionService,
     private readonly confirm: ConfirmDialogService,
+    private readonly router: Router,
   ) {}
 
   ngOnInit(): void {
+    this.loadHistorial();
+    // Tras un pago el router vuelve aquí: recargar siempre al activar la ruta.
+    this.navSub = this.router.events
+      .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
+      .subscribe((event) => {
+        const raw = event.urlAfterRedirects || event.url || '';
+        const url = raw.split('?')[0];
+        if (!url.includes('/pagos-eventos')) {
+          return;
+        }
+        this.loadHistorial();
+        // El webhook de MP a veces confirma milisegundos después del redirect.
+        if (raw.includes('refreshed=')) {
+          setTimeout(() => this.loadHistorial(false), 1500);
+        }
+      });
+  }
+
+  ngOnDestroy(): void {
+    this.navSub?.unsubscribe();
+  }
+
+  loadHistorial(showLoading = true): void {
+    if (showLoading) {
+      this.loading = true;
+    }
+    this.errorMessage = null;
     this.subscriptions.getHistorialPagosEventos().subscribe({
       next: (pagos) => {
         this.pagos = pagos;
@@ -35,10 +68,12 @@ export class EventPaymentHistoryComponent implements OnInit {
       error: () => {
         this.errorMessage = 'No se pudo cargar tu historial de pagos de eventos.';
         this.loading = false;
-        void this.confirm.error({
-          title: 'Error al cargar',
-          message: this.errorMessage!,
-        });
+        if (showLoading) {
+          void this.confirm.error({
+            title: 'Error al cargar',
+            message: this.errorMessage!,
+          });
+        }
       }
     });
   }

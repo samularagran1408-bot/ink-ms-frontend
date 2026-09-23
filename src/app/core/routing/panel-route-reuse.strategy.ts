@@ -68,11 +68,22 @@ export class PanelRouteReuseStrategy implements RouteReuseStrategy {
     if (!path || path === 'login' || path === 'register' || path === 'guest' || path === 'welcome') {
       return false;
     }
+    // Historial de pagos: siempre fresco tras un cobro (sin cache SPA).
+    if (this.isPaymentHistoryPath(path)) {
+      return false;
+    }
     return path.startsWith('home')
       || path.startsWith('admin')
       || path.startsWith('trainer')
       || path.startsWith('organizer')
       || path.startsWith('asistencia');
+  }
+
+  private isPaymentHistoryPath(path: string): boolean {
+    return path === 'home/pagos-eventos'
+      || path === 'organizer/payments'
+      || path.endsWith('/pagos-eventos')
+      || path.endsWith('/payments');
   }
 
   /**
