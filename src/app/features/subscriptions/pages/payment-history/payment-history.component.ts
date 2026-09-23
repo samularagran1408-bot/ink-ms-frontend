@@ -1,9 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
-import { forkJoin, of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { NavigationEnd, Router } from '@angular/router';
+import { Subscription, forkJoin, of } from 'rxjs';
+import { catchError, filter } from 'rxjs/operators';
 
 import { SubscriptionService } from '../../services/subscription.service';
 import {
@@ -31,11 +31,13 @@ interface LedgerRow {
   templateUrl: './payment-history.component.html',
   styleUrl: './payment-history.component.scss'
 })
-export class PaymentHistoryComponent implements OnInit {
+export class PaymentHistoryComponent implements OnInit, OnDestroy {
   rows: LedgerRow[] = [];
   loading = true;
   errorMessage: string | null = null;
   filtro = '';
+
+  private navSub: Subscription | null = null;
 
   constructor(
     private subscriptions: SubscriptionService,
@@ -43,6 +45,24 @@ export class PaymentHistoryComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.loadHistorial();
+    this.navSub = this.router.events
+      .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
+      .subscribe((event) => {
+        const url = (event.urlAfterRedirects || event.url || '').split('?')[0];
+        if (url === '/organizer/payments' || url.endsWith('/organizer/payments')) {
+          this.loadHistorial();
+        }
+      });
+  }
+
+  ngOnDestroy(): void {
+    this.navSub?.unsubscribe();
+  }
+
+  loadHistorial(): void {
+    this.loading = true;
+    this.errorMessage = null;
     forkJoin({
       suscripcion: this.subscriptions.getHistorialPagosSuscripcion().pipe(
         catchError(() => of([] as PagoSuscripcionResponse[]))

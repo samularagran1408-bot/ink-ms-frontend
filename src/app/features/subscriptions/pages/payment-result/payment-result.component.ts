@@ -111,7 +111,9 @@ export class PaymentResultComponent implements OnInit {
   }
 
   irHistorial(): void {
-    void this.router.navigate(['/home/pagos-eventos']);
+    void this.router.navigate(['/home/pagos-eventos'], {
+      queryParams: { refreshed: Date.now() },
+    });
   }
 
   irPanel(): void {

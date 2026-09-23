@@ -202,7 +202,9 @@ export class PaymentGatewayComponent implements OnInit, AfterViewInit {
               : '¡Pago aprobado! Tu suscripción ya está activa.';
             setTimeout(() => {
               if (this.modo === 'evento') {
-                void this.router.navigate(['/home/pagos-eventos']);
+                void this.router.navigate(['/home/pagos-eventos'], {
+                  queryParams: { refreshed: Date.now() },
+                });
               } else {
                 void this.router.navigate(['/organizer/payments/receipt'], {
                   queryParams: { ref: this.referencia },
