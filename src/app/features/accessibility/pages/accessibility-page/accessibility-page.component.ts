@@ -52,7 +52,6 @@ export class AccessibilityPageComponent implements OnInit {
       voiceCommandsEnabled: [false],
       ttsEnabled: [false],
       voiceLanguage: [this.languageService.voiceLanguageFor(this.languageService.currentLang)],
-      disabilityType: [''],
       attendanceCheckInMethod: ['qr'],
       weeklyReportEmailEnabled: [false]
     });
@@ -106,8 +105,7 @@ export class AccessibilityPageComponent implements OnInit {
           notificationsEnabled: prefs.notificationsEnabled !== false,
           voiceCommandsEnabled: !!prefs.voiceCommandsEnabled,
           ttsEnabled: prefs.ttsEnabled !== false,
-          voiceLanguage: prefs.voiceLanguage || this.languageService.voiceLanguageFor(language),
-          disabilityType: prefs.disabilityType || '',
+          voiceLanguage: this.languageService.voiceLanguageFor(language),
           attendanceCheckInMethod: prefs.attendanceCheckInMethod === 'form' ? 'form' : 'qr',
           weeklyReportEmailEnabled: !!prefs.weeklyReportEmailEnabled
         }, { emitEvent: false });
@@ -144,23 +142,22 @@ export class AccessibilityPageComponent implements OnInit {
   testVoice(): void {
     this.tts.unlock();
     this.tts.applyPreferences(this.form.value);
-    const voiceLang = String(this.form.value.voiceLanguage || 'es-ES');
-    const phrase = voiceLang.toLowerCase().startsWith('en')
-      ? this.translate.instant('ACCESSIBILITY.TTS_TEST_PHRASE')
-      : this.translate.instant('ACCESSIBILITY.TTS_TEST_PHRASE');
+    const phrase = this.languageService.normalize(this.form.value.language) === 'en'
+      ? 'This is an English accessibility voice test.'
+      : 'Esta es una prueba de voz de accesibilidad en español.';
     this.tts.speak(phrase, { force: true });
   }
 
   save(): void {
     const enableWeekly = !!this.form.value.weeklyReportEmailEnabled;
+    const payloadLanguage = this.form.value.followSystemLanguage
+      ? this.accessibility.detectSystemLanguage()
+      : this.languageService.normalize(this.form.value.language);
     const payload = {
       ...this.form.value,
-      language: this.form.value.followSystemLanguage
-        ? this.accessibility.detectSystemLanguage()
-        : this.languageService.normalize(this.form.value.language),
+      language: payloadLanguage,
       followSystemLanguage: !!this.form.value.followSystemLanguage,
-      voiceLanguage: this.form.value.voiceLanguage
-        || this.languageService.voiceLanguageFor(this.form.value.language),
+      voiceLanguage: this.languageService.voiceLanguageFor(payloadLanguage),
       weeklyReportEmailEnabled: enableWeekly
     };
 
