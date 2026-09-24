@@ -45,8 +45,10 @@ export class TtsService {
     this.voiceCommandsEnabled = !!prefs.voiceCommandsEnabled;
     this.ttsEnabled = !!prefs.ttsEnabled;
     this.notificationsEnabled = prefs.notificationsEnabled !== false;
-    if (prefs.voiceLanguage) {
-      this.voiceLanguage = prefs.voiceLanguage;
+    if (prefs.language) {
+      this.voiceLanguage = prefs.language.toLowerCase().startsWith('en') ? 'en-US' : 'es-ES';
+    } else if (prefs.voiceLanguage) {
+      this.voiceLanguage = prefs.voiceLanguage.toLowerCase().startsWith('en') ? 'en-US' : 'es-ES';
     }
     this.prefsSubject.next({
       voiceCommandsEnabled: this.voiceCommandsEnabled,
